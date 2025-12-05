@@ -1,32 +1,128 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Job Entry - Siddhivinayak Digital</title>
-  <link rel="stylesheet" href="../style.css">
+  <meta charset="utf-8">
+  <title>New Job — Siddhivinayak Digital</title>
+  <link rel="stylesheet" href="../styles/internal.css">
 </head>
 <body>
+  <div class="topbar">
+    <div class="brand">Siddhivinayak Digital</div>
+    <div class="controls"><div id="sv_user_name"></div><button class="btn" onclick="logout()">Logout</button></div>
+  </div>
 
-<header class="topbar">Siddhivinayak Digital</header>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand-small">Actions</div>
+      <a href="dashboard.html" class="nav-link">Dashboard</a>
+      <a href="job-entry.html" class="nav-link active">New Job Entry</a>
+      <a href="job-queue.html" class="nav-link">Job Queue</a>
+    </aside>
 
-<nav class="sidebar">
-  <a href="../index.html">Home</a>
-  <a href="dashboard.html">Dashboard</a>
-  <a href="job_entry.html" class="active">Job Entry</a>
-  <a href="materials.html">Materials</a>
-  <a href="customers.html">Customers</a>
-  <a href="expenses.html">Expenses</a>
-  <a href="reports.html">Reports</a>
-  <a href="monitoring.html">Monitoring</a>
-  <a href="settings.html">Settings</a>
-</nav>
+    <main class="main">
+      <div class="page-header">
+        <div>
+          <div class="page-title">New Job Entry</div>
+          <div class="page-sub">Create a new print/xerox job</div>
+        </div>
+      </div>
 
-<main>
-  <h1 class="page-title">Job Entry</h1>
-  <p>Create new print/xerox jobs and assign them to workflow departments.</p>
-</main>
+      <div class="card">
+        <form id="jobForm">
+          <div class="form-row">
+            <div class="field">
+              <label>Customer name</label>
+              <input id="custName" type="text" required placeholder="Customer name">
+            </div>
+            <div class="field">
+              <label>Contact</label>
+              <input id="custContact" type="text" placeholder="Phone or email">
+            </div>
+          </div>
 
-<script src="../script.js"></script>
+          <div class="form-row">
+            <div class="field">
+              <label>Job Type</label>
+              <select id="jobType">
+                <option>Photocopy</option>
+                <option>Printing - Color</option>
+                <option>Printing - B/W</option>
+                <option>Binding</option>
+                <option>Scanning</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Quantity</label>
+              <input id="qty" type="number" value="1" min="1">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="field">
+              <label>Assigned Department</label>
+              <select id="department">
+                <option>Data Entry</option>
+                <option>Checking</option>
+                <option>Printing</option>
+                <option>Finishing</option>
+                <option>Delivery</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Urgency</label>
+              <select id="urgency"><option>Normal</option><option>Express</option></select>
+            </div>
+          </div>
+
+          <div style="margin-top:12px">
+            <label>Notes</label>
+            <textarea id="notes" rows="3" placeholder="Extra instructions"></textarea>
+          </div>
+
+          <div style="margin-top:14px;display:flex;gap:10px">
+            <button type="submit" class="btn">Create Job</button>
+            <button type="button" class="btn secondary" onclick="location.href='job-queue.html'">Open Queue</button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script src="../script.js"></script>
+  <script>
+    checkAuth();
+
+    // generate simple job id
+    function genId(){
+      return 'J-'+Date.now().toString().slice(-6);
+    }
+
+    // Save job to /data/jobs.json? (we will only save to localStorage / notify user)
+    document.getElementById('jobForm').addEventListener('submit', function(ev){
+      ev.preventDefault();
+      const job = {
+        id: genId(),
+        date: new Date().toISOString(),
+        customer: document.getElementById('custName').value,
+        contact: document.getElementById('custContact').value,
+        jobType: document.getElementById('jobType').value,
+        qty: Number(document.getElementById('qty').value) || 1,
+        department: document.getElementById('department').value,
+        urgency: document.getElementById('urgency').value,
+        notes: document.getElementById('notes').value,
+        status: 'Pending',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      // store in localStorage as quick demo database (safe until we wire GitHub commits)
+      const jobs = JSON.parse(localStorage.getItem('sv_jobs') || '[]');
+      jobs.push(job);
+      localStorage.setItem('sv_jobs', JSON.stringify(jobs));
+
+      alert('Job created: ' + job.id);
+      window.location.href = 'job-queue.html';
+    });
+  </script>
 </body>
 </html>
