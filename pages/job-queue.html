@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"><title>Job Queue</title>
+  <link rel="stylesheet" href="../styles/internal.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">Siddhivinayak Digital</div>
+    <div class="controls"><div id="sv_user_name"></div><button class="btn" onclick="logout()">Logout</button></div>
+  </div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand-small">Queue</div>
+      <a href="dashboard.html" class="nav-link">Dashboard</a>
+      <a href="job-entry.html" class="nav-link">New Job Entry</a>
+      <a href="job-queue.html" class="nav-link active">Job Queue</a>
+    </aside>
+
+    <main class="main">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Job Queue</div>
+          <div class="page-sub">Manage and update job statuses</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <table class="table" id="jobsTable">
+          <thead><tr><th>Job ID</th><th>Cust</th><th>Type</th><th>Qty</th><th>Dept</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <script src="../script.js"></script>
+  <script>
+    checkAuth();
+
+    function loadLocalJobs(){
+      const jobs = JSON.parse(localStorage.getItem('sv_jobs') || '[]');
+      return jobs;
+    }
+
+    function saveLocalJobs(jobs){
+      localStorage.setItem('sv_jobs', JSON.stringify(jobs));
+    }
+
+    function renderJobs(){
+      const tbody = document.querySelector('#jobsTable tbody');
+      const jobs = loadLocalJobs();
+      tbody.innerHTML = '';
+      if(jobs.length===0){
+        tbody.innerHTML = '<tr><td colspan="7" class="muted">No jobs. Create a new job.</td></tr>';
+        return;
+      }
+      jobs.forEach((j, idx)=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${j.id}</td><td>${j.customer || ''}</td><td>${j.jobType}</td><td>${j.qty}</td><td>${j.department}</td><td>${j.status}</td>
+          <td>
+            <select id="s_${idx}">
+              <option>Pending</option><option>Working</option><option>Completed</option><option>Hold</option>
+            </select>
+            <button class="btn secondary" onclick="updateStatus(${idx})">Update</button>
+          </td>`;
+        tbody.appendChild(tr);
+        document.getElementById('s_'+idx).value = j.status || 'Pending';
+      });
+    }
+
+    function updateStatus(idx){
+      const sel = document.getElementById('s_'+idx);
+      const val = sel.value;
+      const jobs = loadLocalJobs();
+      jobs[idx].status = val;
+      jobs[idx].updatedAt = new Date().toISOString();
+      saveLocalJobs(jobs);
+      renderJobs();
+    }
+
+    renderJobs();
+  </script>
+</body>
+</html>
