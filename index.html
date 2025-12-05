@@ -1,24 +1,45 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Login</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="utf-8" />
+  <title>Siddhivinayak Digital</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Correct redirect (root → /home.html) -->
+  <meta http-equiv="refresh" content="0;url=home.html">
+
+  <script>
+    window.location.href = "home.html";
+  </script>
+
+  <style>
+    body{
+      font-family:Arial,Helvetica,sans-serif;
+      background:#f2f6ff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      height:100vh;
+      margin:0;
+    }
+    .box{
+      background:#fff;
+      padding:20px;
+      border-radius:10px;
+      box-shadow:0 0 20px rgba(0,0,0,0.1);
+      text-align:center;
+    }
+    a{
+      color:#0066ff;
+      font-weight:bold;
+    }
+  </style>
+
 </head>
-
 <body>
-  <div class="login-box">
-    <h2>Login</h2>
-
-    <input id="username" type="text" placeholder="Username" />
-    <input id="password" type="password" placeholder="Password" />
-
-    <button onclick="login()">Login</button>
-
-    <p id="error" class="error"></p>
+  <div class="box">
+    <h2>Redirecting…</h2>
+    <p>If not redirected automatically → <a href="home.html">Click here</a></p>
   </div>
-
-  <script src="script.js"></script>
 </body>
 </html>
