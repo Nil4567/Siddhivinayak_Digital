@@ -1,52 +1,28 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Siddhivinayak Digital — Dashboard</title>
-  <link rel="stylesheet" href="../style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard – Siddhivinayak Digital</title>
+    <link rel="stylesheet" href="../style.css">
 </head>
+
 <body>
-  <div class="layout">
-    <aside class="sidebar">
-      <div class="sidebar-brand">Siddhivinayak</div>
-      <nav>
-        <a href="dashboard.html" class="active">Dashboard</a>
-        <a href="billing.html">Billing</a>
-        <a href="stock.html">Stock</a>
-        <a href="customers.html">Customers</a>
-        <a href="expenses.html">Expenses</a>
-        <a href="reports.html">Reports</a>
-        <a href="monitoring.html" class="admin-only">Monitoring</a>
-        <a href="settings.html" class="admin-only">Settings</a>
-      </nav>
-    </aside>
 
-    <div class="page">
-      <header class="page-header">
-        <div class="page-title">Dashboard</div>
-        <div class="user-area">
-          <span id="userName"></span>
-          <button id="logoutBtn" class="btn small">Logout</button>
-        </div>
-      </header>
+<div class="sidebar">
+    <h2>Siddhivinayak Digital</h2>
+    <a href="dashboard.html" class="active">Dashboard</a>
+    <a href="job_entry.html">New Job</a>
+    <a href="job_queue.html">Job Queue</a>
+    <a href="departments.html">Departments</a>
+    <a href="reports.html">Reports</a>
+    <a href="settings.html">Settings</a>
+</div>
 
-      <section class="page-content">
-        <h3>Welcome to Siddhivinayak Digital</h3>
-        <p>This is the Dashboard. We'll populate metrics here in the next steps.</p>
-        <div id="dashboardWidgets"></div>
-      </section>
+<div class="main-content">
+    <div class="top-bar">
+        <span>Welcome, Admin</span>
+        <button onclick="logout()">Logout</button>
     </div>
-  </div>
 
-  <script src="../script.js"></script>
-  <script>
-    // Page-specific init
-    requireAuth();
-    renderUser();
-    // show placeholder widgets
-    document.getElementById('dashboardWidgets').innerHTML =
-      '<div class="card">Today: 0 Transactions</div><div class="card">Open Jobs: 0</div>';
-  </script>
-</body>
-</html>
+    <h1 class="page-title">Dashboard</h
