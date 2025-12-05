@@ -22,8 +22,11 @@ function login(event) {
     return;
   }
 
+  // Save login info
   localStorage.setItem("loggedUser", JSON.stringify(found));
-  window.location.href = "pages/home.html";
+
+  // Redirect to dashboard (correct path)
+  window.location.href = "pages/dashboard.html";
 }
 
 // -----------------------------
@@ -32,6 +35,7 @@ function login(event) {
 function checkLogin() {
   const user = JSON.parse(localStorage.getItem("loggedUser"));
   if (!user) {
+    // go back to login page (correct path from /pages/)
     window.location.href = "../index.html";
   }
 }
