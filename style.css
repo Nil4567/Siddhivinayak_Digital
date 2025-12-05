@@ -1,1 +1,53 @@
+/* Login Page Styles */
 
+body {
+    margin: 0;
+    background: #f2f2f2;
+    font-family: Arial, sans-serif;
+}
+
+.login-container {
+    text-align: center;
+    padding-top: 60px;
+}
+
+.title {
+    font-size: 32px;
+    margin-bottom: 20px;
+}
+
+.login-box {
+    width: 320px;
+    margin: auto;
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.login-box input {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #aaa;
+    border-radius: 6px;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    background: #0066cc;
+    border: none;
+    color: white;
+    border-radius: 6px;
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #004d99;
+}
+
+.demo-btn {
+    background: #333;
+}
