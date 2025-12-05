@@ -1,49 +1,29 @@
-// -----------------------------
-// USER DATABASE (Hardcoded because GitHub Pages cannot load JSON)
-// -----------------------------
-const users = [
-  { username: "admin", password: "admin123", role: "admin" },
-  { username: "staff", password: "staff123", role: "staff" }
-];
+// Simple hardcoded login credentials
+const validUser = {
+  username: "admin",
+  password: "12345"
+};
 
-// -----------------------------
-// LOGIN FUNCTION
-// -----------------------------
-function login(event) {
-  if (event) event.preventDefault();
+function login() {
+  const user = document.getElementById("username").value;
+  const pass = document.getElementById("password").value;
 
-  const uname = document.getElementById("username").value.trim();
-  const pass = document.getElementById("password").value.trim();
+  const error = document.getElementById("error");
 
-  const found = users.find(u => u.username === uname && u.password === pass);
+  if (user === validUser.username && pass === validUser.password) {
+    // Store login status
+    localStorage.setItem("loggedIn", "yes");
 
-  if (!found) {
-    alert("❌ Invalid username or password");
-    return;
+    // Redirect to homepage
+    window.location.href = "home.html";
+  } else {
+    error.textContent = "Invalid username or password!";
   }
-
-  // Save login info
-  localStorage.setItem("loggedUser", JSON.stringify(found));
-
-  // Redirect to dashboard (correct path)
-  window.location.href = "pages/dashboard.html";
 }
 
-// -----------------------------
-// CHECK LOGIN BEFORE LOADING PAGES
-// -----------------------------
+// Redirect users who are not logged in
 function checkLogin() {
-  const user = JSON.parse(localStorage.getItem("loggedUser"));
-  if (!user) {
-    // go back to login page (correct path from /pages/)
-    window.location.href = "../index.html";
+  if (localStorage.getItem("loggedIn") !== "yes") {
+    window.location.href = "index.html";
   }
-}
-
-// -----------------------------
-// LOGOUT FUNCTION
-// -----------------------------
-function logout() {
-  localStorage.removeItem("loggedUser");
-  window.location.href = "../index.html";
 }
