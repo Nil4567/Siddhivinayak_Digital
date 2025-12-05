@@ -1,122 +1,108 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Siddhivinayak Digital</title>
-
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background:#f5f5f5;
-            margin:0;
-            padding:0;
-        }
-
-        .navbar {
-            background:#9C27B0;
-            padding:15px;
-            color:white;
-            font-size:22px;
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-        }
-
-        .logout-btn {
-            background:white;
-            color:#9C27B0;
-            padding:8px 16px;
-            border-radius:6px;
-            cursor:pointer;
-            font-weight:bold;
-            border:none;
-        }
-
-        .logout-btn:hover {
-            background:#f2e4f8;
-        }
-
-        .container {
-            max-width:1000px;
-            margin:auto;
-            margin-top:40px;
-            padding:20px;
-        }
-
-        .grid {
-            display:grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap:20px;
-        }
-
-        .tile {
-            background:white;
-            padding:40px 20px;
-            text-align:center;
-            border-radius:12px;
-            box-shadow:0 4px 10px rgba(0,0,0,0.1);
-            cursor:pointer;
-            transition:0.2s;
-            font-size:20px;
-            font-weight:bold;
-        }
-
-        .tile:hover {
-            transform:translateY(-5px);
-            box-shadow:0 6px 14px rgba(0,0,0,0.18);
-        }
-    </style>
-
-    <script>
-        // Redirect if not logged in
-        if (!sessionStorage.getItem("loggedIn")) {
-            window.location.href = "../index.html";
-        }
-
-        function logout() {
-            sessionStorage.removeItem("loggedIn");
-            window.location.href = "../index.html";
-        }
-    </script>
+  <meta charset="utf-8">
+  <title>Dashboard — Siddhivinayak Digital</title>
+  <link rel="stylesheet" href="../styles/internal.css">
 </head>
-
 <body>
-
-    <div class="navbar">
-        <div><b>Siddhivinayak Digital – Dashboard</b></div>
-        <button class="logout-btn" onclick="logout()">Logout</button>
+  <div class="topbar">
+    <div class="brand">Siddhivinayak Digital</div>
+    <div class="controls">
+      <div id="sv_user_name"></div>
+      <button class="btn" onclick="logout()">Logout</button>
     </div>
+  </div>
 
-    <div class="container">
-        <div class="grid">
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand-small">Control Panel</div>
+      <a href="dashboard.html" class="nav-link active">Dashboard</a>
+      <a href="job-entry.html" class="nav-link">New Job Entry</a>
+      <a href="job-queue.html" class="nav-link">Job Queue</a>
+      <a href="departments.html" class="nav-link">Departments</a>
+      <a href="materials.html" class="nav-link">Materials</a>
+      <a href="reports.html" class="nav-link">Reports</a>
+      <a href="settings.html" class="nav-link">Settings</a>
+    </aside>
 
-            <div class="tile" onclick="window.location.href='new_job.html'">
-                ➕ New Job Entry
-            </div>
-
-            <div class="tile" onclick="window.location.href='job_queue.html'">
-                📋 Job Queue
-            </div>
-
-            <div class="tile" onclick="window.location.href='departments.html'">
-                🏭 Departments
-            </div>
-
-            <div class="tile" onclick="window.location.href='materials.html'">
-                📦 Materials
-            </div>
-
-            <div class="tile" onclick="window.location.href='reports.html'">
-                📊 Reports
-            </div>
-
-            <div class="tile" onclick="window.location.href='settings.html'">
-                ⚙️ Settings
-            </div>
-
+    <main class="main">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Dashboard</div>
+          <div class="page-sub">Overview of jobs, TAT and department load</div>
         </div>
-    </div>
+      </div>
 
+      <div class="grid-3">
+        <div class="card">
+          <h3>Today's Jobs</h3>
+          <div class="big" id="todayJobs">0</div>
+        </div>
+        <div class="card">
+          <h3>Pending</h3>
+          <div class="big" id="pendingJobs">0</div>
+        </div>
+        <div class="card">
+          <h3>Completed</h3>
+          <div class="big" id="completedJobs">0</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <h3>Recent Jobs</h3>
+        <table class="table" id="recentTable">
+          <thead><tr><th>Job ID</th><th>Customer</th><th>Dept</th><th>Status</th><th>Time</th></tr></thead>
+          <tbody><tr><td colspan="5" class="muted">No jobs yet</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="actions">
+        <a class="btn" href="job-entry.html">New Job</a>
+        <a class="btn secondary" href="job-queue.html">Open Queue</a>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="../script.js"></script>
+  <script>
+    // require login
+    checkAuth();
+
+    // placeholder: load transactions/jobs from /data/jobs.json if exists
+    async function loadJobs(){
+      try{
+        const r = await fetch('/data/jobs.json', {cache:'no-store'});
+        if(!r.ok) throw new Error('no jobs file');
+        const jobs = await r.json();
+        return jobs;
+      }catch(e){
+        return [];
+      }
+    }
+
+    (async function init(){
+      const jobs = await loadJobs();
+      // simple counts
+      const today = new Date().toISOString().slice(0,10);
+      let tCnt=0, pending=0, completed=0;
+      const tbody = document.querySelector('#recentTable tbody');
+      tbody.innerHTML = '';
+      jobs.slice().reverse().slice(0,8).forEach(j=>{
+        if(j.date && j.date.startsWith(today)) tCnt++;
+        if(j.status && j.status.toLowerCase() === 'completed') completed++; else pending++;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${j.id||''}</td><td>${j.customer||''}</td><td>${j.department||''}</td><td>${j.status||''}</td><td>${formatDT(j.updatedAt||j.date)}</td>`;
+        tbody.appendChild(tr);
+      });
+      document.getElementById('todayJobs').textContent = tCnt;
+      document.getElementById('pendingJobs').textContent = pending;
+      document.getElementById('completedJobs').textContent = completed;
+      if(jobs.length===0){
+        tbody.innerHTML = '<tr><td colspan="5" class="muted">No jobs found</td></tr>';
+      }
+    })();
+  </script>
 </body>
 </html>
