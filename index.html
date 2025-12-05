@@ -1,27 +1,24 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>Redirecting…</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <!-- Auto redirect to home.html -->
-  <meta http-equiv="refresh" content="0; url=home.html">
-
-  <script>
-    window.location.href = "home.html";
-  </script>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding-top: 40px;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
-  <p>Redirecting to homepage…</p>
-  <a href="home.html">Click here if not redirected</a>
+  <div class="login-box">
+    <h2>Login</h2>
+
+    <input id="username" type="text" placeholder="Username" />
+    <input id="password" type="password" placeholder="Password" />
+
+    <button onclick="login()">Login</button>
+
+    <p id="error" class="error"></p>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>
