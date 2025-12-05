@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Staff Login - Siddhivinayak Digital</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body{font-family:Arial;background:#f2f6ff;margin:0;height:100vh;display:flex;align-items:center;justify-content:center;color:#1a2a44}
+    .login-box{width:360px;background:#fff;padding:26px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.08);text-align:center}
+    .login-box h2{margin:0 0 16px;color:#003366}
+    input{width:100%;padding:12px;margin:8px 0;border:1px solid #d7e2ff;border-radius:8px;font-size:15px}
+    button{width:100%;padding:12px;margin-top:12px;border-radius:8px;border:0;background:#0073ff;color:#fff;font-weight:700;cursor:pointer}
+    .error{color:#b00020;margin-top:10px;display:none}
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <h2>Staff Login</h2>
+
+    <form id="loginForm">
+      <input id="username" type="text" placeholder="Username" required>
+      <input id="password" type="password" placeholder="Password" required>
+      <button type="submit">Login</button>
+    </form>
+
+    <div id="err" class="error"></div>
+    <p style="margin-top:12px;font-size:13px;color:#666">Default credentials: <b>admin / admin123</b></p>
+  </div>
+
+  <script>
+    const users = [ { username: "admin", password: "admin123", role: "admin" } ];
+
+    document.getElementById('loginForm').addEventListener('submit', function(ev){
+      ev.preventDefault();
+      const u = username.value.trim();
+      const p = password.value;
+
+      const found = users.find(x => x.username === u && x.password === p);
+      if(!found){
+        err.style.display='block';
+        err.textContent='Invalid username or password';
+        return;
+      }
+      localStorage.setItem('loggedUser', JSON.stringify(found));
+      window.location.href = 'dashboard.html';
+    });
+  </script>
+</body>
+</html>
