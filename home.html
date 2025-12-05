@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Siddhivinayak Digital - Home</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body onload="checkLogin()">
+
+    <!-- Header -->
+    <div class="header">
+        <h2>Siddhivinayak Digital – Dashboard</h2>
+        <button onclick="logout()" class="logout-btn">Logout</button>
+    </div>
+
+    <!-- Main Body -->
+    <div class="main">
+        <h3>Welcome</h3>
+        <p>Select an option from the menu to start.</p>
+
+        <!-- Dashboard Menu -->
+        <div class="menu-container">
+
+            <a href="pages/job-entry.html" class="menu-box">New Job Entry</a>
+            <a href="pages/in-process.html" class="menu-box">In Process Jobs</a>
+            <a href="pages/completed.html" class="menu-box">Completed Jobs</a>
+            <a href="pages/delivery.html" class="menu-box">Delivery / Pickup</a>
+            <a href="pages/accounts.html" class="menu-box">Accounts</a>
+            <a href="pages/settings.html" class="menu-box">Settings (Admin)</a>
+
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
