@@ -2,54 +2,116 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Siddhivinayak Digital</title>
+  <title>Siddhivinayak Digital - Login</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  
-  <!-- Redirect directly to pages/home.html -->
-  <meta http-equiv="refresh" content="0;url=pages/home.html">
 
   <style>
     body{
       font-family:Arial,Helvetica,sans-serif;
       background:#f2f6ff;
-      color:#1a2a44;
+      margin:0;
+      height:100vh;
       display:flex;
       align-items:center;
       justify-content:center;
-      height:100vh;
-      margin:0;
+      color:#1a2a44;
     }
-    .box{
-      background:#fff;
-      padding:28px;
-      border-radius:10px;
-      box-shadow:0 8px 24px rgba(0,0,0,0.1);
+
+    .login-box{
+      background:#ffffff;
+      padding:30px;
+      width:350px;
+      border-radius:12px;
+      box-shadow:0 8px 24px rgba(0,0,0,0.15);
       text-align:center;
-      max-width:500px;
     }
-    a.button{
-      display:inline-block;
-      margin-top:15px;
-      padding:10px 16px;
+
+    h2{
+      margin-bottom:20px;
+      font-size:26px;
+      font-weight:bold;
+      color:#0047b3;
+    }
+
+    input{
+      width:100%;
+      padding:12px;
+      margin:10px 0;
+      border:1px solid #ccc;
+      border-radius:8px;
+      font-size:16px;
+    }
+
+    button{
+      width:100%;
+      padding:12px;
+      border:none;
       background:#0066ff;
       color:#fff;
+      font-size:18px;
       border-radius:8px;
-      text-decoration:none;
+      cursor:pointer;
+      margin-top:10px;
       font-weight:bold;
+    }
+
+    button:hover{
+      background:#004fcc;
+    }
+
+    .error{
+      color:red;
+      margin-top:10px;
+      font-size:14px;
+      display:none;
     }
   </style>
 
-  <!-- JS fallback redirect -->
   <script>
-    window.location.replace("home.html");
-</script>
+    async function login(event){
+      event.preventDefault();
+
+      let username = document.getElementById("username").value.trim();
+      let password = document.getElementById("password").value.trim();
+
+      let errorBox = document.getElementById("error");
+
+      // Load users.json
+      try {
+        let res = await fetch("data/users.json");
+        let users = await res.json();
+
+        let found = users.find(u => u.username === username && u.password === password);
+
+        if(found){
+          localStorage.setItem("loggedUser", username);
+          window.location.href = "pages/home.html";
+        } else {
+          errorBox.style.display = "block";
+          errorBox.innerText = "Invalid username or password";
+        }
+
+      } catch(e){
+        errorBox.style.display = "block";
+        errorBox.innerText = "Unable to load user database.";
+      }
+    }
+  </script>
 
 </head>
 <body>
-  <div class="box">
-    <h2>Loading Siddhivinayak Digital…</h2>
-    <p>If not redirected automatically:</p>
-    <a class="button" href="pages/home.html">Open Home Page</a>
+
+  <div class="login-box">
+    <h2>Siddhivinayak Digital</h2>
+
+    <form onsubmit="login(event)">
+      <input type="text" id="username" placeholder="Username" required>
+      <input type="password" id="password" placeholder="Password" required>
+      <button type="submit">Login</button>
+    </form>
+
+    <div id="error" class="error"></div>
   </div>
+
 </body>
 </html>
