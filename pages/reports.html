@@ -1,32 +1,47 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reports - Siddhivinayak Digital</title>
-  <link rel="stylesheet" href="../style.css">
-</head>
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Reports</title><link rel="stylesheet" href="../styles/internal.css"></head>
 <body>
+  <div class="topbar"><div class="brand">Siddhivinayak Digital</div><div class="controls"><div id="sv_user_name"></div><button class="btn" onclick="logout()">Logout</button></div></div>
 
-<header class="topbar">Siddhivinayak Digital</header>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand-small">Reports</div>
+      <a href="dashboard.html" class="nav-link">Dashboard</a>
+      <a href="reports.html" class="nav-link active">Reports</a>
+    </aside>
 
-<nav class="sidebar">
-  <a href="../index.html">Home</a>
-  <a href="dashboard.html">Dashboard</a>
-  <a href="job_entry.html">Job Entry</a>
-  <a href="materials.html">Materials</a>
-  <a href="customers.html">Customers</a>
-  <a href="expenses.html">Expenses</a>
-  <a href="reports.html" class="active">Reports</a>
-  <a href="monitoring.html">Monitoring</a>
-  <a href="settings.html">Settings</a>
-</nav>
+    <main class="main">
+      <div class="page-header"><div><div class="page-title">Reports & Exports</div><div class="page-sub">Generate daily summary & export CSV</div></div></div>
 
-<main>
-  <h1 class="page-title">Reports</h1>
-  <p>Generate sales reports, job summaries, TAT analysis, and performance reports.</p>
-</main>
+      <div class="card">
+        <h3>Quick Export</h3>
+        <p>Click to download current jobs as CSV (from local data)</p>
+        <div style="display:flex;gap:10px">
+          <button class="btn" onclick="exportJobsCSV()">Export Jobs (CSV)</button>
+        </div>
+      </div>
 
-<script src="../script.js"></script>
+    </main>
+  </div>
+
+  <script src="../script.js"></script>
+  <script>
+    checkAuth();
+
+    function exportJobsCSV(){
+      const jobs = JSON.parse(localStorage.getItem('sv_jobs')||'[]');
+      if(jobs.length===0){ alert('No jobs to export'); return; }
+      const keys = ['id','date','customer','jobType','qty','department','status','createdAt','updatedAt'];
+      const csv = [keys.join(',')].concat(jobs.map(j=> keys.map(k=> `"${(j[k]||'').toString().replace(/"/g,'""')}"`).join(','))).join('\n');
+      const blob = new Blob([csv], {type:'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'jobs_export.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  </script>
 </body>
 </html>
