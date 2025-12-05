@@ -1,0 +1,16 @@
+[
+  {
+    "username": "admin",
+    "name": "Administrator",
+    "department": "Admin",
+    "role": "admin",
+    "password_b64": "YWRtaW4xMjM=" 
+  },
+  {
+    "username": "dataent01",
+    "name": "Data Entry 1",
+    "department": "Data Entry",
+    "role": "user",
+    "password_b64": "cGFzc3dvcmQx" 
+  }
+]
