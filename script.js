@@ -16,3 +16,6 @@ function login() {
 function demoLogin() {
     window.location.href = "pages/dashboard.html";
 }
+function logout() {
+    window.location.href = "../index.html";
+}
