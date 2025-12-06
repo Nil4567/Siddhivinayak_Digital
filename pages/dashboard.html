@@ -1,158 +1,68 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>Dashboard — Siddhivinayak Digital</title>
-  <link rel="stylesheet" href="../styles/internal.css">
+  <title>Dashboard</title>
+  <style>
+    .topbar {
+      background: #222;
+      color: white;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 18px;
+    }
+    .right {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    button {
+      padding: 8px 12px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
 </head>
+
 <body>
 
-<!-- ================== TOP HEADER BAR ================== -->
-<div id="headerBar" style="
-    display:flex;
-    justify-content:flex-end;
-    align-items:center;
-    padding:12px 16px;
-    background:#fff;
-    border-bottom:1px solid #eee;
-    gap:12px;
-    font-size:15px;
-">
-    <span id="sv_user_name" style="font-weight:600;"></span>
-    <span id="liveTime" style="font-weight:500;"></span>
-    <button id="logoutBtn" class="btn" onclick="logout()" style="
-        padding:8px 14px;
-        background:#0073ff;
-        color:white;
-        font-weight:600;
-        border-radius:6px;
-        border:0;
-        cursor:pointer;
-    ">Logout</button>
-</div>
-<!-- ===================================================== -->
-
-<div class="app">
-  <aside class="sidebar">
-    <div class="brand-small">Control Panel</div>
-    <a href="dashboard.html" class="nav-link active">Dashboard</a>
-    <a href="job-entry.html" class="nav-link">New Job Entry</a>
-    <a href="job-queue.html" class="nav-link">Job Queue</a>
-    <a href="departments.html" class="nav-link">Departments</a>
-    <a href="materials.html" class="nav-link">Materials</a>
-    <a href="reports.html" class="nav-link">Reports</a>
-    <a href="settings.html" class="nav-link">Settings</a>
-  </aside>
-
-  <main class="main">
-    <div class="page-header">
-      <div>
-        <div class="page-title">Dashboard</div>
-        <div class="page-sub">Overview of jobs, TAT and department load</div>
-      </div>
-    </div>
-
-    <div class="grid-3">
-      <div class="card">
-        <h3>Today's Jobs</h3>
-        <div class="big" id="todayJobs">0</div>
-      </div>
-      <div class="card">
-        <h3>Pending</h3>
-        <div class="big" id="pendingJobs">0</div>
-      </div>
-      <div class="card">
-        <h3>Completed</h3>
-        <div class="big" id="completedJobs">0</div>
-      </div>
-    </div>
-
-    <div class="card" style="margin-bottom:16px">
-      <h3>Recent Jobs</h3>
-      <table class="table" id="recentTable">
-        <thead><tr><th>Job ID</th><th>Customer</th><th>Dept</th><th>Status</th><th>Time</th></tr></thead>
-        <tbody><tr><td colspan="5" class="muted">No jobs yet</td></tr></tbody>
-      </table>
-    </div>
-
-    <div class="actions">
-      <a class="btn" href="job-entry.html">New Job</a>
-      <a class="btn secondary" href="job-queue.html">Open Queue</a>
-    </div>
-
-  </main>
-</div>
-
-<!-- ================== SCRIPT SECTION ================== -->
 <script>
-// Force authentication
+// Block users if not logged in
 if (localStorage.getItem("loggedIn") !== "yes") {
-    window.location.href = "../pages/login.html";
+  window.location.href = "login.html";
 }
+</script>
 
+<div class="topbar">
+  <span id="usernameDisplay"></span>
+
+  <div class="right">
+    <span id="datetime"></span>
+    <button onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<h2>Welcome to Dashboard</h2>
+
+<script>
 // Show username
-document.getElementById("sv_user_name").innerText =
-    localStorage.getItem("username") || "";
+document.getElementById("usernameDisplay").textContent =
+  "User: " + (localStorage.getItem("username") || "");
 
-// Show logout button always when logged in
-document.getElementById("logoutBtn").style.display = "inline-block";
-
-// Live date + time clock
-function tick() {
-    document.getElementById("liveTime").innerText =
-        new Date().toLocaleString();
+// Live Date + Time
+function updateDateTime() {
+  document.getElementById("datetime").textContent =
+    new Date().toLocaleString();
 }
-tick();
-setInterval(tick, 1000);
+setInterval(updateDateTime, 1000);
+updateDateTime();
 
-// Logout function
+// Logout Function
 function logout() {
-    localStorage.removeItem("loggedIn");
-    localStorage.removeItem("username");
-    window.location.href = "../pages/login.html";
+  localStorage.clear();
+  window.location.href = "login.html";
 }
-
-// ---------- Load Jobs (your existing code kept same) ----------
-async function loadJobs(){
-  try{
-    const r = await fetch('/data/jobs.json', {cache:'no-store'});
-    if(!r.ok) throw new Error('no jobs file');
-    return await r.json();
-  }catch(e){
-    return [];
-  }
-}
-
-(async function init(){
-  const jobs = await loadJobs();
-  const today = new Date().toISOString().slice(0,10);
-  let tCnt=0, pending=0, completed=0;
-  const tbody = document.querySelector('#recentTable tbody');
-  tbody.innerHTML = '';
-
-  jobs.slice().reverse().slice(0,8).forEach(j=>{
-    if(j.date && j.date.startsWith(today)) tCnt++;
-    if(j.status && j.status.toLowerCase() === 'completed') completed++;
-    else pending++;
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${j.id||''}</td>
-      <td>${j.customer||''}</td>
-      <td>${j.department||''}</td>
-      <td>${j.status||''}</td>
-      <td>${j.updatedAt||j.date}</td>`;
-    tbody.appendChild(tr);
-  });
-
-  document.getElementById('todayJobs').textContent = tCnt;
-  document.getElementById('pendingJobs').textContent = pending;
-  document.getElementById('completedJobs').textContent = completed;
-
-  if(jobs.length===0){
-    tbody.innerHTML = '<tr><td colspan="5" class="muted">No jobs found</td></tr>';
-  }
-})();
 </script>
 
 </body>
