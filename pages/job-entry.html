@@ -1,38 +1,148 @@
-<script src="../script.js"></script>
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>New Job — Siddhivinayak Digital</title>
+  <link rel="stylesheet" href="../styles/internal.css">
+</head>
 
-<script>
-  checkLogin();
+<body>
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="brand">Siddhivinayak Digital</div>
+    <div class="controls">
+      <div id="sv_user_name"></div>
+      <button id="logoutBtn" class="btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
 
-  function genId() {
-    return 'J-' + Date.now().toString().slice(-6);
-  }
+  <div class="app">
 
-  document.getElementById("jobForm").addEventListener("submit", async function(ev) {
-    ev.preventDefault();
+    <!-- LEFT SIDE MENU -->
+    <aside class="sidebar">
+      <div class="brand-small">Actions</div>
 
-    const job = {
-      id: genId(),
-      date: new Date().toISOString(),
-      customer: document.getElementById('custName').value,
-      contact: document.getElementById('custContact').value,
-      jobType: document.getElementById('jobType').value,
-      qty: Number(document.getElementById('qty').value) || 1,
-      department: document.getElementById('department').value,
-      urgency: document.getElementById('urgency').value,
-      notes: document.getElementById('notes').value,
-      status: "Pending",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+      <a href="dashboard.html" class="nav-link">Dashboard</a>
+      <a href="job-entry.html" class="nav-link active">New Job Entry</a>
+      <a href="job-queue.html" class="nav-link">Job Queue</a>
+    </aside>
 
-    // 🔥 Send to GitHub
-    const ok = await saveJobToGitHub(job);
+    <!-- MAIN AREA -->
+    <main class="main">
+      <div class="page-header">
+        <div>
+          <div class="page-title">New Job Entry</div>
+          <div class="page-sub">Create a new print / xerox job</div>
+        </div>
+      </div>
 
-    if (ok) {
-      alert("Job created and saved: " + job.id);
-      window.location.href = "job-queue.html";
-    } else {
-      alert("Failed to save job. Check console.");
+      <div class="card">
+        <form id="jobForm">
+
+          <div class="form-row">
+            <div class="field">
+              <label>Customer Name</label>
+              <input id="custName" type="text" required placeholder="Customer name">
+            </div>
+
+            <div class="field">
+              <label>Contact</label>
+              <input id="custContact" type="text" placeholder="Phone or email">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="field">
+              <label>Job Type</label>
+              <select id="jobType">
+                <option>Photocopy</option>
+                <option>Printing - Color</option>
+                <option>Printing - B/W</option>
+                <option>Binding</option>
+                <option>Scanning</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Quantity</label>
+              <input id="qty" type="number" value="1" min="1">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="field">
+              <label>Assigned Department</label>
+              <select id="department">
+                <option>Data Entry</option>
+                <option>Checking</option>
+                <option>Printing</option>
+                <option>Finishing</option>
+                <option>Delivery</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Urgency</label>
+              <select id="urgency">
+                <option>Normal</option>
+                <option>Express</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-top:14px;">
+            <label>Notes</label>
+            <textarea id="notes" rows="3" placeholder="Extra instructions"></textarea>
+          </div>
+
+          <div style="margin-top:16px; display:flex; gap:10px;">
+            <button type="submit" class="btn">Create Job</button>
+            <button type="button" class="btn secondary" onclick="location.href='job-queue.html'">Open Queue</button>
+          </div>
+
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <!-- MAIN SCRIPT -->
+  <script src="../script.js"></script>
+
+  <script>
+    checkLogin();
+
+    function genId() {
+      return 'J-' + Date.now().toString().slice(-6);
     }
-  });
-</script>
+
+    document.getElementById("jobForm").addEventListener("submit", async function(ev) {
+      ev.preventDefault();
+
+      const job = {
+        id: genId(),
+        date: new Date().toISOString(),
+        customer: document.getElementById('custName').value,
+        contact: document.getElementById('custContact').value,
+        jobType: document.getElementById('jobType').value,
+        qty: Number(document.getElementById('qty').value) || 1,
+        department: document.getElementById('department').value,
+        urgency: document.getElementById('urgency').value,
+        notes: document.getElementById('notes').value,
+        status: "Pending",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      const ok = await saveJobToGitHub(job);
+
+      if (ok) {
+        alert("Job created and saved: " + job.id);
+        window.location.href = "job-queue.html";
+      } else {
+        alert("Failed to save job. Check console.");
+      }
+    });
+  </script>
+
+</body>
+</html>
