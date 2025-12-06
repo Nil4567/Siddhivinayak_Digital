@@ -1,2 +1,2 @@
-window.GITHUB_SITE_KEY = "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";
+window.GITHUB_SITE_KEY = "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";
 
