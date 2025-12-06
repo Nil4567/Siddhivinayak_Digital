@@ -105,14 +105,19 @@
     </main>
   </div>
 
+
+  <!-- MUST LOAD CONFIG FIRST -->
+  <script src="../data/config.js"></script>
+
   <!-- MAIN SCRIPT -->
   <script src="../script.js"></script>
 
+  <!-- PAGE LOGIC -->
   <script>
     checkLogin();
 
     function genId() {
-      return 'J-' + Date.now().toString().slice(-6);
+      return "J-" + Date.now().toString().slice(-6);
     }
 
     document.getElementById("jobForm").addEventListener("submit", async function(ev) {
