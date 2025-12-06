@@ -1,69 +1,78 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
 <head>
-  <title>Dashboard</title>
-  <style>
-    .topbar {
-      background: #222;
-      color: white;
-      padding: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 18px;
-    }
-    .right {
-      display: flex;
-      gap: 20px;
-      align-items: center;
-    }
-    button {
-      padding: 8px 12px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-  </style>
+  <meta charset="utf-8">
+  <title>Dashboard — Siddhivinayak Digital</title>
+  <link rel="stylesheet" href="../styles/internal.css">
 </head>
-
 <body>
-
-<script>
-// Block users if not logged in
-if (localStorage.getItem("loggedIn") !== "yes") {
-  window.location.href = "login.html";
-}
-</script>
-
-<div class="topbar">
-  <span id="usernameDisplay"></span>
-
-  <div class="right">
-    <span id="datetime"></span>
-    <button onclick="logout()">Logout</button>
+  <div class="topbar">
+    <div class="brand">Siddhivinayak Digital</div>
+    <div class="controls">
+      <div id="sv_user_name"></div>
+      <button class="btn" onclick="logout()">Logout</button>
+    </div>
   </div>
-</div>
 
-<h2>Welcome to Dashboard</h2>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand-small">Control Panel</div>
+      <a href="dashboard.html" class="nav-link active">Dashboard</a>
+      <a href="job-entry.html" class="nav-link">New Job Entry</a>
+      <a href="job-queue.html" class="nav-link">Job Queue</a>
+      <a href="departments.html" class="nav-link">Departments</a>
+      <a href="materials.html" class="nav-link">Materials</a>
+      <a href="reports.html" class="nav-link">Reports</a>
+      <a href="settings.html" class="nav-link">Settings</a>
+    </aside>
 
-<script>
-// Show username
-document.getElementById("usernameDisplay").textContent =
-  "User: " + (localStorage.getItem("username") || "");
+    <main class="main">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Dashboard</div>
+          <div class="page-sub">Overview of jobs, TAT and department load</div>
+        </div>
+      </div>
 
-// Live Date + Time
-function updateDateTime() {
-  document.getElementById("datetime").textContent =
-    new Date().toLocaleString();
-}
-setInterval(updateDateTime, 1000);
-updateDateTime();
+      <div class="grid-3">
+        <div class="card">
+          <h3>Today's Jobs</h3>
+          <div class="big" id="todayJobs">0</div>
+        </div>
+        <div class="card">
+          <h3>Pending</h3>
+          <div class="big" id="pendingJobs">0</div>
+        </div>
+        <div class="card">
+          <h3>Completed</h3>
+          <div class="big" id="completedJobs">0</div>
+        </div>
+      </div>
 
-// Logout Function
-function logout() {
-  localStorage.clear();
-  window.location.href = "login.html";
-}
-</script>
+      <div class="card" style="margin-bottom:16px">
+        <h3>Recent Jobs</h3>
+        <table class="table" id="recentTable">
+          <thead><tr><th>Job ID</th><th>Customer</th><th>Dept</th><th>Status</th><th>Time</th></tr></thead>
+          <tbody><tr><td colspan="5" class="muted">No jobs yet</td></tr></tbody>
+        </table>
+      </div>
 
-</body>
-</html>
+      <div class="actions">
+        <a class="btn" href="job-entry.html">New Job</a>
+        <a class="btn secondary" href="job-queue.html">Open Queue</a>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="../script.js"></script>
+  <script>
+    // require login
+    checkAuth();
+
+    // placeholder: load transactions/jobs from /data/jobs.json if exists
+    async function loadJobs(){
+      try{
+        const r = await fetch('/data/jobs.json', {cache:'no-store'});
+        if(!r.ok) throw new Error('no jobs file');
+        const jobs =
