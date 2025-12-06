@@ -7,7 +7,7 @@ const BASE = "https://nil4567.github.io/Siddhivinayak_Digital";
 // Hardcoded (simple) credentials — change as needed
 const validUser = {
   username: "admin",
-  password: "12345",
+  password: "admin123",  // FIXED
   name: "Admin User"
 };
 
@@ -26,7 +26,8 @@ function login() {
     // store login state
     localStorage.setItem("loggedIn", "yes");
     localStorage.setItem("username", validUser.name);
-    // redirect to dashboard (full GitHub Pages URL to avoid 404)
+
+    // redirect to dashboard (full GitHub Pages URL)
     window.location.href = `${BASE}/pages/dashboard.html`;
   } else {
     errEl.textContent = "Invalid username or password!";
@@ -34,10 +35,9 @@ function login() {
   }
 }
 
-// ---------- Check login (include on pages that require auth) ----------
+// ---------- Check login ----------
 function checkLogin() {
   if (localStorage.getItem("loggedIn") !== "yes") {
-    // redirect to login page
     window.location.href = `${BASE}/pages/login.html`;
   }
 }
@@ -49,9 +49,8 @@ function logout() {
   window.location.href = `${BASE}/pages/login.html`;
 }
 
-// ---------- Header init: show username + logout button visibility ----------
+// ---------- Header init: show username ----------
 function initHeader() {
-  // elements we expect in your header/topbar
   const nameEl = document.getElementById("sv_user_name") || document.getElementById("showUser");
   const logoutBtn = document.getElementById("logoutBtn");
   const logged = localStorage.getItem("loggedIn") === "yes";
@@ -75,7 +74,6 @@ function startLiveClock() {
   if (!el) return;
   function tick() {
     const now = new Date();
-    // you can customise formatting
     el.textContent = now.toLocaleDateString() + " " + now.toLocaleTimeString();
   }
   tick();
@@ -83,9 +81,8 @@ function startLiveClock() {
   _clockTimer = setInterval(tick, 1000);
 }
 
-// ---------- Auto hook for login form if it's present ----------
+// ---------- Auto hook for login form ----------
 document.addEventListener("DOMContentLoaded", function () {
-  // Auto attach submit handler for login form if present
   const form = document.getElementById("loginForm");
   if (form) {
     form.addEventListener("submit", function (e) {
@@ -94,7 +91,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Initialize header and clock on any page where these elements exist
   initHeader();
   startLiveClock();
 });
