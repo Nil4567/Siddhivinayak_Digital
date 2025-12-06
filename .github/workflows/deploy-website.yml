@@ -13,22 +13,25 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Upload site files (only website folders)
+      - name: Prepare clean website folder
+        run: |
+          mkdir public
+          cp -r pages public/pages
+          cp -r styles public/styles
+          cp -r data public/data
+          cp home.html public/home.html
+          cp script.js public/script.js
+          cp script-github.js public/script-github.js
+
+      - name: Upload website
         uses: actions/upload-artifact@v4
         with:
-          name: github-pages
-          path: |
-            pages/
-            styles/
-            data/
-            script.js
-            script-github.js
-            home.html
+          name: website
+          path: public
           if-no-files-found: error
 
   deploy:
@@ -36,14 +39,16 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
 
     steps:
-      - name: Download website artifact
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: github-pages
+          name: website
+          path: public
 
       - name: Deploy to GitHub Pages
         id: deploy
         uses: actions/deploy-pages@v4
+        with:
+          artifact_path: public
