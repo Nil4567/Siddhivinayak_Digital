@@ -10,6 +10,7 @@ permissions:
 jobs:
   update_jobs:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -18,21 +19,28 @@ jobs:
 
       - name: Save incoming job to file
         run: |
-          echo '${{ github.event.client_payload.job }}' > newjob.json
-          node -e "
-const fs=require('fs');
-const newJob=JSON.parse(fs.readFileSync('newjob.json','utf8'));
-const path='data/jobs.json';
-let data=[];
-if(fs.existsSync(path)) data=JSON.parse(fs.readFileSync(path,'utf8'));
-data.push(newJob);
-fs.writeFileSync(path, JSON.stringify(data, null, 2), 'utf8');
-console.log('jobs.json updated, total:', data.length);
-"
-      - name: Commit & push
+          echo "${{ github.event.client_payload.job }}" > newjob.json
+          node << 'EOF'
+          const fs = require('fs');
+          const newJob = JSON.parse(fs.readFileSync('newjob.json', 'utf8'));
+
+          const dbPath = "data/jobs.json";
+          let database = [];
+
+          if (fs.existsSync(dbPath)) {
+            database = JSON.parse(fs.readFileSync(dbPath, "utf8"));
+          }
+
+          database.push(newJob);
+
+          fs.writeFileSync(dbPath, JSON.stringify(database, null, 2), 'utf8');
+          console.log("jobs.json updated. Total jobs:", database.length);
+          EOF
+
+      - name: Commit & Push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/jobs.json
-          git commit -m "Add job from website: ${{ github.event.client_payload.job.id || 'new' }}" || echo "No changes to commit"
+          git commit -m "Add job: ${{ github.event.client_payload.job.id || 'new' }}" || echo "No changes to commit"
           git push
