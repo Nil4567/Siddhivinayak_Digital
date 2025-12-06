@@ -1,3 +1,6 @@
+<script src="../config.js"></script>   <!-- loads token -->
+<script src="../script.js"></script>   <!-- main logic -->
+
 /* script.js - Auth + Header + Clock + Safe GitHub Job Dispatch */
 
 /* --------------------------------------------------
