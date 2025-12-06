@@ -1,2 +1,2 @@
-// NEVER COMMIT THIS FILE — KEEP LOCAL ONLY
-const GITHUB_SITE_KEY = "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";
+window.GITHUB_SITE_KEY = "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";
+
