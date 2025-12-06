@@ -3,77 +3,151 @@
 <head>
   <meta charset="utf-8">
   <title>Dashboard — Siddhivinayak Digital</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <link rel="stylesheet" href="../styles/internal.css">
+  <style>
+    /* small safety styles in case internal.css isn't loaded */
+    .controls { display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:12px 16px; background:#fff; border-bottom:1px solid #eee; }
+    .btn{ padding:8px 12px; border-radius:6px; border:0; cursor:pointer; background:#0073ff; color:#fff; font-weight:600; }
+    .muted{ color:#777; text-align:center; padding:12px 0; }
+  </style>
 </head>
 <body>
-<div class="controls">
-  <span id="sv_user_name" style="font-weight:600"></span>
-  <span id="liveTime" style="margin-left:12px;font-weight:500"></span>
-  <button id="logoutBtn" class="btn" onclick="logout()" style="margin-left:12px;">Logout</button>
-</div>
 
+  <div class="topbar">
+    <div class="brand" style="padding:12px 16px; font-weight:700;">Siddhivinayak Digital</div>
+
+    <div class="controls" style="margin-left:auto;">
+      <span id="sv_user_name" style="font-weight:600; display:inline-block"></span>
+      <span id="liveTime" style="margin-left:12px;font-weight:500; display:inline-block"></span>
+      <button id="logoutBtn" class="btn" onclick="logout()" style="margin-left:12px; display:none;">Logout</button>
+    </div>
   </div>
 
-  <div class="app">
-    <aside class="sidebar">
-      <div class="brand-small">Control Panel</div>
-      <a href="dashboard.html" class="nav-link active">Dashboard</a>
-      <a href="job-entry.html" class="nav-link">New Job Entry</a>
-      <a href="job-queue.html" class="nav-link">Job Queue</a>
-      <a href="departments.html" class="nav-link">Departments</a>
-      <a href="materials.html" class="nav-link">Materials</a>
-      <a href="reports.html" class="nav-link">Reports</a>
+  <div class="app" style="display:flex; min-height:calc(100vh - 56px);">
+    <aside class="sidebar" style="width:220px; padding:16px; background:#f8fbff; border-right:1px solid #eee">
+      <div class="brand-small" style="font-weight:700;margin-bottom:12px">Control Panel</div>
+      <a href="dashboard.html" class="nav-link active">Dashboard</a><br>
+      <a href="job-entry.html" class="nav-link">New Job Entry</a><br>
+      <a href="job-queue.html" class="nav-link">Job Queue</a><br>
+      <a href="departments.html" class="nav-link">Departments</a><br>
+      <a href="materials.html" class="nav-link">Materials</a><br>
+      <a href="reports.html" class="nav-link">Reports</a><br>
       <a href="settings.html" class="nav-link">Settings</a>
     </aside>
 
-    <main class="main">
+    <main class="main" style="flex:1; padding:20px;">
       <div class="page-header">
         <div>
-          <div class="page-title">Dashboard</div>
-          <div class="page-sub">Overview of jobs, TAT and department load</div>
+          <div class="page-title" style="font-size:20px;font-weight:700">Dashboard</div>
+          <div class="page-sub" style="color:#666">Overview of jobs, TAT and department load</div>
         </div>
       </div>
 
-      <div class="grid-3">
-        <div class="card">
+      <div class="grid-3" style="display:flex; gap:12px; margin-top:16px;">
+        <div class="card" style="flex:1; padding:12px; background:#fff; border-radius:8px;">
           <h3>Today's Jobs</h3>
-          <div class="big" id="todayJobs">0</div>
+          <div class="big" id="todayJobs" style="font-size:28px;font-weight:700">0</div>
         </div>
-        <div class="card">
+        <div class="card" style="flex:1; padding:12px; background:#fff; border-radius:8px;">
           <h3>Pending</h3>
-          <div class="big" id="pendingJobs">0</div>
+          <div class="big" id="pendingJobs" style="font-size:28px;font-weight:700">0</div>
         </div>
-        <div class="card">
+        <div class="card" style="flex:1; padding:12px; background:#fff; border-radius:8px;">
           <h3>Completed</h3>
-          <div class="big" id="completedJobs">0</div>
+          <div class="big" id="completedJobs" style="font-size:28px;font-weight:700">0</div>
         </div>
       </div>
 
-      <div class="card" style="margin-bottom:16px">
+      <div class="card" style="margin-top:16px; padding:12px; background:#fff; border-radius:8px;">
         <h3>Recent Jobs</h3>
-        <table class="table" id="recentTable">
-          <thead><tr><th>Job ID</th><th>Customer</th><th>Dept</th><th>Status</th><th>Time</th></tr></thead>
+        <table class="table" id="recentTable" style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr style="text-align:left; border-bottom:1px solid #eee;">
+              <th>Job ID</th><th>Customer</th><th>Dept</th><th>Status</th><th>Time</th>
+            </tr>
+          </thead>
           <tbody><tr><td colspan="5" class="muted">No jobs yet</td></tr></tbody>
         </table>
       </div>
 
-      <div class="actions">
-        <a class="btn" href="job-entry.html">New Job</a>
-        <a class="btn secondary" href="job-queue.html">Open Queue</a>
+      <div class="actions" style="margin-top:16px;">
+        <a class="btn" href="job-entry.html" style="text-decoration:none; display:inline-block; margin-right:8px;">New Job</a>
+        <a class="btn" href="job-queue.html" style="text-decoration:none; display:inline-block; background:#6c757d;">Open Queue</a>
       </div>
 
     </main>
   </div>
 
+  <!-- shared script (recommended) -->
   <script src="../script.js"></script>
-  <script>
-    // require login
-    checkAuth();
 
-    // placeholder: load transactions/jobs from /data/jobs.json if exists
+  <script>
+    // --- Compatibility / fallback helpers for older pages that used checkAuth() ---
+    const BASE = "https://nil4567.github.io/Siddhivinayak_Digital";
+
+    // If your shared script defines checkLogin(), make checkAuth() call it.
+    function checkAuth(){
+      if (typeof checkLogin === 'function') {
+        return checkLogin();
+      }
+      // fallback: simple check (redirect to login if not logged in)
+      if (localStorage.getItem('loggedIn') !== 'yes') {
+        window.location.href = BASE + '/pages/login.html';
+      }
+    }
+
+    // If shared script has initHeader() and startLiveClock() they will run on DOMContentLoaded.
+    // But provide small fallback to ensure header/clock work even if script.js isn't present.
+    function _fallbackInitHeaderAndClock(){
+      // set username
+      const nameEl = document.getElementById('sv_user_name');
+      const logoutBtn = document.getElementById('logoutBtn');
+      const logged = localStorage.getItem('loggedIn') === 'yes';
+      const username = localStorage.getItem('username') || localStorage.getItem('sv_user') || '';
+
+      if (nameEl) {
+        nameEl.textContent = logged ? username : '';
+        nameEl.style.display = logged ? 'inline-block' : 'none';
+      }
+      if (logoutBtn) {
+        logoutBtn.style.display = logged ? 'inline-block' : 'none';
+      }
+
+      // live time
+      const liveEl = document.getElementById('liveTime');
+      if (liveEl) {
+        function tick(){
+          const now = new Date();
+          liveEl.textContent = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+        }
+        tick();
+        setInterval(tick, 1000);
+      }
+    }
+
+    // Provide logout fallback if not present
+    if (typeof logout !== 'function') {
+      function logout(){
+        localStorage.removeItem('loggedIn');
+        localStorage.removeItem('username');
+        localStorage.removeItem('sv_user');
+        window.location.href = BASE + '/pages/login.html';
+      }
+    }
+
+    // Simple date formatter used in table (fallback if not provided)
+    function formatDT(v){
+      if(!v) return '';
+      const d = new Date(v);
+      if(isNaN(d)) return v;
+      return d.toLocaleString();
+    }
+
+    // Use repository-level data path (avoids root-path 404 on GH Pages)
     async function loadJobs(){
       try{
-        const r = await fetch('/data/jobs.json', {cache:'no-store'});
+        const r = await fetch(BASE + '/data/jobs.json', { cache: 'no-store' });
         if(!r.ok) throw new Error('no jobs file');
         const jobs = await r.json();
         return jobs;
@@ -82,26 +156,49 @@
       }
     }
 
-    (async function init(){
-      const jobs = await loadJobs();
-      // simple counts
-      const today = new Date().toISOString().slice(0,10);
-      let tCnt=0, pending=0, completed=0;
-      const tbody = document.querySelector('#recentTable tbody');
-      tbody.innerHTML = '';
-      jobs.slice().reverse().slice(0,8).forEach(j=>{
-        if(j.date && j.date.startsWith(today)) tCnt++;
-        if(j.status && j.status.toLowerCase() === 'completed') completed++; else pending++;
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${j.id||''}</td><td>${j.customer||''}</td><td>${j.department||''}</td><td>${j.status||''}</td><td>${formatDT(j.updatedAt||j.date)}</td>`;
-        tbody.appendChild(tr);
-      });
-      document.getElementById('todayJobs').textContent = tCnt;
-      document.getElementById('pendingJobs').textContent = pending;
-      document.getElementById('completedJobs').textContent = completed;
-      if(jobs.length===0){
-        tbody.innerHTML = '<tr><td colspan="5" class="muted">No jobs found</td></tr>';
+    // Run auth check, header init & job load
+    (function initPage(){
+      try {
+        checkAuth();
+      } catch(e) {
+        // ignore
       }
+
+      // If primary header init exists in script.js use it, otherwise run fallback
+      if (typeof initHeader === 'function') {
+        try { initHeader(); } catch(e) {}
+      } else {
+        _fallbackInitHeaderAndClock();
+      }
+
+      if (typeof startLiveClock === 'function') {
+        try { startLiveClock(); } catch(e) {}
+      }
+
+      // Load jobs and render counts
+      (async function renderJobs(){
+        const jobs = await loadJobs();
+        const today = new Date().toISOString().slice(0,10);
+        let tCnt = 0, pending = 0, completed = 0;
+        const tbody = document.querySelector('#recentTable tbody');
+        tbody.innerHTML = '';
+
+        jobs.slice().reverse().slice(0,8).forEach(j=>{
+          if (j.date && j.date.startsWith(today)) tCnt++;
+          if (j.status && j.status.toLowerCase() === 'completed') completed++; else pending++;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${j.id||''}</td><td>${j.customer||''}</td><td>${j.department||''}</td><td>${j.status||''}</td><td>${formatDT(j.updatedAt||j.date)}</td>`;
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById('todayJobs').textContent = tCnt;
+        document.getElementById('pendingJobs').textContent = pending;
+        document.getElementById('completedJobs').textContent = completed;
+
+        if (!jobs || jobs.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="muted">No jobs found</td></tr>';
+        }
+      })();
     })();
   </script>
 </body>
