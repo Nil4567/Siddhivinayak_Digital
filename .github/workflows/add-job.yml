@@ -1,0 +1,50 @@
+name: Add Job Entry
+
+on:
+  repository_dispatch:
+    types: [add-job]
+
+jobs:
+  update-jobs:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Parse job payload
+        id: parse
+        run: |
+          echo '${{ github.event.client_payload.job }}' > newjob.json
+
+      - name: Update jobs.json
+        run: |
+          mkdir -p data
+          touch data/jobs.json
+
+          # If jobs.json exists and valid, use it; otherwise start empty list
+          if [ -s data/jobs.json ]; then
+            cp data/jobs.json old_jobs.json
+          else
+            echo "[]" > old_jobs.json
+          fi
+
+          # Combine existing jobs + new job
+          node << 'EOF'
+          const fs = require("fs");
+          const oldJobs = JSON.parse(fs.readFileSync("old_jobs.json", "utf8"));
+          const newJob = JSON.parse(fs.readFileSync("newjob.json", "utf8"));
+          oldJobs.push(newJob);
+          fs.writeFileSync("data/jobs.json", JSON.stringify(oldJobs, null, 2));
+          EOF
+
+      - name: Commit updated file
+        run: |
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git add data/jobs.json
+          git commit -m "Add new job entry"
+          git push
