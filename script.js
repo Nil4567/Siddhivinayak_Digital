@@ -1,4 +1,4 @@
-/* script.js - Shared Auth + Header + Clock + GitHub Database */
+/* script.js - Auth + Header + Clock + Safe GitHub Job Dispatch */
 
 // --------------------------------------------------
 // BASE URL FOR REDIRECTION
@@ -61,6 +61,7 @@ function logout() {
 function initHeader() {
   const nameEl = document.getElementById("sv_user_name");
   const logoutBtn = document.getElementById("logoutBtn");
+
   const logged = localStorage.getItem("loggedIn") === "yes";
   const username = localStorage.getItem("username") || "";
 
@@ -78,6 +79,7 @@ function initHeader() {
 // LIVE CLOCK
 // --------------------------------------------------
 let _clockTimer = null;
+
 function startLiveClock() {
   const el = document.getElementById("liveTime");
   if (!el) return;
@@ -93,50 +95,40 @@ function startLiveClock() {
 }
 
 // --------------------------------------------------
-// SAVE JOB TO GITHUB DATABASE (NEW)
+// SAVE JOB (SAFE VERSION - USING DISPATCH EVENT)
 // --------------------------------------------------
 async function saveJobToGitHub(newJob) {
-  const token = "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";  // <<< CHANGE THIS
-  const repoOwner = "Nil4567";
-  const repoName = "Siddhivinayak_Digital";
-  const filePath = "data/jobs.json";
 
-  // 1. GET existing file
-  const getRes = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
+  // The website reads a token ONLY from config.js (ignored by .gitignore)
+  if (typeof GITHUB_SITE_KEY === "undefined" || !GITHUB_SITE_KEY) {
+    console.error("❌ ERROR: GITHUB_SITE_KEY not found. Create config.js");
+    return false;
+  }
 
-  const fileData = await getRes.json();
-  const oldContent = fileData.content ? atob(fileData.content) : "[]";
-  const jobs = JSON.parse(oldContent);
+  const dispatchUrl =
+    "https://api.github.com/repos/Nil4567/Siddhivinayak_Digital/dispatches";
 
-  // 2. ADD new job
-  jobs.push(newJob);
-
-  // 3. ENCODE updated JSON
-  const updatedContent = btoa(JSON.stringify(jobs, null, 2));
-
-  // 4. UPLOAD updated file
-  const commitRes = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`, {
-    method: "PUT",
-    headers: { 
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json"
+  const res = await fetch(dispatchUrl, {
+    method: "POST",
+    headers: {
+      "Accept": "application/vnd.github+json",
+      "Authorization": "Bearer " + GITHUB_SITE_KEY,
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      message: "Add new job entry",
-      content: updatedContent,
-      sha: fileData.sha
+      event_type: "add-job",
+      client_payload: { job: newJob }
     })
   });
 
-  return commitRes.ok;
+  return res.ok;
 }
 
 // --------------------------------------------------
 // AUTO INIT
 // --------------------------------------------------
 document.addEventListener("DOMContentLoaded", function () {
+
   const form = document.getElementById("loginForm");
   if (form) {
     form.addEventListener("submit", function (e) {
