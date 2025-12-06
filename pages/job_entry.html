@@ -2,7 +2,7 @@
 <script src="../script-github.js"></script>
 
 <script>
-  checkAuth();
+  checkLogin(); // 🔥 FIXED – correct function name from script.js
 
   function genId() {
     return 'J-' + Date.now().toString().slice(-6);
@@ -26,7 +26,7 @@
       updatedAt: new Date().toISOString()
     };
 
-    // 🔥 Send to GitHub
+    // 🔥 Send to GitHub (via workflow trigger)
     const ok = await sendJobToGitHub(job);
 
     if (ok) {
