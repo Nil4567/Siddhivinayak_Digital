@@ -1,22 +1,22 @@
 /* script.js - Auth + Header + Clock + Safe GitHub Job Dispatch */
 
-// --------------------------------------------------
-// BASE URL FOR REDIRECTION
-// --------------------------------------------------
+/* --------------------------------------------------
+   BASE URL FOR REDIRECTION
+-------------------------------------------------- */
 const BASE = "https://nil4567.github.io/Siddhivinayak_Digital";
 
-// --------------------------------------------------
-// LOGIN CREDENTIALS
-// --------------------------------------------------
+/* --------------------------------------------------
+   LOGIN CREDENTIALS
+-------------------------------------------------- */
 const validUser = {
   username: "admin",
   password: "admin123",
   name: "Admin User"
 };
 
-// --------------------------------------------------
-// LOGIN FUNCTION
-// --------------------------------------------------
+/* --------------------------------------------------
+   LOGIN FUNCTION
+-------------------------------------------------- */
 function login() {
   const userEl = document.getElementById("username");
   const passEl = document.getElementById("password");
@@ -37,27 +37,27 @@ function login() {
   }
 }
 
-// --------------------------------------------------
-// CHECK LOGIN
-// --------------------------------------------------
+/* --------------------------------------------------
+   CHECK LOGIN
+-------------------------------------------------- */
 function checkLogin() {
   if (localStorage.getItem("loggedIn") !== "yes") {
     window.location.href = `${BASE}/pages/login.html`;
   }
 }
 
-// --------------------------------------------------
-// LOGOUT
-// --------------------------------------------------
+/* --------------------------------------------------
+   LOGOUT
+-------------------------------------------------- */
 function logout() {
   localStorage.removeItem("loggedIn");
   localStorage.removeItem("username");
   window.location.href = `${BASE}/pages/login.html`;
 }
 
-// --------------------------------------------------
-// SHOW USERNAME IN HEADER
-// --------------------------------------------------
+/* --------------------------------------------------
+   SHOW USERNAME IN HEADER
+-------------------------------------------------- */
 function initHeader() {
   const nameEl = document.getElementById("sv_user_name");
   const logoutBtn = document.getElementById("logoutBtn");
@@ -75,9 +75,9 @@ function initHeader() {
   }
 }
 
-// --------------------------------------------------
-// LIVE CLOCK
-// --------------------------------------------------
+/* --------------------------------------------------
+   LIVE CLOCK
+-------------------------------------------------- */
 let _clockTimer = null;
 
 function startLiveClock() {
@@ -94,14 +94,14 @@ function startLiveClock() {
   _clockTimer = setInterval(tick, 1000);
 }
 
-// --------------------------------------------------
-// SAVE JOB (SAFE VERSION - USING DISPATCH EVENT)
-// --------------------------------------------------
+/* --------------------------------------------------
+   SAVE JOB (SAFE - REPO DISPATCH)
+-------------------------------------------------- */
 async function saveJobToGitHub(newJob) {
 
-  // The website reads a token ONLY from config.js (ignored by .gitignore)
+  // Token must come ONLY from config.js (ignored in repo)
   if (typeof GITHUB_SITE_KEY === "undefined" || !GITHUB_SITE_KEY) {
-    console.error("❌ ERROR: GITHUB_SITE_KEY not found. Create config.js");
+    console.error("❌ ERROR: GITHUB_SITE_KEY missing. Create data/config.js");
     return false;
   }
 
@@ -124,9 +124,9 @@ async function saveJobToGitHub(newJob) {
   return res.ok;
 }
 
-// --------------------------------------------------
-// AUTO INIT
-// --------------------------------------------------
+/* --------------------------------------------------
+   AUTO INIT
+-------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", function () {
 
   const form = document.getElementById("loginForm");
