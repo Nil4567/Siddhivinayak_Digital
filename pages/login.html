@@ -5,12 +5,52 @@
   <title>Staff Login - Siddhivinayak Digital</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
-    body{font-family:Arial;background:#f2f6ff;margin:0;height:100vh;display:flex;align-items:center;justify-content:center;color:#1a2a44}
-    .login-box{width:360px;background:#fff;padding:26px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.08);text-align:center}
-    .login-box h2{margin:0 0 16px;color:#003366}
-    input{width:100%;padding:12px;margin:8px 0;border:1px solid #d7e2ff;border-radius:8px;font-size:15px}
-    button{width:100%;padding:12px;margin-top:12px;border-radius:8px;border:0;background:#0073ff;color:#fff;font-weight:700;cursor:pointer}
-    .error{color:#b00020;margin-top:10px;display:none}
+    body {
+      font-family: Arial;
+      background: #f2f6ff;
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #1a2a44;
+    }
+    .login-box {
+      width: 360px;
+      background: #fff;
+      padding: 26px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+    .login-box h2 {
+      margin: 0 0 16px;
+      color: #003366;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: 1px solid #d7e2ff;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 12px;
+      border-radius: 8px;
+      border: 0;
+      background: #0073ff;
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .error {
+      color: #b00020;
+      margin-top: 10px;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -24,26 +64,45 @@
     </form>
 
     <div id="err" class="error"></div>
-    <p style="margin-top:12px;font-size:13px;color:#666">Default credentials: <b>admin / admin123</b></p>
+
+    <p style="margin-top:12px;font-size:13px;color:#666">
+      Default credentials: <b>admin / admin123</b>
+    </p>
   </div>
 
   <script>
-    const users = [ { username: "admin", password: "admin123", role: "admin" } ];
+    // User list (you can add more users here)
+    const users = [
+      { 
+        username: "admin", 
+        password: "admin123",
+        name: "Admin User",     // This will show in dashboard header
+        role: "admin" 
+      }
+    ];
 
     document.getElementById('loginForm').addEventListener('submit', function(ev){
       ev.preventDefault();
+
       const u = username.value.trim();
       const p = password.value;
 
+      // Check user
       const found = users.find(x => x.username === u && x.password === p);
-      if(!found){
-        err.style.display='block';
-        err.textContent='Invalid username or password';
+
+      if (!found) {
+        err.style.display = 'block';
+        err.textContent = 'Invalid username or password';
         return;
       }
-      localStorage.setItem('loggedUser', JSON.stringify(found));
-      window.location.href = 'dashboard.html';
+
+      // Save login user
+      localStorage.setItem('sv_user', JSON.stringify(found));
+
+      // Redirect to dashboard
+      window.location.href = "/pages/dashboard.html";
     });
   </script>
+
 </body>
 </html>
