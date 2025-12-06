@@ -18,12 +18,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Upload site files
+      - name: Upload site files (only website folders)
         uses: actions/upload-artifact@v4
         with:
           name: github-pages
           path: |
-            ./
+            pages/
+            styles/
+            data/
+            script.js
+            script-github.js
+            home.html
           if-no-files-found: error
 
   deploy:
