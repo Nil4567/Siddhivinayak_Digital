@@ -96,7 +96,7 @@ function startLiveClock() {
 // SAVE JOB TO GITHUB DATABASE (NEW)
 // --------------------------------------------------
 async function saveJobToGitHub(newJob) {
-  const token = "YOUR_GITHUB_TOKEN_HERE";  // <<< CHANGE THIS
+  const token = "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";  // <<< CHANGE THIS
   const repoOwner = "Nil4567";
   const repoName = "Siddhivinayak_Digital";
   const filePath = "data/jobs.json";
