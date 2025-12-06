@@ -1,8 +1,7 @@
 <script src="../script.js"></script>
-<script src="../script-github.js"></script>
 
 <script>
-  checkLogin(); // 🔥 FIXED – correct function name from script.js
+  checkLogin();
 
   function genId() {
     return 'J-' + Date.now().toString().slice(-6);
@@ -26,14 +25,14 @@
       updatedAt: new Date().toISOString()
     };
 
-    // 🔥 Send to GitHub (via workflow trigger)
-    const ok = await sendJobToGitHub(job);
+    // 🔥 Send to GitHub
+    const ok = await saveJobToGitHub(job);
 
     if (ok) {
-      alert("Job created and synced: " + job.id);
+      alert("Job created and saved: " + job.id);
       window.location.href = "job-queue.html";
     } else {
-      alert("Failed to send job to GitHub. Check console.");
+      alert("Failed to save job. Check console.");
     }
   });
 </script>
