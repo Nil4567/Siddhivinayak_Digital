@@ -32,8 +32,10 @@
         text-align: center; 
     }
     #jobQueueTable td:nth-child(2) { text-align: left; } /* Customer name left align */
-    /* Adjusting column number for amount fields due to new 'Description' and 'Invoice' columns */
-    #jobQueueTable td:nth-child(9), #jobQueueTable td:nth-child(10) { text-align: right; } /* Amount fields right align */
+    
+    /* Adjusting column numbers for amount fields due to new 'Order Token' column */
+    /* Amount columns are now 10 and 11 */
+    #jobQueueTable td:nth-child(10), #jobQueueTable td:nth-child(11) { text-align: right; } 
     
     /* Make the Status cell look clickable */
     #jobQueueTable td.status-pending,
@@ -119,15 +121,23 @@
         font-family: inherit;
     }
     
-    /* Invoice button style */
-    .invoice-btn {
-        padding: 4px 8px;
-        font-size: 11px;
+    /* Token and Invoice button styles */
+    .token-btn, .invoice-btn {
+        padding: 4px 6px;
+        font-size: 10px;
         font-weight: 700;
         border-radius: 6px;
-        background: var(--accent); /* Using accent color for visual contrast */
-        color: #fff;
         text-decoration: none;
+        display: block; /* Stack buttons nicely */
+        margin: 2px 0;
+    }
+    .token-btn {
+        background: var(--primary); 
+        color: #fff;
+    }
+    .invoice-btn {
+        background: var(--accent); 
+        color: #fff;
     }
   </style>
 </head>
@@ -189,10 +199,11 @@
               <th>Pending TAT (Days)</th>
               <th>Amount (Rs.)</th>
               <th>Pending Amount (Rs.)</th>
-              <th>Invoice</th> </tr>
+              <th>Token</th> <th>Invoice</th> 
+            </tr>
           </thead>
           <tbody>
-            <tr><td colspan="10" class="muted">Loading job queue...</td></tr>
+            <tr><td colspan="11" class="muted">Loading job queue...</td></tr>
           </tbody>
         </table>
       </div>
@@ -310,13 +321,18 @@
         alert(`Job Instructions:\n\n=====================\n${description}`);
     }
 
-    // NEW: Function to navigate to the invoice template
+    // Function to navigate to the invoice template
     function generateInvoice(jobId) {
         window.open(`invoice-template.html?jobId=${jobId}`, '_blank');
     }
+    
+    // NEW: Function to navigate to the order token template
+    function generateOrderToken(jobId) {
+        window.open(`order-token.html?jobId=${jobId}`, '_blank');
+    }
 
 
-    // --- Modal Functions ---
+    // --- Modal Functions (Unchanged) ---
     function openModal(id) {
         document.getElementById(id).style.display = 'flex';
     }
@@ -390,7 +406,8 @@
       const managerTATSummary = {}; 
       
       if (activeJobs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" class="muted">The Job Queue is empty! 🎉</td></tr>';
+        // NOTE: colspan is now 11 (9 data columns + 2 button columns)
+        tbody.innerHTML = '<tr><td colspan="11" class="muted">The Job Queue is empty! 🎉</td></tr>';
       } else {
         
         // Sort by Order Date (Oldest/Overdue first)
@@ -451,9 +468,15 @@
               <td class="${getStatusClass(job.status)}" onclick="updateJobStatus(${index})">${job.status}</td>
               <td>${DEFAULT_TAT_DAYS}</td> 
               <td><span class="${tatClass}">${displayValue}</span></td> 
-              <td>₹ ${job.amount}</td>
-              <td>₹ ${job.pendingAmount}</td>
-              <td><a href="#" onclick="generateInvoice('${job.id}')" class="invoice-btn">Invoice</a></td> `;
+              <td style="text-align: right;">₹ ${job.amount}</td>
+              <td style="text-align: right;">₹ ${job.pendingAmount}</td>
+              <td>
+                <a href="#" onclick="generateOrderToken('${job.id}')" class="token-btn">Token</a>
+              </td>
+              <td>
+                <a href="#" onclick="generateInvoice('${job.id}')" class="invoice-btn">Invoice</a>
+              </td>
+            `;
             tbody.appendChild(row);
         });
       }
@@ -483,7 +506,7 @@
       }
     }
     
-    // --- Submission Logic for Status Update (Unchanged, but ensures new description is saved) ---
+    // --- Submission Logic for Status Update (Unchanged) ---
     document.getElementById('statusUpdateForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
@@ -497,7 +520,12 @@
         modalError.style.display = 'none';
 
         const jobToUpdate = activeJobsCache[activeJobIndex];
-        const pendingAmount = parseFloat(jobToUpdate.pendingAmount) || 0;
+        // Use cleanAndParseAmount for safe parsing of pending amount, as it might have '₹'
+        function cleanAndParseAmount(amountStr) {
+            if (!amountStr) return 0;
+            return parseFloat(String(amountStr).replace(/[₹$,]/g, '').trim()) || 0;
+        }
+        const pendingAmount = cleanAndParseAmount(jobToUpdate.pendingAmount);
 
         // 1. COMPULSORY CHECK: If status is 'Completed' and there's a pending amount
         if (newStatus === 'Completed' && pendingAmount > 0) {
@@ -530,7 +558,8 @@
 
         // If completed and payment was received (which is forced by validation)
         if (newStatus === 'Completed' && pendingAmount > 0 && paymentReceived === 'Yes') {
-            updatedJob.advance = (parseFloat(updatedJob.advance) + pendingAmount).toFixed(0);
+            const currentAdvance = cleanAndParseAmount(updatedJob.advance);
+            updatedJob.advance = (currentAdvance + pendingAmount).toFixed(0);
             updatedJob.pendingAmount = '0';
         }
         
