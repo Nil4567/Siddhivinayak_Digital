@@ -5,20 +5,31 @@
   <title>New Job Entry — Siddhivinayak Digital</title>
   <link rel="stylesheet" href="../styles/internal.css">
   <style>
-    /* Styling for Topbar User Display */
-    .user-display {
-        background: #e9f2ff; 
-        color: #0b2540;
-        padding: 5px 10px;
-        border-radius: 8px;
-        font-size: 13px;
-        font-weight: 600;
-        margin-right: 15px;
-        border: 1px solid rgba(15,111,255,0.1);
+    .entry-form {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
     }
-    .user-display span {
-        font-weight: 800;
-        color: var(--primary);
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .full-width {
+      grid-column: 1 / -1;
+    }
+    .total-display {
+      font-size: 1.2em;
+      font-weight: bold;
+      margin-top: 15px;
+      padding: 10px;
+      background-color: var(--highlight);
+      border-radius: 6px;
+      text-align: right;
+    }
+    .btn-save {
+      width: 100%;
+      margin-top: 20px;
     }
   </style>
 </head>
@@ -43,201 +54,166 @@
       <a href="customers.html" class="nav-link">Customers</a>
       <a href="expenses.html" class="nav-link">Daily Expenses</a>
       <a href="reports.html" class="nav-link">Reports</a>
-      <a href="settings.html" class="nav-link">Settings</a>
+      <a href="settings.html" class="nav-link">User Settings</a>
+      <a href="admin-credentials.html" class="nav-link">Admin Credentials</a>
     </aside>
 
     <main class="main">
       <div class="page-header">
         <div>
           <div class="page-title">New Job Entry</div>
-          <div class="page-sub">Enter all details for a new customer order.</div>
+          <div class="page-sub">Enter details for a new job received from a customer.</div>
         </div>
       </div>
 
-      <div class="card">
-        <h3>Customer and Job Details</h3>
-        <form id="newJobForm">
-            <div class="form-row">
-                <div class="field">
-                    <label for="customer">Customer Name *</label>
-                    <input type="text" id="customer" name="customer" required>
-                </div>
-                <div class="field">
-                    <label for="contact">Contact Number</label>
-                    <input type="text" id="contact" name="contact">
-                </div>
+      <div class="card entry-form">
+        <h3>Job Details</h3>
+        <form id="jobEntryForm">
+          <div class="grid-2">
+            <div class="field">
+              <label for="jobDate">Date *</label>
+              <input type="date" id="jobDate" required>
             </div>
-
-            <div class="form-row">
-                <div class="field">
-                    <label for="description">Job Description / Instructions *</label>
-                    <textarea id="description" name="description" rows="3" required></textarea>
-                </div>
+            <div class="field">
+              <label for="customerName">Customer Name *</label>
+              <input type="text" id="customerName" required placeholder="e.g., Rohan Patil">
             </div>
             
-            <div class="form-row">
-                <div class="field">
-                    <label for="amount">Total Amount (₹) *</label>
-                    <input type="number" id="amount" name="amount" required min="1" step="1">
-                </div>
-                <div class="field">
-                    <label for="advance">Advance Paid (₹)</label>
-                    <input type="number" id="advance" name="advance" value="0" min="0" step="1">
-                </div>
+            <div class="field full-width">
+              <label for="jobDescription">Job Description *</label>
+              <textarea id="jobDescription" rows="3" required placeholder="e.g., 500 A4 color prints, 10 laminated posters"></textarea>
             </div>
             
-            <div class="form-row">
-                <div class="field">
-                    <label for="assignedPerson">Assigned Manager *</label>
-                    <select id="assignedPerson" name="assignedPerson" required>
-                        <option value="Admin User">Loading Managers...</option> 
-                    </select>
-                </div>
-                <div class="field">
-                    <label for="orderDate">Order Date</label>
-                    <input type="date" id="orderDate" name="orderDate" required>
-                </div>
+            <div class="field">
+              <label for="jobAmount">Total Job Amount (₹) *</label>
+              <input type="number" id="jobAmount" required min="0" step="0.01" value="0.00">
+            </div>
+            <div class="field">
+              <label for="amountReceived">Amount Received (₹) *</label>
+              <input type="number" id="amountReceived" required min="0" step="0.01" value="0.00">
             </div>
 
-            <p id="submissionMessage" style="color: green; font-weight: 700; margin-top: 15px; display: none;"></p>
-            <button type="submit" class="btn" style="margin-top: 20px;">Submit New Job</button>
+            <div class="field full-width">
+              <label for="manager">Manager/Operator Handling Job *</label>
+              <select id="manager" required>
+                </select>
+            </div>
+          </div>
+          
+          <div class="total-display">
+            Balance Remaining: ₹ <span id="balanceAmount">0.00</span>
+          </div>
+
+          <button type="submit" class="btn btn-save">Save Job & Clear Form</button>
         </form>
       </div>
+
     </main>
   </div>
 
   <script src="../script.js"></script>
   <script>
-    // Constants and functions expected from script.js
+    // Access global functions from script.js
+    const saveJobToScript = window.saveJobToScript;
     const getManagers = window.getManagers;
-    const saveJobToGitHub = window.saveJobToGitHub;
-    const ACCESS_PERMISSIONS = window.ACCESS_PERMISSIONS || {};
     
-    // --- Helper function to populate managers ---
-    function populateManagers() {
-        const select = document.getElementById('assignedPerson');
-        const managers = getManagers(); 
-        
-        select.innerHTML = ''; 
-        
-        if (managers && managers.length > 0) {
-            managers.forEach(manager => {
-                const option = document.createElement('option');
-                option.value = manager;
-                option.textContent = manager;
-                select.appendChild(option);
-            });
-            
-            // Set the default selection: current user > 'Admin User' > first manager
-            const currentUser = localStorage.getItem('username');
-            if (managers.includes(currentUser)) {
-                select.value = currentUser;
-            } else if (managers.includes('Admin User')) {
-                 select.value = 'Admin User';
-            } else {
-                select.value = managers[0];
-            }
-        } else {
-             select.innerHTML = '<option value="Admin User">Admin User</option>';
+    // --- Utility Functions ---
+    function updateBalance() {
+      const amount = parseFloat(document.getElementById('jobAmount').value) || 0;
+      const received = parseFloat(document.getElementById('amountReceived').value) || 0;
+      const balance = amount - received;
+      
+      const balanceEl = document.getElementById('balanceAmount');
+      balanceEl.textContent = balance.toFixed(2);
+      
+      // Highlight if balance is negative or positive
+      balanceEl.style.color = balance > 0 ? 'var(--danger)' : (balance < 0 ? 'var(--primary)' : 'var(--success)');
+    }
+    
+    function populateManagerDropdown() {
+      const select = document.getElementById('manager');
+      const managers = getManagers(); 
+      select.innerHTML = '<option value="">-- Select Manager --</option>';
+
+      if (managers && managers.length > 0) {
+        managers.forEach(manager => {
+          const option = document.createElement('option');
+          option.value = manager;
+          option.textContent = manager;
+          select.appendChild(option);
+        });
+        // Pre-select the logged-in user if available
+        const loggedInUser = localStorage.getItem('username');
+        if (loggedInUser && managers.includes(loggedInUser)) {
+            select.value = loggedInUser;
         }
+      }
     }
 
+    // --- Form Submission Handler ---
+    document.getElementById('jobEntryForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const form = e.target;
+      const jobDate = form.jobDate.value;
+      const customerName = form.customerName.value.trim();
+      const jobDescription = form.jobDescription.value.trim();
+      const jobAmount = parseFloat(form.jobAmount.value) || 0;
+      const amountReceived = parseFloat(form.amountReceived.value) || 0;
+      const balance = jobAmount - amountReceived;
+      const manager = form.manager.value;
 
-    // --- Form Submission Logic ---
-    document.getElementById('newJobForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const form = e.target;
-        const amount = parseFloat(form.amount.value) || 0;
-        const advance = parseFloat(form.advance.value) || 0;
-        const pendingAmount = amount - advance;
-        
-        if (pendingAmount < 0) {
-            alert("Error: Advance amount cannot be more than the total amount.");
-            return;
-        }
+      // Simple validation check
+      if (jobAmount < 0 || amountReceived < 0) {
+        alert("Amounts cannot be negative.");
+        return;
+      }
+      
+      const newJob = {
+        date: jobDate,
+        customer: customerName,
+        description: jobDescription,
+        amount: jobAmount,
+        received: amountReceived,
+        balance: balance,
+        manager: manager,
+        status: balance > 0 ? 'Pending' : 'Completed' // Simple status logic
+      };
+      
+      // Call the external save function
+      const success = await saveJobToScript(newJob);
 
-        const newJob = {
-            id: 'J-' + Date.now().toString().slice(-6),
-            customer: form.customer.value.trim(),
-            contact: form.contact.value.trim(),
-            description: form.description.value.trim(),
-            amount: amount.toFixed(0),
-            advance: advance.toFixed(0),
-            pendingAmount: pendingAmount.toFixed(0),
-            orderDate: form.orderDate.value,
-            assignedPerson: form.assignedPerson.value, 
-            status: 'Pending',
-            createdAt: new Date().toISOString(),
-            enteredBy: localStorage.getItem('username') || 'Unknown'
-        };
-
-        // 1. Save to Local Storage (Always save locally first)
-        const allJobs = JSON.parse(localStorage.getItem('sv_jobs') || '[]');
-        allJobs.push(newJob);
-        localStorage.setItem('sv_jobs', JSON.stringify(allJobs));
-
-        // 2. Dispatch to GitHub (For persistent storage)
-        const msgEl = document.getElementById('submissionMessage');
-        msgEl.style.color = 'orange';
-        msgEl.textContent = `Job #${newJob.id} saved locally. Dispatching to central record...`;
-        msgEl.style.display = 'block';
-
-        let success = true;
-        try {
-            if (typeof saveJobToGitHub === 'function') {
-                success = await saveJobToGitHub(newJob); 
-            } else {
-                console.warn("saveJobToGitHub function not found. Job saved locally only.");
-            }
-        } catch (e) {
-            console.error("Error during GitHub dispatch:", e);
-            success = false;
-        }
-
-        if (success) {
-            msgEl.style.color = 'green';
-            msgEl.textContent = `✅ Job #${newJob.id} submitted successfully and saved to central record!`;
-        } else {
-            msgEl.style.color = 'red';
-            msgEl.textContent = `❌ Job #${newJob.id} saved locally, but failed to reach central record (GitHub). Check console for error.`;
-        }
-        
-        // Reset form for next entry
+      if (success) {
+        alert(`Job for ${customerName} saved successfully! Balance: ₹${balance.toFixed(2)}`);
         form.reset();
-        document.getElementById('orderDate').valueAsDate = new Date();
-        populateManagers(); // Re-populate to ensure default selection is correct
+        // Set date to today after reset
+        document.getElementById('jobDate').valueAsDate = new Date();
+        // Recalculate balance display after reset
+        updateBalance();
+      } else {
+        // saveJobToScript alerts the user on failure
+        console.error("Job saving failed.");
+      }
     });
 
-    // --- Initialization and Role-Based Access Filter (START) ---
+    // --- Initialization ---
     document.addEventListener("DOMContentLoaded", function() {
-        // 1. Run the primary authentication check (includes initHeader and checkAccess)
-        if (typeof checkAuth === 'function') {
-            checkAuth(); 
-        } else {
-            console.error("checkAuth() function not found. Ensure script.js is loaded.");
-            return;
-        }
-        
-        // 2. Run manager population and set default date
-        populateManagers();
-        document.getElementById('orderDate').valueAsDate = new Date();
-        
-        // 3. Access Control Navigation Filter
-        const userRole = localStorage.getItem("sv_user_role");
-        const allowedPages = ACCESS_PERMISSIONS[userRole] || [];
-        
-        document.querySelectorAll('.sidebar .nav-link').forEach(link => {
-            const href = link.getAttribute('href');
-            const pageName = href ? href.split('/').pop() : '';
-            
-            // Hide the link if the current role doesn't have permission
-            if (pageName && !allowedPages.includes(pageName)) {
-                link.style.display = 'none';
-            }
-        });
+      // 1. Check Auth & Load Header/Sidebar (from script.js)
+      checkAuth(); 
+      
+      // 2. Set the default date to today
+      document.getElementById('jobDate').valueAsDate = new Date();
+      
+      // 3. Populate managers
+      populateManagerDropdown();
+
+      // 4. Set up live balance calculation
+      document.getElementById('jobAmount').addEventListener('input', updateBalance);
+      document.getElementById('amountReceived').addEventListener('input', updateBalance);
+      
+      // Initial balance display
+      updateBalance();
     });
-    // --- Initialization and Role-Based Access Filter (END) ---
   </script>
 </body>
 </html>
