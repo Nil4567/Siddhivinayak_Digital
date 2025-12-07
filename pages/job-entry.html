@@ -33,7 +33,6 @@
         }
         .calculation-display span {
             float: right;
-            /* Default color is set in JS */
         }
         .btn-submit {
             background-color: var(--primary);
@@ -41,6 +40,12 @@
             font-size: 1.1em;
             padding: 10px 20px;
             margin-top: 20px;
+        }
+        /* Custom styles for better error visibility */
+        .error-message {
+            color: var(--danger);
+            font-weight: bold;
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -128,6 +133,7 @@
                     </div>
 
                     <div class="full-width">
+                        <div id="submissionError" class="error-message" style="display: none;"></div>
                         <button type="submit" class="btn btn-submit" id="submitButton">Submit New Job</button>
                     </div>
                 </form>
@@ -146,24 +152,29 @@
         const amountInput = document.getElementById('amount');
         const receivedInput = document.getElementById('received');
         const statusInput = document.getElementById('status');
+        const managerSelect = document.getElementById('manager');
         const balanceDisplay = document.getElementById('pendingBalanceDisplay');
         const submitButton = document.getElementById('submitButton');
+        const submissionError = document.getElementById('submissionError');
 
         /**
          * Calculates and updates the pending balance display and payment status.
          */
         function updateBalance() {
+            // Use 0 if input is invalid
             const amount = parseFloat(amountInput.value) || 0;
             const received = parseFloat(receivedInput.value) || 0;
             let balance = amount - received;
             
-            // Ensure balance is not negative (if received > amount, balance is 0)
+            // Ensure balance is not negative
             if (balance < 0) {
                  balance = 0;
             }
 
             // Update status based on balance
-            if (balance === 0 && amount > 0) {
+            if (amount === 0) {
+                statusInput.value = 'Pending'; // Job has zero amount, pending is a safe default
+            } else if (balance === 0) {
                 statusInput.value = 'Completed';
             } else if (received > 0 && balance > 0) {
                 statusInput.value = 'Partial';
@@ -173,15 +184,13 @@
             
             // Update display
             balanceDisplay.textContent = balance.toFixed(2);
-            // Change color: Red for pending, Green for zero balance (Completed)
             balanceDisplay.style.color = balance > 0 ? 'var(--danger)' : 'var(--success)';
         }
 
         /**
-         * Populates the Manager dropdown list using the list from script.js.
+         * Populates the Manager dropdown list.
          */
         function populateManagers() {
-            const managerSelect = document.getElementById('manager');
             const managers = getManagers(); 
             
             managerSelect.innerHTML = '<option value="">-- Select Manager --</option>';
@@ -204,12 +213,32 @@
         }
         
         /**
+         * Custom Validation before submission.
+         */
+        function validateForm() {
+            submissionError.style.display = 'none';
+            if (managerSelect.value === '') {
+                submissionError.textContent = 'Error: Please select a Manager/Point of Contact.';
+                submissionError.style.display = 'block';
+                managerSelect.focus();
+                return false;
+            }
+            return true;
+        }
+
+        /**
          * Handles form submission and data saving to Google Apps Script.
          */
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            if (!validateForm()) {
+                return;
+            }
+            
             submitButton.disabled = true;
             submitButton.textContent = 'Submitting...';
+            submissionError.style.display = 'none';
 
             // Final check on balance before submission
             updateBalance(); 
@@ -225,7 +254,7 @@
                 received: parseFloat(receivedInput.value).toFixed(2),
                 balance: pendingBalance.toFixed(2),
                 status: statusInput.value,
-                manager: document.getElementById('manager').value,
+                manager: managerSelect.value,
                 entry_timestamp: new Date().toISOString()
             };
 
@@ -243,11 +272,15 @@
                         dateInput.valueAsDate = new Date(); 
                         updateBalance(); 
                     } else {
-                        // Error handling is managed by saveJobToScript (shows an alert)
+                        // If saveJobToScript returns false, it already showed an alert 
+                        // from the server error, but we can add a local indicator too.
+                        submissionError.textContent = 'Submission failed. Check credentials and server logs.';
+                        submissionError.style.display = 'block';
                     }
                 } catch (error) {
                     console.error("Job submission failed:", error);
-                    alert("A critical error occurred during submission. Check console.");
+                    submissionError.textContent = 'A critical network error occurred. Check internet connection.';
+                    submissionError.style.display = 'block';
                 }
             }
             
@@ -267,7 +300,8 @@
             // Attach input listeners for live balance calculation
             amountInput.addEventListener('input', updateBalance);
             receivedInput.addEventListener('input', updateBalance);
-            statusInput.addEventListener('change', updateBalance);
+            // We listen to change on status in case the user manually overrides the auto-status
+            statusInput.addEventListener('change', updateBalance); 
             
             // Initial calculation display setup
             updateBalance();
