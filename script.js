@@ -1,8 +1,16 @@
 // Global Constants
-const ADMIN_CREDENTIALS_KEY = 'sv_admin_credentials'; // Key for Google Script URL & Token
-const MANAGER_LIST_KEY = 'sv_manager_list'; // Key for the list of managers/users
+const ADMIN_CREDENTIALS_KEY = 'sv_admin_credentials'; 
+const MANAGER_LIST_KEY = 'sv_manager_list';
 const APP_DATA_TYPE_JOB = 'JOB_ENTRY';
 const APP_DATA_TYPE_EXPENSE = 'DAILY_EXPENSE';
+
+/* --------------------------------------------------
+    *** HARDCODED CREDENTIALS (NO LOCAL STORAGE) ***
+    
+    CRITICAL: REPLACE THESE PLACEHOLDERS WITH YOUR ACTUAL VALUES
+-------------------------------------------------- */
+const HARDCODED_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVcME3Xb95pDU8faZ1HhGGB1k5hYiBhSlx6GPFUcE2CbCtzO5_9Y3KLv12aoFF70M8sQ/exec"; 
+const HARDCODED_SECURITY_TOKEN = "Siddhivi!n@yakD1gital-T0ken-987"; 
 
 /* --------------------------------------------------
     1. AUTHENTICATION AND UTILITY FUNCTIONS
@@ -17,24 +25,19 @@ function checkAuth() {
     const userRole = localStorage.getItem('sv_user_role');
 
     if (!isLoggedIn) {
-        // Not logged in, redirect to login page
         if (window.location.pathname.indexOf('index.html') === -1) {
             window.location.href = '../index.html';
         }
     } else {
-        // Logged in, update UI elements
         const userNameDisplay = document.getElementById('sv_user_name');
         if (userNameDisplay) {
             userNameDisplay.textContent = username + ' (' + userRole.charAt(0).toUpperCase() + userRole.slice(1) + ')';
         }
         updateLiveTime();
-        setInterval(updateLiveTime, 1000); // Start the clock
+        setInterval(updateLiveTime, 1000);
     }
 }
 
-/**
- * Updates the live time display (simple utility).
- */
 function updateLiveTime() {
     const timeElement = document.getElementById('liveTime');
     if (timeElement) {
@@ -42,14 +45,10 @@ function updateLiveTime() {
     }
 }
 
-/**
- * Logs the user out and clears session data.
- */
 function logout() {
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('username');
     localStorage.removeItem('sv_user_role');
-    // Keep credentials and manager list saved for next login/admin
     window.location.href = '../index.html';
 }
 
@@ -57,32 +56,24 @@ window.checkAuth = checkAuth;
 window.logout = logout;
 
 /* --------------------------------------------------
-    2. CREDENTIAL MANAGEMENT (For Admin Page)
+    2. CREDENTIAL MANAGEMENT (NOW HARDCODED)
 -------------------------------------------------- */
 
 /**
- * Retrieves the saved Google Apps Script URL and Token.
+ * Retrieves the hardcoded Google Apps Script URL and Token.
  * @returns {object} {url: string, token: string}
  */
 function getAdminCredentials() {
-    const creds = localStorage.getItem(ADMIN_CREDENTIALS_KEY);
-    return creds ? JSON.parse(creds) : { url: '', token: '' };
+    return { 
+        url: HARDCODED_SCRIPT_URL, 
+        token: HARDCODED_SECURITY_TOKEN 
+    };
 }
 
-/**
- * Saves the Google Apps Script URL and Token to Local Storage.
- * (Used by admin-credentials.html)
- * @param {string} url - The deployed Apps Script URL.
- * @param {string} token - The custom security token.
- */
-function saveAdminCredentials(url, token) {
-    const creds = { url, token };
-    localStorage.setItem(ADMIN_CREDENTIALS_KEY, JSON.stringify(creds));
-    return creds;
-}
+// NOTE: saveAdminCredentials is no longer needed/used since data is hardcoded.
 
 window.getAdminCredentials = getAdminCredentials;
-window.saveAdminCredentials = saveAdminCredentials;
+
 
 /* --------------------------------------------------
     3. USER / MANAGER LIST MANAGEMENT
@@ -90,20 +81,16 @@ window.saveAdminCredentials = saveAdminCredentials;
 
 /**
  * Retrieves the list of managers (users) from Local Storage.
- * (Used by job-entry.html and expenses.html)
- * NOTE: This assumes the manager list is saved elsewhere, e.g., in settings.html
- * For now, it returns a placeholder list or the last saved list.
  * @returns {Array<string>} List of manager names.
  */
 function getManagers() {
-    // We assume the user management page saves a list of manager names
     const rawUsers = localStorage.getItem(MANAGER_LIST_KEY);
     if (rawUsers) {
         try {
             return JSON.parse(rawUsers);
         } catch (e) {
             console.error("Error parsing manager list:", e);
-            return ['Admin User', 'Manager 1', 'User 1']; // Fallback
+            return ['Admin User', 'Manager 1', 'User 1'];
         }
     }
     // Default fallback list
@@ -125,10 +112,9 @@ window.getManagers = getManagers;
 async function sendDataToScript(data, dataType) {
     const { url, token } = getAdminCredentials();
 
-    // CRITICAL CHECK: This is why the Job Entry page was redirecting!
-    if (!url || !token) {
-        alert("CRITICAL ERROR: Google Apps Script URL or Token is not configured. Please contact Admin.");
-        window.location.href = '../pages/admin-credentials.html';
+    // CRITICAL CHECK: Now checks if hardcoded values are still the placeholder text
+    if (url.includes('YOUR_DEPLOYED') || token.includes('YOUR_UNIQUE')) {
+        alert("CRITICAL ERROR: Hardcoded Google Apps Script URL or Token is not configured. Please update script.js with your credentials.");
         return false;
     }
 
@@ -141,14 +127,13 @@ async function sendDataToScript(data, dataType) {
     try {
         const response = await fetch(url, {
             method: 'POST',
-            mode: 'cors', // Required for Google Apps Script web apps
+            mode: 'cors',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(payload)
         });
 
-        // The Apps Script usually returns a JSON response like {result: 'success'}
         const result = await response.json();
 
         if (result.result === 'success') {
@@ -173,14 +158,4 @@ async function saveJobToScript(jobData) {
     return sendDataToScript(jobData, APP_DATA_TYPE_JOB);
 }
 
-/**
- * Specific function to save Expense data (Will be used by expenses.html).
- * @param {object} expenseData - The expense details.
- * @returns {Promise<boolean>}
- */
-async function saveExpenseToScript(expenseData) {
-    return sendDataToScript(expenseData, APP_DATA_TYPE_EXPENSE);
-}
-
 window.saveJobToScript = saveJobToScript;
-window.saveExpenseToScript = saveExpenseToScript;
