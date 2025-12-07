@@ -1,206 +1,166 @@
 <!doctype html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>Daily Expenses — Siddhivinayak Digital</title>
-  <link rel="stylesheet" href="../styles/internal.css">
-  <style>
-    /* Expense specific styling */
-    .expense-list {
-        max-height: 400px;
-        overflow-y: auto;
-    }
-  </style>
+    <meta charset="utf-8">
+    <title>Daily Expenses — Siddhivinayak Digital</title>
+    <link rel="stylesheet" href="../styles/internal.css">
+    <style>
+        .expense-form {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .expense-form .field {
+            margin-bottom: 15px;
+        }
+        .expense-form textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        .btn-save {
+            width: 100%;
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
-  <div class="topbar">
-    <div class="brand">Siddhivinayak Digital</div>
-    <div class="controls">
-        <button class="btn secondary" onclick="history.back()">Back</button>
-        <a href="../index.html" class="btn secondary">Home</a>
-        <div class="user-display">Logged in as: <span id="sv_user_name"></span></div>
-        <span id="liveTime"></span>
-        <button class="btn" onclick="logout()">Logout</button>
+    <div class="topbar">
+        <div class="brand">Siddhivinayak Digital</div>
+        <div class="controls">
+            <button class="btn secondary" onclick="history.back()">Back</button>
+            <a href="../index.html" class="btn secondary">Home</a>
+            <div class="user-display">Logged in as: <span id="sv_user_name"></span></div>
+            <span id="liveTime"></span>
+            <button class="btn" onclick="logout()">Logout</button>
+        </div>
     </div>
-  </div>
 
-  <div class="app">
-    <aside class="sidebar">
-      <div class="brand-small">Control Panel</div>
-      <a href="dashboard.html" class="nav-link">Dashboard</a>
-      <a href="job-entry.html" class="nav-link">New Job Entry</a>
-      <a href="job-queue.html" class="nav-link">Job Queue</a>
-      <a href="customers.html" class="nav-link">Customers</a>
-      <a href="expenses.html" class="nav-link active">Daily Expenses</a>
-      <a href="reports.html" class="nav-link">Reports</a>
-      <a href="settings.html" class="nav-link">Settings</a>
-    </aside>
+    <div class="app">
+        <aside class="sidebar">
+            <div class="brand-small">Control Panel</div>
+            <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <a href="job-entry.html" class="nav-link">New Job Entry</a>
+            <a href="job-queue.html" class="nav-link">Job Queue</a>
+            <a href="customers.html" class="nav-link">Customers</a>
+            <a href="expenses.html" class="nav-link active">Daily Expenses</a>
+            <a href="reports.html" class="nav-link">Reports</a>
+            <a href="settings.html" class="nav-link">User Management</a>
+            <a href="admin-credentials.html" class="nav-link">Admin Credentials</a>
+        </aside>
 
-    <main class="main">
-      <div class="page-header">
-        <div>
-          <div class="page-title">Daily Expenses</div>
-          <div class="page-sub">Record all daily expenditures.</div>
-        </div>
-      </div>
-
-      <div class="grid-3">
-        <div class="card">
-            <h3>Record New Expense</h3>
-            <form id="newExpenseForm">
-                <div class="field">
-                    <label for="expenseDate">Date</label>
-                    <input type="date" id="expenseDate" required>
+        <main class="main">
+            <div class="page-header">
+                <div>
+                    <div class="page-title">Daily Expenses Entry</div>
+                    <div class="page-sub">Record daily operational expenditures.</div>
                 </div>
-                <div class="field">
-                    <label for="description">Expense Description *</label>
-                    <input type="text" id="description" placeholder="e.g., Tea/Snacks, Printing Paper" required>
-                </div>
-                <div class="field">
-                    <label for="amount">Amount (₹) *</label>
-                    <input type="number" id="amount" required min="1" step="1">
-                </div>
-                <p id="expenseMsg" style="color: green; font-weight: 700; margin-top: 15px; display: none;"></p>
-                <button type="submit" class="btn" style="width: 100%; margin-top: 10px;">Save Expense</button>
-            </form>
-        </div>
-
-        <div class="card" style="grid-column: span 2;">
-            <h3>Today's Expenses</h3>
-            <div class="expense-list">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Time</th>
-                            <th>Description</th>
-                            <th>Amount (₹)</th>
-                            <th>Recorded By</th>
-                        </tr>
-                    </thead>
-                    <tbody id="expenseTableBody">
-                        <tr><td colspan="4" style="text-align: center;">No expenses recorded today.</td></tr>
-                    </tbody>
-                </table>
             </div>
-            <h4 style="margin-top: 20px;">Total Expenses Today: <span id="totalTodayExpense">₹ 0</span></h4>
-        </div>
-      </div>
-    </main>
-  </div>
 
-  <script src="../script.js"></script>
-  <script>
-    // Functions are assumed to be available from script.js
-    const saveExpenseToGitHub = window.saveExpenseToGitHub;
-    const ACCESS_PERMISSIONS = window.ACCESS_PERMISSIONS || {};
-    const EXPENSE_STORAGE_KEY = 'sv_expenses'; 
-    const USER_ROLE = localStorage.getItem("sv_user_role");
-    
-    // --- Expense Specific Functions ---
-    function renderExpenses() {
-        const today = document.getElementById('expenseDate').value;
-        if (!today) return;
+            <div class="card expense-form">
+                <h3>Record Expense</h3>
+                <form id="expenseEntryForm">
+                    
+                    <div class="field">
+                        <label for="expenseDate">Date *</label>
+                        <input type="date" id="expenseDate" required>
+                    </div>
 
-        const allExpenses = JSON.parse(localStorage.getItem(EXPENSE_STORAGE_KEY) || '[]');
-        const todayExpenses = allExpenses.filter(e => e.date === today);
+                    <div class="field">
+                        <label for="expenseCategory">Category *</label>
+                        <select id="expenseCategory" required>
+                            <option value="">-- Select Category --</option>
+                            <option value="Raw Material">Raw Material (Paper, Ink, etc.)</option>
+                            <option value="Utilities">Utilities (Electricity, Water, Internet)</option>
+                            <option value="Staff Wages">Staff Wages/Salaries</option>
+                            <option value="Rent">Rent</option>
+                            <option value="Maintenance">Maintenance/Repairs</option>
+                            <option value="Other">Other Operational Expense</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="expenseAmount">Amount (₹) *</label>
+                        <input type="number" id="expenseAmount" required min="0.01" step="0.01">
+                    </div>
+                    
+                    <div class="field">
+                        <label for="expenseDescription">Description / Note</label>
+                        <textarea id="expenseDescription" placeholder="e.g., Purchased 5 reams of A4 80gsm paper"></textarea>
+                    </div>
+
+                    <div class="field">
+                        <label for="recordedBy">Recorded By *</label>
+                        <input type="text" id="recordedBy" required readonly>
+                    </div>
+
+                    <button type="submit" class="btn btn-save">Save Expense</button>
+                </form>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="../script.js"></script>
+    <script>
+        // Access global functions from script.js
+        const saveExpenseToScript = window.saveExpenseToScript;
         
-        const tableBody = document.getElementById('expenseTableBody');
-        const totalEl = document.getElementById('totalTodayExpense');
-        tableBody.innerHTML = '';
-        
-        let totalAmount = 0;
+        // --- Form Submission Handler ---
+        document.getElementById('expenseEntryForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const form = e.target;
+            const expenseDate = form.expenseDate.value;
+            const expenseCategory = form.expenseCategory.value;
+            const expenseAmount = parseFloat(form.expenseAmount.value);
+            const expenseDescription = form.expenseDescription.value.trim();
+            const recordedBy = form.recordedBy.value;
 
-        if (todayExpenses.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No expenses recorded for this date.</td></tr>';
-        } else {
-            todayExpenses.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            todayExpenses.forEach(expense => {
-                totalAmount += parseFloat(expense.amount);
-                const row = tableBody.insertRow();
-                row.innerHTML = `
-                    <td>${new Date(expense.createdAt).toLocaleTimeString()}</td>
-                    <td>${expense.description}</td>
-                    <td>₹ ${expense.amount}</td>
-                    <td>${expense.enteredBy || 'N/A'}</td>
-                `;
-            });
-        }
-        
-        totalEl.textContent = `₹ ${totalAmount.toFixed(0)}`;
-    }
-
-    // --- Form Submission Logic ---
-    document.getElementById('newExpenseForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const form = e.target;
-        const amount = parseFloat(form.amount.value) || 0;
-        
-        const newExpense = {
-            id: 'E-' + Date.now().toString().slice(-6),
-            date: form.expenseDate.value,
-            description: form.description.value.trim(),
-            amount: amount.toFixed(0),
-            createdAt: new Date().toISOString(),
-            enteredBy: localStorage.getItem('username') || 'Unknown'
-        };
-
-        // 1. Save to Local Storage
-        const allExpenses = JSON.parse(localStorage.getItem(EXPENSE_STORAGE_KEY) || '[]');
-        allExpenses.push(newExpense);
-        localStorage.setItem(EXPENSE_STORAGE_KEY, JSON.stringify(allExpenses));
-
-        // 2. Dispatch to GitHub (Placeholder)
-        const msgEl = document.getElementById('expenseMsg');
-        msgEl.style.color = 'orange';
-        msgEl.textContent = `Expense saved locally. Dispatching...`;
-        msgEl.style.display = 'block';
-
-        let success = true;
-        try {
-            if (typeof saveExpenseToGitHub === 'function') {
-                success = await saveExpenseToGitHub(newExpense); 
+            // Simple validation check
+            if (expenseAmount <= 0) {
+                alert("Expense amount must be greater than zero.");
+                return;
             }
-        } catch (e) {
-            success = false;
-        }
+            
+            const newExpense = {
+                date: expenseDate,
+                category: expenseCategory,
+                amount: expenseAmount,
+                description: expenseDescription,
+                recordedBy: recordedBy
+            };
+            
+            // Call the external save function
+            const success = await saveExpenseToScript(newExpense);
 
-        if (success) {
-            msgEl.style.color = 'green';
-            msgEl.textContent = `✅ Expense recorded successfully!`;
-        } else {
-            msgEl.style.color = 'red';
-            msgEl.textContent = `❌ Expense saved locally, but failed to reach central record.`;
-        }
-        
-        form.description.value = '';
-        form.amount.value = '';
-        
-        renderExpenses(); 
-    });
-
-    // --- Initialization and Role-Based Access Filter ---
-    document.addEventListener("DOMContentLoaded", function() {
-        checkAuth(); // 1. Run Auth & Access Check
-        
-        // 2. Set default date to today and attach listener
-        const dateInput = document.getElementById('expenseDate');
-        dateInput.valueAsDate = new Date();
-        dateInput.addEventListener('change', renderExpenses);
-        
-        // 3. Render initial expenses for today
-        renderExpenses();
-        
-        // 4. Hide sidebar links based on role access
-        const allowedPages = ACCESS_PERMISSIONS[USER_ROLE] || [];
-        document.querySelectorAll('.sidebar .nav-link').forEach(link => {
-            const href = link.getAttribute('href');
-            const pageName = href ? href.split('/').pop() : '';
-            if (pageName && !allowedPages.includes(pageName)) {
-                link.style.display = 'none';
+            if (success) {
+                alert(`Expense of ₹${expenseAmount.toFixed(2)} (${expenseCategory}) saved successfully!`);
+                form.reset();
+                // Set date and recordedBy after reset
+                document.getElementById('expenseDate').valueAsDate = new Date();
+                document.getElementById('recordedBy').value = localStorage.getItem('username') || 'Unknown';
+            } else {
+                // saveExpenseToScript alerts the user on failure
+                console.error("Expense saving failed.");
             }
         });
-    });
-  </script>
+
+        // --- Initialization ---
+        document.addEventListener("DOMContentLoaded", function() {
+            // 1. Check Auth & Load Header/Sidebar (from script.js)
+            checkAuth(); 
+            
+            // 2. Set the default date to today
+            document.getElementById('expenseDate').valueAsDate = new Date();
+            
+            // 3. Auto-fill the 'Recorded By' field with the logged-in user
+            const loggedInUser = localStorage.getItem('username');
+            if (loggedInUser) {
+                document.getElementById('recordedBy').value = loggedInUser;
+            } else {
+                 document.getElementById('recordedBy').value = 'Unknown User';
+            }
+        });
+    </script>
 </body>
 </html>
