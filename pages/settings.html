@@ -33,6 +33,11 @@
     .permission-table label {
         cursor: pointer;
     }
+    /* User List Styling */
+    .manager-list {
+        list-style: none;
+        padding: 0;
+    }
     .manager-list li {
         display: flex;
         justify-content: space-between;
@@ -74,6 +79,8 @@
     .role-admin { background: #dc3545; }
     .role-manager { background: #ffc107; color: #343a40; }
     .role-viewer { background: #007bff; }
+    .role-custom { background: #6c757d; } /* New color for custom role */
+
     .manager-list .edit-btn {
         background: var(--primary);
         color: white;
@@ -223,13 +230,20 @@
     // --- Modal Functions ---
     function openModal(username) {
         editingUserUsername = username;
-        const users = getUserCredentials();
+        // Always get fresh user data when opening the modal
+        const users = getUserCredentials(); 
         const user = users.find(u => u.username === username);
+        
         if (!user) return;
+        if (user.username === 'admin') {
+            alert("The primary 'admin' user permissions are locked and cannot be edited.");
+            return;
+        }
 
         document.getElementById('modalUserName').textContent = `Edit Permissions for ${user.name}`;
         document.getElementById('modalUserInfo').innerHTML = `Username: <strong>${user.username}</strong> | Role Template: <span class="role-tag role-${user.role}">${user.role}</span>`;
 
+        // Render table based on the user's current permissions object
         renderPermissionsTable(user.permissions);
         document.getElementById('permissionsModal').style.display = 'block';
     }
@@ -257,6 +271,7 @@
                 const isAvailable = feature.actions.includes(action);
                 
                 if (isAvailable) {
+                    // Check if the current user permissions array includes this action for this feature
                     const isChecked = currentPermissions[featureKey] && currentPermissions[featureKey].includes(action);
                     
                     const label = document.createElement('label');
@@ -279,7 +294,7 @@
     function savePermissions() {
         if (!editingUserUsername) return;
         
-        let users = getUserCredentials();
+        let users = getUserCredentials(); // Get fresh list
         const userIndex = users.findIndex(u => u.username === editingUserUsername);
         
         if (userIndex === -1) return;
@@ -297,20 +312,23 @@
             newPermissions[feature].push(action);
         });
 
-        // The 'admin' user is special and cannot have their role or permissions changed away from full access
-        if (users[userIndex].username === 'admin') {
-            alert("Primary 'admin' user permissions cannot be overridden.");
-            closeModal();
-            return;
-        }
-
+        // Update the user object in the array
         users[userIndex].permissions = newPermissions;
         users[userIndex].role = 'custom'; // Mark role as custom after manual edit
+        
+        // Save the updated list back to local storage
         saveUserCredentials(users);
         initManagers();
         renderUserList();
         closeModal();
         alert(`Permissions for ${users[userIndex].name} updated.`);
+        
+        // IMPORTANT: If the user is editing their OWN permissions, update their session storage
+        if (localStorage.getItem("username") === users[userIndex].name) {
+            localStorage.setItem("sv_user_permissions", JSON.stringify(newPermissions));
+            // Reload to apply new access rules immediately
+            window.location.reload(); 
+        }
     }
 
     // --- Rendering Logic ---
@@ -322,13 +340,14 @@
         users.forEach(user => {
             const li = document.createElement('li');
             const isAdmin = user.username === 'admin';
+            const roleClass = `role-${user.role}`;
 
             li.innerHTML = `
                 <div class="user-info">
                     <span class="user-name">${user.name}</span>
                     <span>(${user.username})</span>
                     <span class="password-display">${user.password}</span>
-                    <span class="role-tag role-${user.role}">${user.role}</span>
+                    <span class="role-tag ${roleClass}">${user.role}</span>
                 </div>
                 ${!isAdmin ? 
                     `<button class="edit-btn" onclick="openModal('${user.username}')">Edit Permissions</button>`
@@ -337,6 +356,10 @@
             `;
             listEl.appendChild(li);
         });
+
+        if (users.length === 0) {
+            listEl.innerHTML = '<li>No users found. Please add the first user.</li>';
+        }
     }
 
     // --- Add User Logic ---
@@ -357,15 +380,15 @@
             return;
         }
 
-        const templatePermissions = ACCESS_PERMISSIONS[role] || ACCESS_PERMISSIONS.viewer; // Use template
+        const templatePermissions = ACCESS_PERMISSIONS[role] || ACCESS_PERMISSIONS.viewer; 
         
         const newUser = { name, username, password, role, permissions: templatePermissions };
         users.push(newUser);
         saveUserCredentials(users);
-        initManagers();
-
+        initManagers(); // Update the manager dropdown list
+        
         form.reset();
-        renderUserList();
+        renderUserList(); // RE-RENDER THE LIST HERE
         alert(`User "${name}" (${role}) added successfully. You can now adjust custom permissions.`);
     });
     
@@ -373,22 +396,23 @@
     document.addEventListener("DOMContentLoaded", function() {
         checkAuth(); 
 
-        renderUserList();
+        renderUserList(); // Initial render of the list
         
         // Hide sidebar links based on user's current permissions
         const userPermissions = JSON.parse(localStorage.getItem("sv_user_permissions") || "{}");
+        const features = ACCESS_PERMISSIONS.features;
+
         document.querySelectorAll('.sidebar .nav-link').forEach(link => {
             const href = link.getAttribute('href');
             const pageName = href ? href.split('/').pop() : '';
 
-            // Check if the user has 'view' access for this feature
-            const featureKey = Object.keys(ACCESS_PERMISSIONS.features).find(key => 
-                ACCESS_PERMISSIONS.features[key].page === pageName
+            const featureKey = Object.keys(features).find(key => 
+                features[key].page === pageName
             );
 
             const hasViewPermission = userPermissions[featureKey] && userPermissions[featureKey].includes('view');
 
-            if (!hasViewPermission) {
+            if (featureKey && !hasViewPermission) {
                 link.style.display = 'none';
             }
         });
