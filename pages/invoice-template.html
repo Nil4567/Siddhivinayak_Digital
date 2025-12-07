@@ -4,6 +4,9 @@
     <meta charset="utf-8">
     <title>Invoice - Siddhivinayak Digital</title>
     <link rel="stylesheet" href="../styles/internal.css"> 
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
     <style>
         body { background: #f4f7f9; }
         .invoice-container {
@@ -173,9 +176,9 @@
     <script>
         // Placeholder function for client-side image generation
         function shareAsJpeg() {
-            // Check if html2canvas is available (requires external script)
+            // Check if html2canvas is available (it should be now, thanks to the script link above)
             if (typeof html2canvas === 'undefined') {
-                alert("Image conversion is currently disabled. Please add the html2canvas script to the <head> to enable JPEG download.");
+                alert("Image conversion failed. The html2canvas script could not be loaded.");
                 return;
             }
 
@@ -249,13 +252,3 @@
             const balance = parseFloat(job.pendingAmount) || 0;
 
             document.getElementById('jobAmount').textContent = amount.toFixed(0);
-            document.getElementById('subtotal').textContent = amount.toFixed(0);
-            document.getElementById('advancePaid').textContent = advance.toFixed(0);
-            document.getElementById('balanceDue').textContent = balance.toFixed(0);
-        }
-
-        document.addEventListener("DOMContentLoaded", loadInvoiceData);
-        
-    </script>
-</body>
-</html>
