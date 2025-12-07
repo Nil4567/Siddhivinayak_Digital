@@ -2,10 +2,10 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Settings — Siddhivinayak Digital</title>
+    <title>User Management — Siddhivinayak Digital</title>
     <link rel="stylesheet" href="../styles/internal.css">
     <style>
-        /* CSS for the User Management layout */
+        /* New CSS for the User Management layout */
         .user-management-grid {
             display: grid;
             grid-template-columns: 1fr 2fr; /* Make the list section wider than the form */
@@ -57,69 +57,54 @@
             <a href="customers.html" class="nav-link">Customers</a>
             <a href="expenses.html" class="nav-link">Daily Expenses</a>
             <a href="reports.html" class="nav-link">Reports</a>
-            <a href="settings.html" class="nav-link active">User Settings</a>
-            <a href="admin-credentials.html" class="nav-link">Admin Credentials</a>
+            <a href="settings.html" class="nav-link active">User Management</a> <a href="admin-credentials.html" class="nav-link">Admin Credentials</a>
         </aside>
 
         <main class="main">
             <div class="page-header">
                 <div>
-                    <div class="page-title">User Settings</div>
-                    <div class="page-sub">Manage user accounts, permissions, and application configurations.</div>
+                    <div class="page-title">User & Access Management</div>
+                    <div class="page-sub">Add new users and manage their login credentials and specific menu permissions.</div>
                 </div>
             </div>
 
-            <div class="content-layout">
-                <aside class="settings-menu">
-                    <a href="#" id="userManagementLink" class="nav-link active">User Management</a> 
-                    <a href="admin-credentials.html" class="nav-link">Script Credentials</a>
-                    <a href="dashboard.html" class="nav-link back-link">← Back to Dashboard</a>
-                </aside>
-
-                <div class="settings-content-panel">
-                    
-                    <div class="page-title">User & Access Management</div>
-                    <div class="page-sub">Add new users and manage their login credentials and specific menu permissions.</div>
-
-                    <div class="user-management-grid">
-                        
-                        <div class="card add-user-section">
-                            <h3>Add New User</h3>
-                            <form id="addUserForm">
-                                <div class="field">
-                                    <label for="userFullName">User's Full Name *</label>
-                                    <input type="text" id="userFullName" name="userFullName" required placeholder="e.g., Pooja Singh">
-                                </div>
-                                
-                                <div class="field">
-                                    <label for="loginUsername">Login Username *</label>
-                                    <input type="text" id="loginUsername" name="loginUsername" required placeholder="e.g., pooja.s">
-                                </div>
-                                
-                                <div class="field">
-                                    <label for="password">Password *</label>
-                                    <input type="password" id="password" name="password" required placeholder="e.g., pass123">
-                                </div>
-                                
-                                <div class="field">
-                                    <label for="accessTemplate">Access Template *</label>
-                                    <select id="accessTemplate" name="accessTemplate" required>
-                                        </select>
-                                </div>
-                                
-                                <button type="submit" class="btn full-width">Add User</button>
-                            </form>
+            <div class="user-management-grid">
+                
+                <div class="card add-user-section">
+                    <h3>Add New User</h3>
+                    <form id="addUserForm">
+                        <div class="field">
+                            <label for="userFullName">User's Full Name *</label>
+                            <input type="text" id="userFullName" name="userFullName" required placeholder="e.g., Pooja Singh">
                         </div>
                         
-                        <div class="card current-users-section">
-                            <h3>Current Active Users & Credentials</h3>
-                            <div id="currentUsersList">
-                                <p>Loading user list...</p>
-                            </div>
+                        <div class="field">
+                            <label for="loginUsername">Login Username *</label>
+                            <input type="text" id="loginUsername" name="loginUsername" required placeholder="e.g., pooja.s">
                         </div>
                         
+                        <div class="field">
+                            <label for="password">Password *</label>
+                            <input type="password" id="password" name="password" required placeholder="e.g., pass123">
+                        </div>
+                        
+                        <div class="field">
+                            <label for="accessTemplate">Access Template *</label>
+                            <select id="accessTemplate" name="accessTemplate" required>
+                                </select>
+                        </div>
+                        
+                        <button type="submit" class="btn full-width">Add User</button>
+                    </form>
+                </div>
+                
+                <div class="card current-users-section">
+                    <h3>Current Active Users & Credentials</h3>
+                    <div id="currentUsersList">
+                        <p>Loading user list...</p>
                     </div>
                 </div>
+                
             </div>
         </main>
     </div>
@@ -161,7 +146,6 @@
             
             if (!container) return;
             
-            // Reinitialize container with the table structure
             container.innerHTML = '<table></table>'; 
             const table = container.querySelector('table');
             table.className = 'data-table';
@@ -186,7 +170,6 @@
                 // Format permissions summary
                 const permissionsSummary = Object.entries(user.permissions || {})
                     .map(([feature, actions]) => {
-                        // Use feature.label from the features definition
                         const featureLabel = ACCESS_PERMISSIONS.features[feature] ? ACCESS_PERMISSIONS.features[feature].label : feature;
                         return actions.length > 0 ? `${featureLabel} (${actions.join(', ')})` : null;
                     })
@@ -232,19 +215,11 @@
 
         // --- Initialization ---
         document.addEventListener("DOMContentLoaded", function() {
-            checkAuth(); // From script.js: Checks login/access and initializes header/sidebar
+            checkAuth(); 
             populateAccessTemplates();
             displayCurrentUsers();
             
-            // Ensure the correct sub-menu item is active (User Management)
-            // Assuming .settings-menu has a structure like the one provided in the HTML
-            document.querySelectorAll('.settings-menu a').forEach(a => {
-                a.classList.remove('active');
-            });
-            const userLink = document.getElementById('userManagementLink');
-            if (userLink) {
-                 userLink.classList.add('active');
-            }
+            // Since this page is now the main User Management page, no need for sub-menu activation
         });
     </script>
 </body>
