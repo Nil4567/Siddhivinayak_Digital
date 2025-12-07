@@ -1,8 +1,23 @@
+/* --- CSS Custom Properties (Variables) --- */
+:root {
+    --primary-color: #0073ff;    /* Main Brand Blue */
+    --secondary-color: #f7931e;  /* Accent Color (Optional, for highlights) */
+    --danger-color: #d9534f;     /* Logout/Delete Red */
+    --danger-hover: #b52b27;
+    --text-color-dark: #333;
+    --text-color-light: #444;
+    --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.15);
+    --shadow-large: 0px 4px 12px rgba(0, 0, 0, 0.2);
+    --border-radius: 12px;
+}
+
+/* ---------------------------------------------------- */
+
 /* Header */
 .header {
-    background: #0073ff;
+    background: var(--primary-color);
     color: white;
-    padding: 15px;
+    padding: 15px 25px; /* Added horizontal padding */
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -22,31 +37,32 @@
 .banner {
     width: 100%;
     text-align: center;
-    margin-top: 10px;
+    padding: 15px 0; /* Use padding instead of margin-top for consistent spacing */
 }
 
 .banner-img {
     width: 90%;
     max-height: 260px;
     object-fit: cover;
-    border-radius: 12px;
-    box-shadow: 0px 4px 12px rgba(0,0,0,0.2);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-large);
 }
 
 /* Dashboard Text Center */
 .dashboard-wrapper {
     text-align: center;
-    padding: 40px 20px;
+    padding: 40px 20px 20px; /* Reduced bottom padding */
 }
 
 .welcome-title {
     font-size: 32px;
     margin-bottom: 10px;
+    color: var(--text-color-dark);
 }
 
 .welcome-sub {
     font-size: 20px;
-    color: #444;
+    color: var(--text-color-light);
     margin-bottom: 40px;
 }
 
@@ -56,24 +72,25 @@
     flex-wrap: wrap;
     justify-content: center;
     gap: 25px;
+    padding-bottom: 40px; /* Add padding to the bottom of the container */
 }
 
 .menu-box {
     width: 230px;
     background: white;
     padding: 20px;
-    border-radius: 12px;
+    border-radius: var(--border-radius);
     text-decoration: none;
-    color: #0073ff;
+    color: var(--primary-color);
     font-size: 20px;
     font-weight: bold;
     text-align: center;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: var(--shadow-medium);
     transition: 0.2s;
 }
 
 .menu-box:hover {
-    background: #0073ff;
+    background: var(--primary-color);
     color: white;
     transform: scale(1.05);
 }
@@ -86,14 +103,15 @@
 
 /* Logout Button */
 .logout-btn {
-    background: #d9534f;
+    background: var(--danger-color);
     padding: 10px 15px;
     border: none;
     border-radius: 5px;
     color: white;
     cursor: pointer;
+    transition: background 0.2s;
 }
 
 .logout-btn:hover {
-    background: #b52b27;
+    background: var(--danger-hover);
 }
