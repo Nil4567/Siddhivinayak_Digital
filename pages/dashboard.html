@@ -1,16 +1,87 @@
-<script src="../script.js"></script>
-<script>
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Dashboard — Siddhivinayak Digital</title>
+  <link rel="stylesheet" href="../styles/internal.css">
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">Siddhivinayak Digital</div>
+    <div class="controls">
+      <span id="sv_user_name"></span>
+      <span id="liveTime"></span>
+      <button class="btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand-small">Control Panel</div>
+      <a href="dashboard.html" class="nav-link active">Dashboard</a>
+      <a href="job-entry.html" class="nav-link">New Job Entry</a>
+      <a href="job-queue.html" class="nav-link">Job Queue</a>
+      <a href="departments.html" class="nav-link">Departments</a>
+      <a href="materials.html" class="nav-link">Materials</a>
+      <a href="reports.html" class="nav-link">Reports</a>
+      <a href="settings.html" class="nav-link">Settings</a>
+    </aside>
+
+    <main class="main">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Dashboard</div>
+          <div class="page-sub">Overview of jobs, TAT and department load</div>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="card">
+          <h3>Today's Jobs</h3>
+          <div class="big" id="todayJobs">0</div>
+        </div>
+        <div class="card">
+          <h3>Pending</h3>
+          <div class="big" id="pendingJobs">0</div>
+        </div>
+        <div class="card">
+          <h3>Completed</h3>
+          <div class="big" id="completedJobs">0</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <h3>Recent Jobs</h3>
+        <table class="table" id="recentTable">
+          <thead>
+            <tr><th>Job ID</th><th>Customer</th><th>Dept</th><th>Status</th><th>Time</th></tr>
+          </thead>
+          <tbody><tr><td colspan="5" class="muted">Loading jobs...</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="actions">
+        <a class="btn" href="job-entry.html">New Job</a>
+        <a class="btn secondary" href="job-queue.html">Open Queue</a>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="../script.js"></script>
+  <script>
     // 1. Authentication Check (from script.js)
     checkAuth();
     
-    // --- Dashboard Helper Functions (REQUIRED) ---
+    // --- Dashboard Helper Functions ---
     
     function loadLocalJobs() {
-      // Assumes job data is stored under the key 'sv_jobs'
+      // Key must match the job-entry and job-queue pages
       const jobs = JSON.parse(localStorage.getItem('sv_jobs') || '[]');
       return jobs;
     }
 
+    // Helper function to return the correct CSS class for status coloring
     function getStatusClass(status) {
       switch (status) {
         case 'Completed': return 'status-completed';
@@ -50,8 +121,8 @@
         
         const latestJobs = sortedJobs.slice(0, 7);
 
-        // --- Display Counts (CRASH PREVENTION ADDED) ---
-        // If the element is not found (null), the script skips it instead of crashing.
+        // --- Display Counts (WITH CRASH PREVENTION CHECKS) ---
+        // These checks prevent the "Cannot set properties of null" error.
         let el = document.getElementById('todayJobs');
         if (el) el.textContent = todayJobCount;
 
@@ -92,3 +163,4 @@
     renderDashboard();
 
 </script>
+</html>
