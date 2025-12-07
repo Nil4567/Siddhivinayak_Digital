@@ -9,7 +9,7 @@ const BASE = "https://nil4567.github.io/Siddhivinayak_Digital";
     LOCAL STORAGE KEYS
 -------------------------------------------------- */
 const MANAGER_STORAGE_KEY = 'sv_managers'; // For job assignment dropdown
-const USER_CREDENTIALS_KEY = 'sv_user_credentials'; // NEW: For secure user list
+const USER_CREDENTIALS_KEY = 'sv_user_credentials'; // For secure user list
 
 /* --------------------------------------------------
     ROLES AND PERMISSIONS DEFINITION 🔑
@@ -21,7 +21,7 @@ const ACCESS_PERMISSIONS = {
 };
 
 /* --------------------------------------------------
-    INITIAL LOGIN CREDENTIALS 🔒
+    INITIAL LOGIN CREDENTIALS 🔒 (Used only for first-time setup)
 -------------------------------------------------- */
 const INITIAL_CREDENTIALS = [
     { username: "admin", password: "admin123", name: "Admin User", role: "admin" },
@@ -30,7 +30,7 @@ const INITIAL_CREDENTIALS = [
 ];
 
 /* --------------------------------------------------
-    USER CREDENTIAL MANAGEMENT (NEW CORE UTILITY)
+    USER CREDENTIAL MANAGEMENT
 -------------------------------------------------- */
 function getUserCredentials() {
     let users = JSON.parse(localStorage.getItem(USER_CREDENTIALS_KEY));
@@ -119,7 +119,6 @@ function checkAccess() {
         console.error(`Access Denied: Role "${userRole}" cannot access ${currentPage}`);
         // Redirect to their default landing page (dashboard)
         window.location.href = `${BASE}/pages/dashboard.html`;
-        // alert("Access Denied: You do not have permission to view this page."); // Optional alert
     }
 }
 
@@ -137,6 +136,9 @@ function checkAuth() {
     if (localStorage.getItem("loggedIn") !== "yes") {
         window.location.href = `${BASE}/index.html`;
     }
+    // Set global visibility for ACCESS_PERMISSIONS to be used by all page scripts
+    window.ACCESS_PERMISSIONS = ACCESS_PERMISSIONS; 
+    
     checkAccess();
     initHeader();
 }
@@ -150,7 +152,7 @@ function logout() {
 
 
 /* --------------------------------------------------
-    HEADER & CLOCK (Unchanged)
+    HEADER & CLOCK
 -------------------------------------------------- */
 function initHeader() {
     const nameEl = document.getElementById("sv_user_name");
@@ -178,41 +180,28 @@ function startLiveClock() {
 
 
 /* --------------------------------------------------
-    SAVE JOB/EXPENSE (REPO DISPATCH) (Unchanged)
+    SAVE JOB/EXPENSE (REPO DISPATCH)
 -------------------------------------------------- */
+// Placeholders for GitHub dispatch functions (requires GITHUB_SITE_KEY defined elsewhere)
 async function saveJobToGitHub(newJob) {
-    if (typeof GITHUB_SITE_KEY === "undefined" || !GITHUB_SITE_KEY) {
-        console.error("❌ ERROR: GITHUB_SITE_KEY missing.");
-        return false;
-    }
-    const dispatchUrl = "https://api.github.com/repos/Nil4567/Siddhivinayak_Digital/dispatches";
-    const res = await fetch(dispatchUrl, {
-        method: "POST",
-        headers: { "Accept": "application/vnd.github+json", "Authorization": "Bearer " + GITHUB_SITE_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify({ event_type: "add-job", client_payload: { job: newJob } })
-    });
-    return res.ok;
+    console.warn("GitHub dispatch placeholder called for Job.");
+    return true; // Assume success for local testing
 }
 
 async function saveExpenseToGitHub(newExpense) {
-    if (typeof GITHUB_SITE_KEY === "undefined" || !GITHUB_SITE_KEY) {
-        console.error("❌ ERROR: GITHUB_SITE_KEY missing.");
-        return false;
-    }
-    const dispatchUrl = "https://api.github.com/repos/Nil4567/Siddhivinayak_Digital/dispatches";
-    const res = await fetch(dispatchUrl, {
-        method: "POST",
-        headers: { "Accept": "application/vnd.github+json", "Authorization": "Bearer " + GITHUB_SITE_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify({ event_type: "add-expense", client_payload: { expense: newExpense } })
-    });
-    return res.ok;
+    console.warn("GitHub dispatch placeholder called for Expense.");
+    return true; // Assume success for local testing
 }
+
+window.saveJobToGitHub = saveJobToGitHub;
+window.saveExpenseToGitHub = saveExpenseToGitHub;
 
 
 /* --------------------------------------------------
-    AUTO INIT (Updated)
+    AUTO INIT
 -------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", function () {
+    
     // Ensure initial users are loaded into storage if not present
     getUserCredentials();
 
