@@ -3,7 +3,7 @@
     // 1. Authentication Check (from script.js)
     checkAuth();
     
-    // --- Dashboard Helper Functions ---
+    // --- Dashboard Helper Functions (CRITICAL) ---
     
     // Loads all jobs stored in the browser's local storage
     function loadLocalJobs() {
@@ -13,6 +13,7 @@
     }
 
     // Helper function to return the correct CSS class for status coloring
+    // (This function is required by renderDashboard to apply colors from internal.css)
     function getStatusClass(status) {
       switch (status) {
         case 'Completed': return 'status-completed';
@@ -33,13 +34,13 @@
         
         // Count jobs and determine status
         allJobs.forEach(job => {
-            // 1. Calculate Today's Jobs (based on job date/createdAt)
+            // Check for today's jobs based on the creation timestamp
             const jobDate = job.createdAt ? job.createdAt.slice(0, 10) : '';
             if (jobDate === today) {
                 todayJobCount++;
             }
             
-            // 2. Calculate Status Counts
+            // Calculate Status Counts
             if (job.status === 'Pending' || job.status === 'Working' || job.status === 'Hold') {
                 pendingJobCount++;
             } else if (job.status === 'Completed') {
@@ -49,11 +50,11 @@
         
         // Sort jobs by creation time (newest first)
         const sortedJobs = [...allJobs].sort((a, b) => {
-            // Use createdAt or a similar timestamp for accurate sorting
+            // Safely compare timestamps, assuming a fallback of 0 if missing
             return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
         });
         
-        const latestJobs = sortedJobs.slice(0, 7); // Show the top 7 most recent jobs
+        const latestJobs = sortedJobs.slice(0, 7); // Display the top 7 most recent jobs
 
         // --- Display Counts ---
         document.getElementById('todayJobs').textContent = todayJobCount;
@@ -69,8 +70,7 @@
         } else {
             latestJobs.forEach(job => {
                 const row = document.createElement('tr');
-                
-                // Format job time 
+                // Format time for readability
                 const jobTime = job.createdAt ? new Date(job.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'N/A';
 
                 row.innerHTML = `
