@@ -107,6 +107,17 @@
         flex-direction: column;
         align-items: flex-start;
     }
+    /* Textarea style for description */
+    #modalDescription {
+        width: 100%; 
+        border: 1px solid #ccc; 
+        padding: 8px; 
+        border-radius: 4px; 
+        background: #fff; 
+        font-size: 13px;
+        resize: vertical; /* Allow vertical resizing */
+        font-family: inherit;
+    }
   </style>
 </head>
 <body>
@@ -161,7 +172,8 @@
               <th>ID</th>
               <th>Customer</th>
               <th>Manager</th>
-              <th>Description</th> <th>Status</th>
+              <th>Description</th> 
+              <th>Status</th>
               <th>Total TAT (Days)</th>
               <th>Pending TAT (Days)</th>
               <th>Amount (Rs.)</th>
@@ -193,7 +205,7 @@
       <div id="statusModal" class="modal">
           <div class="modal-content">
               <span class="close-button" onclick="closeModal('statusModal')">&times;</span>
-              <h3>Update Job Status</h3>
+              <h3>Update Job Details</h3>
               <p>Order ID: **#<span id="modalJobId" style="font-weight:700;"></span>** for <span id="modalCustomerName"></span></p>
               
               <form id="statusUpdateForm">
@@ -202,8 +214,8 @@
                   
                   <div class="form-row">
                       <div class="field">
-                          <label style="font-weight:700;">Job Description / Instructions</label>
-                          <p id="modalDescription" style="border: 1px solid #ccc; padding: 8px; border-radius: 4px; background: #f9f9f9; font-style: italic; font-size: 13px;"></p>
+                          <label for="modalDescription" style="font-weight:700;">Job Description / Instructions</label>
+                          <textarea id="modalDescription" name="modalDescription" rows="4"></textarea>
                       </div>
                   </div>
                   
@@ -229,7 +241,7 @@
                       </select>
                   </div>
 
-                  <button type="submit" class="btn" style="width: 100%; margin-top: 15px;">Save Status Update</button>
+                  <button type="submit" class="btn" style="width: 100%; margin-top: 15px;">Save Job Updates</button>
                   <p id="modalError" style="color: red; margin-top: 10px; display:none;"></p>
               </form>
           </div>
@@ -281,7 +293,7 @@
       }
     }
 
-    // NEW: Function to show job description via alert (fulfills 'hyperlink' request)
+    // Function to show job description via alert (fulfills 'hyperlink' request)
     function viewDescription(description, event) {
         if (event) event.preventDefault();
         alert(`Job Instructions:\n\n=====================\n${description}`);
@@ -326,7 +338,9 @@
         // Populate Modal Fields
         document.getElementById('modalJobId').textContent = job.id;
         document.getElementById('modalCustomerName').textContent = job.customer;
-        document.getElementById('modalDescription').textContent = job.description; // <--- NEW: Populate description
+        
+        // Populate the editable TEXTAREA with the current description
+        document.getElementById('modalDescription').value = job.description; 
         
         // Use the index of the job in the ACTIVE JOBS array for lookup in saveStatusUpdate
         document.getElementById('modalJobIndex').value = activeJobIndex; 
@@ -409,7 +423,6 @@
             }
             
             // Prepare description string for safe inline function call
-            // Escapes single quotes to prevent breaking the string literal
             const safeDescription = job.description.replace(/'/g, "\\'");
             
             const row = document.createElement('tr');
@@ -418,7 +431,8 @@
               <td>#${job.id}</td>
               <td style="text-align: left;">${job.customer}</td>
               <td>${job.assignedPerson}</td>
-              <td class="description-cell"><a href="#" onclick="viewDescription('${safeDescription}', event)">[View]</a></td> <td class="${getStatusClass(job.status)}" onclick="updateJobStatus(${index})">${job.status}</td>
+              <td class="description-cell"><a href="#" onclick="viewDescription('${safeDescription}', event)">[View]</a></td> 
+              <td class="${getStatusClass(job.status)}" onclick="updateJobStatus(${index})">${job.status}</td>
               <td>${DEFAULT_TAT_DAYS}</td> 
               <td><span class="${tatClass}">${displayValue}</span></td> 
               <td>₹ ${job.amount}</td>
@@ -453,13 +467,14 @@
       }
     }
     
-    // --- Submission Logic for Status Update (Unchanged) ---
+    // --- Submission Logic for Status Update ---
     document.getElementById('statusUpdateForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const form = e.target;
         const newStatus = form.newStatus.value;
         const paymentReceived = form.paymentReceived.value;
+        const newDescription = form.modalDescription.value; // <--- GET NEW DESCRIPTION
         const activeJobIndex = parseInt(form.modalJobIndex.value);
         const originalJobId = form.modalOriginalJobId.value;
         const modalError = document.getElementById('modalError');
@@ -495,6 +510,7 @@
         // 3. Apply updates
         const updatedJob = allJobs[globalJobIndex];
         updatedJob.status = newStatus;
+        updatedJob.description = newDescription; // <--- APPLY NEW DESCRIPTION
 
         // If completed and payment was received (which is forced by validation)
         if (newStatus === 'Completed' && pendingAmount > 0 && paymentReceived === 'Yes') {
