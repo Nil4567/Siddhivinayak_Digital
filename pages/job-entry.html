@@ -1,194 +1,190 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>New Job Entry — Siddhivinayak Digital</title>
+  <link rel="stylesheet" href="../styles/internal.css">
+</head>
 <body>
   <div class="topbar">
     <div class="brand">Siddhivinayak Digital</div>
     <div class="controls">
-      <div id="sv_user_name"></div>
-      <button id="logoutBtn" class="btn" onclick="logout()">Logout</button>
+      <span id="sv_user_name"></span>
+      <span id="liveTime"></span>
+      <button class="btn" onclick="logout()">Logout</button>
     </div>
   </div>
 
   <div class="app">
-
     <aside class="sidebar">
-      <div class="brand-small">Actions</div>
+      <div class="brand-small">Control Panel</div>
       <a href="dashboard.html" class="nav-link">Dashboard</a>
       <a href="job-entry.html" class="nav-link active">New Job Entry</a>
       <a href="job-queue.html" class="nav-link">Job Queue</a>
+      <a href="departments.html" class="nav-link">Departments</a>
+      <a href="materials.html" class="nav-link">Materials</a>
+      <a href="reports.html" class="nav-link">Reports</a>
+      <a href="settings.html" class="nav-link">Settings</a>
     </aside>
 
     <main class="main">
       <div class="page-header">
         <div>
           <div class="page-title">New Job Entry</div>
-          <div class="page-sub">Create a new print / xerox job</div>
+          <div class="page-sub">Enter details for a new print or design request</div>
         </div>
       </div>
 
       <div class="card">
-        <form id="jobForm">
+        <form id="jobEntryForm">
+          
+          <div id="alertMessage" style="display:none; padding:12px; margin-bottom:15px; border-radius:8px; font-weight:700; background:#d4edda; color:#155724;"></div>
 
           <div class="form-row">
             <div class="field">
-              <label for="custName">Customer Name *</label>
-              <input id="custName" name="customer" type="text" required placeholder="Customer name">
+              <label for="customerName">Customer Name</label>
+              <input type="text" id="customerName" name="customerName" required>
             </div>
-
             <div class="field">
-              <label for="custContact">Contact</label>
-              <input id="custContact" name="contact" type="text" placeholder="Phone or email">
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="field">
-              <label for="jobType">Job Type</label>
-              <select id="jobType" name="jobType">
-                <option>Photocopy</option>
-                <option>Printing - Color</option>
-                <option>Printing - B/W</option>
-                <option>Binding</option>
-                <option>Scanning</option>
-              </select>
-            </div>
-
-            <div class="field">
-              <label for="qty">Quantity</label>
-              <input id="qty" name="qty" type="number" value="1" min="1">
+              <label for="customerContact">Contact Number</label>
+              <input type="number" id="customerContact" name="customerContact" required>
             </div>
           </div>
           
-          <div class="form-row" id="bindingTypeField" style="display: none;">
-            <div class="field full-width">
-              <label for="bindingType">Binding Type *</label>
-              <select id="bindingType" name="bindingType">
-                <option value="" disabled selected>Select binding type</option>
-                <option>Spiral</option>
-                <option>Perfect</option>
-                <option>Wiro</option>
-                <option>Staple</option>
+          <div class="form-row">
+            <div class="field">
+              <label for="jobType">Job Type</label>
+              <select id="jobType" name="jobType" required>
+                <option value="">Select Type...</option>
+                <option value="Color Print">Color Print</option>
+                <option value="B/W Print">B/W Print</option>
+                <option value="Design">Design</option>
+                <option value="Binding">Binding</option>
+                <option value="Lamination">Lamination</option>
+                <option value="Scanning">Scanning</option>
               </select>
+            </div>
+            <div class="field">
+              <label for="quantity">Quantity / Pages</label>
+              <input type="number" id="quantity" name="quantity" min="1" required>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="field full-width">
+              <label for="jobDescription">Job Description / Instructions</label>
+              <textarea id="jobDescription" name="jobDescription" rows="3" required></textarea>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="field">
+              <label for="assignedDept">Assigned Department</label>
+              <select id="assignedDept" name="assignedDept" required>
+                <option value="">Select Department...</option>
+                <option value="Printing">Printing</option>
+                <option value="Designing">Designing</option>
+                <option value="Finishing">Finishing (Binding/Lamination)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="assignedTo">Assigned To (Staff Name)</label>
+              <input type="text" id="assignedTo" name="assignedTo">
             </div>
           </div>
 
           <div class="form-row">
             <div class="field">
-              <label for="assignedUser">Assign Task To *</label>
-              <select id="assignedUser" name="assignedUser" required>
-                <option value="" disabled selected>-- Select User --</option>
-                <option value="user_a">Data Entry Clerk</option>
-                <option value="user_b">Checker</option>
-                <option value="user_c">Printer Operator</option>
-                <option value="user_d">Finisher</option>
-                <option value="admin">Admin (Completion)</option>
-              </select>
-            </div>
-
-            <div class="field">
-              <label for="department">Assigned Department</label>
-              <select id="department" name="department">
-                <option>Data Entry</option>
-                <option>Checking</option>
-                <option>Printing</option>
-                <option>Finishing</option>
-                <option>Delivery</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="field full-width">
               <label for="urgency">Urgency</label>
               <select id="urgency" name="urgency">
-                <option>Normal</option>
-                <option>Express</option>
+                <option value="Normal">Normal</option>
+                <option value="Express">Express (Urgent)</option>
               </select>
             </div>
+            <div class="field">
+              <label for="expectedDelivery">Expected Delivery Date</label>
+              <input type="date" id="expectedDelivery" name="expectedDelivery" required>
+            </div>
           </div>
-
-
-          <div style="margin-top:14px;">
-            <label for="notes">Notes</label>
-            <textarea id="notes" name="notes" rows="3" placeholder="Extra instructions"></textarea>
-          </div>
-
-          <div style="margin-top:16px; display:flex; gap:10px;">
-            <button type="submit" class="btn">Create Job</button>
-            <button type="button" class="btn secondary" onclick="location.href='job-queue.html'">Open Queue</button>
-          </div>
-
+          
+          <button type="submit" class="btn" style="width:100%; margin-top:15px; padding:12px;">Submit New Job</button>
         </form>
       </div>
     </main>
   </div>
 
-  <script src="https://nil4567.github.io/Siddhivinayak_Digital/data/config.js"></script>
-  <script src="https://nil4567.github.io/Siddhivinayak_Digital/script.js"></script>
-
+  <script src="../script.js"></script>
   <script>
-    checkLogin();
+    // 1. Authentication Check
+    checkAuth();
 
-    // 🔴 TEMPORARY FUNCTION for Sequential ID 
-    // This MUST be implemented on your server for true sequential numbers.
-    async function getSequentialJobId() {
-        return "J-" + Date.now().toString().slice(-6); 
+    // 2. Job Submission Logic
+    function submitJob(event) {
+      event.preventDefault();
+
+      const form = event.target;
+      const alertEl = document.getElementById('alertMessage');
+      
+      // Get the current list of jobs from local storage
+      const existingJobs = JSON.parse(localStorage.getItem('sv_jobs') || '[]');
+
+      // 3. Generate a simple unique ID (Increment last ID or start at 1000)
+      const lastJob = existingJobs.length > 0 ? existingJobs[existingJobs.length - 1] : null;
+      const nextId = lastJob && lastJob.id ? parseInt(lastJob.id) + 1 : 1001;
+      const jobId = String(nextId);
+
+      // 4. Construct the job data object
+      const newJob = {
+        id: jobId,
+        customer: form.customerName.value,
+        contact: form.customerContact.value,
+        type: form.jobType.value,
+        quantity: form.quantity.value,
+        description: form.jobDescription.value,
+        department: form.assignedDept.value,
+        assignedTo: form.assignedTo.value || 'Unassigned',
+        urgency: form.urgency.value,
+        deliveryDate: form.expectedDelivery.value,
+        status: 'Pending', // Initial status
+        createdAt: new Date().toISOString(),
+        createdBy: localStorage.getItem('username') || 'Staff'
+      };
+
+      // 5. Store the new job locally (for dashboard/queue display)
+      existingJobs.push(newJob);
+      localStorage.setItem('sv_jobs', JSON.stringify(existingJobs));
+
+      // 6. Dispatch to GitHub (defined in script.js)
+      // NOTE: saveJobToGitHub must be available globally from script.js
+      saveJobToGitHub(newJob).then(success => {
+        if (success) {
+          alertEl.textContent = `✅ Success! Job #${jobId} saved and dispatched to GitHub workflow.`;
+          alertEl.style.backgroundColor = '#d4edda';
+          alertEl.style.color = '#155724';
+        } else {
+          alertEl.textContent = `⚠️ Warning: Job #${jobId} saved locally but GitHub dispatch failed. Check console for error.`;
+          alertEl.style.backgroundColor = '#fff3cd';
+          alertEl.style.color = '#856404';
+        }
+
+        // Show alert, clear form, and hide alert after 5 seconds
+        alertEl.style.display = 'block';
+        form.reset(); 
+        
+        setTimeout(() => {
+          alertEl.style.display = 'none';
+        }, 5000);
+      });
     }
 
-    // --- DYNAMIC FIELD LOGIC (NEW) ---
-    document.getElementById('jobType').addEventListener('change', function() {
-        const jobType = this.value;
-        const bindingField = document.getElementById('bindingTypeField');
-        const bindingSelect = document.getElementById('bindingType');
-
-        if (jobType === 'Binding') {
-            bindingField.style.display = 'flex'; // Show the field row
-            bindingSelect.setAttribute('required', 'required'); // Make the select box mandatory
-        } else {
-            bindingField.style.display = 'none'; // Hide the field row
-            bindingSelect.removeAttribute('required'); // Remove mandatory requirement
-            bindingSelect.value = bindingSelect.options[0].value; // Reset the value
-        }
-    });
-    // --- END DYNAMIC FIELD LOGIC ---
-
-    document.getElementById("jobForm").addEventListener("submit", async function(ev) {
-      ev.preventDefault();
-
-      const newId = await getSequentialJobId();
-      const jobType = document.getElementById('jobType').value;
-      const bindingType = jobType === 'Binding' ? document.getElementById('bindingType').value : null;
-
-      const job = {
-        id: newId,
-        date: new Date().toISOString(),
-        customer: document.getElementById('custName').value,
-        contact: document.getElementById('custContact').value,
-        jobType: jobType,
-        
-        // Include the conditional field
-        bindingType: bindingType, 
-        
-        qty: Number(document.getElementById('qty').value) || 1,
-        assignedUser: document.getElementById('assignedUser').value, // NEW REQUIRED FIELD
-        department: document.getElementById('department').value,
-        urgency: document.getElementById('urgency').value,
-        notes: document.getElementById('notes').value,
-        status: "Pending",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      
-      console.log("Submitting Job:", job);
-
-      // The saveJobToGitHub function needs to be updated to handle the new fields
-      const ok = await saveJobToGitHub(job); 
-
-      if (ok) {
-        alert("Job created and saved: " + job.id);
-        window.location.href = "job-queue.html";
-      } else {
-        alert("Failed to save job. Check console.");
+    // 7. Attach the submit handler to the form
+    document.addEventListener("DOMContentLoaded", function () {
+      const form = document.getElementById("jobEntryForm");
+      if (form) {
+        form.addEventListener("submit", submitJob);
       }
     });
-  </script>
 
+  </script>
 </body>
+</html>
