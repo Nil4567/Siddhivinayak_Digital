@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Settings — Siddhivinayak Digital</title>
+  <title>User Settings — Siddhivinayak Digital</title>
   <link rel="stylesheet" href="../styles/internal.css">
   <style>
     /* Settings-specific CSS for the new permission table */
@@ -81,7 +81,7 @@
     .role-viewer { background: #007bff; }
     .role-custom { background: #6c757d; } /* New color for custom role */
 
-    .manager-list .edit-btn {
+    .manager-list .edit-btn, .manager-list .delete-btn {
         background: var(--primary);
         color: white;
         border: none;
@@ -89,7 +89,12 @@
         border-radius: 6px;
         cursor: pointer;
         font-size: 12px;
+        margin-left: 5px;
     }
+    .manager-list .delete-btn {
+        background: #dc3545;
+    }
+
     .permissions-modal {
         display: none;
         position: fixed;
@@ -144,14 +149,15 @@
       <a href="customers.html" class="nav-link">Customers</a>
       <a href="expenses.html" class="nav-link">Daily Expenses</a>
       <a href="reports.html" class="nav-link">Reports</a>
-      <a href="settings.html" class="nav-link active">Settings</a>
+      <a href="settings.html" class="nav-link active">User Settings</a>
+      <a href="admin-credentials.html" class="nav-link">Admin Credentials</a>
     </aside>
 
     <main class="main">
       <div class="page-header">
         <div>
           <div class="page-title">User & Access Management</div>
-          <div class="page-sub">Add new users and manage their login credentials and permissions.</div>
+          <div class="page-sub">Add new users and manage their login credentials and specific menu permissions.</div>
         </div>
       </div>
 
@@ -174,10 +180,9 @@
                 <div class="field">
                     <label for="newUserRole">Access Template *</label>
                     <select id="newUserRole" required>
-                        <option value="manager">Manager Template</option>
-                        <option value="viewer">Viewer Template</option>
-                        <option value="admin">Admin Template</option>
-                        <option value="custom">Custom Permissions (Requires Admin to Set)</option>
+                        <option value="manager">Manager Template (View/Manage Jobs, Expenses)</option>
+                        <option value="viewer">Viewer Template (View Queue/Customers, Entry Rights)</option>
+                        <option value="admin">Admin Template (Full Access)</option>
                     </select>
                 </div>
                 <button type="submit" class="btn" style="width: 100%; margin-top: 10px;">Add User</button>
@@ -202,10 +207,9 @@
         <table class="permission-table">
             <thead>
                 <tr>
-                    <th>Feature</th>
-                    <th>View (Access Link)</th>
+                    <th>Feature (Menu)</th>
+                    <th>View (Access Tab)</th>
                     <th>Manage (Create/Update/Delete)</th>
-                    <th>Custom Action (Future)</th>
                 </tr>
             </thead>
             <tbody id="permissionsTableBody">
@@ -218,225 +222,4 @@
   </div>
 
   <script src="../script.js"></script>
-  <script>
-    const getUserCredentials = window.getUserCredentials;
-    const saveUserCredentials = window.saveUserCredentials;
-    const initManagers = window.initManagers;
-    // Ensure ACCESS_PERMISSIONS is available globally from script.js
-    const ACCESS_PERMISSIONS = window.ACCESS_PERMISSIONS || {}; 
-    const USER_ROLE = localStorage.getItem("sv_user_role");
-    
-    let editingUserUsername = null; // Store the username of the user currently being edited
-
-    // --- Modal Functions ---
-    function openModal(username) {
-        editingUserUsername = username;
-        // Always get fresh user data when opening the modal
-        const users = getUserCredentials(); 
-        const user = users.find(u => u.username === username);
-        
-        if (!user) return;
-        if (user.username === 'admin') {
-            alert("The primary 'admin' user permissions are locked and cannot be edited.");
-            return;
-        }
-
-        document.getElementById('modalUserName').textContent = `Edit Permissions for ${user.name}`;
-        document.getElementById('modalUserInfo').innerHTML = `Username: <strong>${user.username}</strong> | Role Template: <span class="role-tag role-${user.role}">${user.role}</span>`;
-
-        // Render table based on the user's current permissions object
-        renderPermissionsTable(user.permissions);
-        document.getElementById('permissionsModal').style.display = 'block';
-    }
-
-    function closeModal() {
-        document.getElementById('permissionsModal').style.display = 'none';
-        editingUserUsername = null;
-    }
-
-    function renderPermissionsTable(currentPermissions) {
-        const tbody = document.getElementById('permissionsTableBody');
-        tbody.innerHTML = '';
-        const features = ACCESS_PERMISSIONS.features;
-        
-        for (const featureKey in features) {
-            const feature = features[featureKey];
-            const row = tbody.insertRow();
-            
-            // Feature Label
-            row.insertCell().textContent = feature.label;
-
-            // Permissions Checkboxes (View, Manage, Custom)
-            ['view', 'manage', 'custom'].forEach(action => {
-                const cell = row.insertCell();
-                const isAvailable = feature.actions.includes(action);
-                
-                if (isAvailable) {
-                    // Check if the current user permissions array includes this action for this feature
-                    const isChecked = currentPermissions[featureKey] && currentPermissions[featureKey].includes(action);
-                    
-                    const label = document.createElement('label');
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.checked = isChecked;
-                    checkbox.dataset.feature = featureKey;
-                    checkbox.dataset.action = action;
-                    
-                    label.appendChild(checkbox);
-                    label.appendChild(document.createTextNode(action === 'custom' ? ' (F.A.)' : '')); // F.A. = Future Action
-                    cell.appendChild(label);
-                } else {
-                    cell.textContent = '-';
-                }
-            });
-        }
-    }
-
-    function savePermissions() {
-        if (!editingUserUsername) return;
-        
-        let users = getUserCredentials(); // Get fresh list
-        const userIndex = users.findIndex(u => u.username === editingUserUsername);
-        
-        if (userIndex === -1) return;
-        
-        const newPermissions = {};
-        const checkboxes = document.querySelectorAll('#permissionsTableBody input[type="checkbox"]:checked');
-        
-        checkboxes.forEach(checkbox => {
-            const feature = checkbox.dataset.feature;
-            const action = checkbox.dataset.action;
-            
-            if (!newPermissions[feature]) {
-                newPermissions[feature] = [];
-            }
-            newPermissions[feature].push(action);
-        });
-
-        // Update the user object in the array
-        users[userIndex].permissions = newPermissions;
-        users[userIndex].role = 'custom'; // Mark role as custom after manual edit
-        
-        // Save the updated list back to local storage
-        saveUserCredentials(users);
-        initManagers();
-        renderUserList(); 
-        closeModal();
-        alert(`Permissions for ${users[userIndex].name} updated.`);
-        
-        // IMPORTANT: If the user is editing their OWN permissions, update their session storage
-        if (localStorage.getItem("username") === users[userIndex].name) {
-            localStorage.setItem("sv_user_permissions", JSON.stringify(newPermissions));
-            // Reload to apply new access rules immediately
-            window.location.reload(); 
-        }
-    }
-
-    // --- Rendering Logic ---
-    function renderUserList() {
-        const users = getUserCredentials();
-        const listEl = document.getElementById('managerList');
-        listEl.innerHTML = '';
-        
-        users.forEach(user => {
-            const li = document.createElement('li');
-            const isAdmin = user.username === 'admin';
-            const roleClass = `role-${user.role}`;
-
-            li.innerHTML = `
-                <div class="user-info">
-                    <span class="user-name">${user.name}</span>
-                    <span>(${user.username})</span>
-                    <span class="password-display">${user.password}</span>
-                    <span class="role-tag ${roleClass}">${user.role}</span>
-                </div>
-                ${!isAdmin ? 
-                    `<button class="edit-btn" onclick="openModal('${user.username}')">Edit Permissions</button>`
-                    : '<span style="color:var(--danger); font-size: 12px; font-weight: 600;">(Primary Admin - Locked)</span>'
-                }
-            `;
-            listEl.appendChild(li);
-        });
-
-        if (users.length === 0) {
-            listEl.innerHTML = '<li>No users found. Please add the first user.</li>';
-        }
-    }
-
-    // --- Add User Logic (FIXED) ---
-    document.getElementById('addManagerForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const form = e.target;
-        
-        const name = form.newUserName.value.trim();
-        const username = form.newUserUsername.value.trim().toLowerCase();
-        const password = form.newUserPassword.value;
-        const role = form.newUserRole.value;
-        
-        if (!name || !username || !password || !role) {
-             alert("Please fill out all required fields.");
-             return;
-        }
-
-        let users = getUserCredentials();
-        if (users.map(u => u.username).includes(username)) {
-            alert(`User with username "${username}" already exists.`);
-            return;
-        }
-
-        // --- FIX: Ensure we use the correct ACCESS_PERMISSIONS template ---
-        // If the selected role is 'custom', we default to a viewer or manager template for the initial save.
-        // We use the selected role if it's a standard one.
-        let templateKey = (role === 'custom' || !ACCESS_PERMISSIONS[role]) ? 'manager' : role; // Default to 'manager' or selected role
-        const templatePermissions = ACCESS_PERMISSIONS[templateKey];
-
-        if (!templatePermissions) {
-             console.error(`Could not find permissions for template key: ${templateKey}`);
-             alert("System error: Could not retrieve role template permissions.");
-             return;
-        }
-        
-        const newUser = { name, username, password, role, permissions: templatePermissions };
-        users.push(newUser);
-        saveUserCredentials(users);
-        initManagers();
-        
-        form.reset();
-        renderUserList(); 
-        alert(`User "${name}" (${role}) added successfully.`);
-    });
-    
-    // --- Initialization and Role-Based Access Filter ---
-    document.addEventListener("DOMContentLoaded", function() {
-        checkAuth(); 
-
-        renderUserList(); 
-        
-        // Hide sidebar links based on user's current permissions
-        const userPermissions = JSON.parse(localStorage.getItem("sv_user_permissions") || "{}");
-        const features = ACCESS_PERMISSIONS.features;
-
-        document.querySelectorAll('.sidebar .nav-link').forEach(link => {
-            const href = link.getAttribute('href');
-            const pageName = href ? href.split('/').pop() : '';
-
-            const featureKey = Object.keys(features).find(key => 
-                features[key].page === pageName
-            );
-
-            const hasViewPermission = userPermissions[featureKey] && userPermissions[featureKey].includes('view');
-
-            if (featureKey && !hasViewPermission) {
-                link.style.display = 'none';
-            }
-        });
-    });
-
-    // Make functions globally accessible for inline HTML calls
-    window.openModal = openModal;
-    window.closeModal = closeModal;
-    window.savePermissions = savePermissions;
-  </script>
-</body>
-</html>
+  <script
