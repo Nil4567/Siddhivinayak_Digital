@@ -79,7 +79,8 @@ function getUserCredentials() {
     // Ensure older user objects have the 'permissions' field, using role defaults if missing
     return users.map(user => {
         if (!user.permissions) {
-            user.permissions = ACCESS_PERMISSIONS[user.role] || ACCESS_PERMISSIONS.viewer;
+            // Assign default permissions based on their role if the field is missing
+            user.permissions = ACCESS_PERMISSIONS[user.role] || ACCESS_PERMISSIONS.viewer; 
         }
         return user;
     });
@@ -93,9 +94,10 @@ function saveUserCredentials(users) {
     MANAGER/USER MANAGEMENT FUNCTIONS
 -------------------------------------------------- */
 function initManagers() {
-    const users = getUserCredentials();
+    // This function must only use the name field to populate the managers list
+    const users = getUserCredentials(); 
     let managers = users
-        .filter(user => user.role === 'admin' || user.role === 'manager')
+        .filter(user => user.role === 'admin' || user.role === 'manager' || user.role === 'custom') // Include custom roles for assignment
         .map(user => user.name);
             
     managers = [...new Set(managers)].sort((a, b) => {
@@ -164,7 +166,14 @@ function checkAccess() {
 
     if (!hasAnyPermission) {
         console.error(`Access Denied: Cannot access page ${currentPage}`);
-        window.location.href = `${BASE}/pages/dashboard.html`;
+        // Log out or redirect to a safe page if access is denied
+        if (currentPage !== 'dashboard.html') {
+             window.location.href = `${BASE}/pages/dashboard.html`;
+        } else {
+             // If they are on dashboard and shouldn't be, log them out or show an empty screen
+             // For now, let's keep them logged in but show no content (handled by dashboard.html itself)
+             console.warn("User is on dashboard but has no dashboard permission.");
+        }
     }
 }
 
@@ -242,7 +251,10 @@ window.saveExpenseToGitHub = saveExpenseToGitHub;
     AUTO INIT
 -------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", function () {
-    getUserCredentials();
+    // This call ensures local storage is populated with default users/permissions 
+    // immediately if it's the very first time running the app.
+    getUserCredentials(); 
+    initManagers(); // Ensure managers list is set up early.
 
     const form = document.getElementById("loginForm");
     if (form) {
