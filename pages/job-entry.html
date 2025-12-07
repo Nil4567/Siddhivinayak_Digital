@@ -42,15 +42,26 @@
 
           <div class="form-row">
             <div class="field">
+              <label for="jobId">Order ID</label>
+              <input type="text" id="jobId" name="jobId" readonly style="font-weight:700; background:#f4f4f4;">
+            </div>
+            <div class="field">
               <label for="customerName">Customer Name</label>
               <input type="text" id="customerName" name="customerName" required>
             </div>
+          </div>
+          
+          <div class="form-row">
             <div class="field">
               <label for="customerContact">Contact Number</label>
               <input type="number" id="customerContact" name="customerContact" required>
             </div>
+            <div class="field">
+              <label for="customerEmail">Email ID</label>
+              <input type="email" id="customerEmail" name="customerEmail">
+            </div>
           </div>
-          
+
           <div class="form-row">
             <div class="field">
               <label for="jobType">Job Type</label>
@@ -65,8 +76,8 @@
               </select>
             </div>
             <div class="field">
-              <label for="quantity">Quantity / Pages</label>
-              <input type="number" id="quantity" name="quantity" min="1" required>
+              <label for="amount">Job Amount (Rs.)</label>
+              <input type="number" id="amount" name="amount" min="0" required>
             </div>
           </div>
           
@@ -79,26 +90,28 @@
           
           <div class="form-row">
             <div class="field">
-              <label for="assignedDept">Assigned Department</label>
-              <select id="assignedDept" name="assignedDept" required>
-                <option value="">Select Department...</option>
-                <option value="Printing">Printing</option>
-                <option value="Designing">Designing</option>
-                <option value="Finishing">Finishing (Binding/Lamination)</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="assignedTo">Assigned To (Staff Name)</label>
-              <input type="text" id="assignedTo" name="assignedTo">
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="field">
               <label for="urgency">Urgency</label>
               <select id="urgency" name="urgency">
                 <option value="Normal">Normal</option>
-                <option value="Express">Express (Urgent)</option>
+                <option value="Low">Low</option>
+                <option value="Urgent">Urgent</option>
+                <option value="Very Urgent">Very Urgent</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="advance">Advance Received (Rs.)</label>
+              <input type="number" id="advance" name="advance" min="0">
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="field">
+              <label for="assignedDept">Assigned Department</label>
+              <select id="assignedDept" name="assignedDept">
+                <option value="">Select Department (Optional)...</option>
+                <option value="Printing">Printing</option>
+                <option value="Designing">Designing</option>
+                <option value="Finishing">Finishing (Binding/Lamination)</option>
               </select>
             </div>
             <div class="field">
@@ -106,7 +119,7 @@
               <input type="date" id="expectedDelivery" name="expectedDelivery" required>
             </div>
           </div>
-          
+
           <button type="submit" class="btn" style="width:100%; margin-top:15px; padding:12px;">Submit New Job</button>
         </form>
       </div>
@@ -115,53 +128,96 @@
 
   <script src="../script.js"></script>
   <script>
-    // 1. Authentication Check
-    checkAuth();
+    // Global variable to hold the list of jobs
+    let existingJobs = [];
+    
+    // --- Helper Functions ---
 
-    // 2. Job Submission Logic
+    // 1. Function to create dummy jobs if local storage is empty
+    function createDummyJobs() {
+        const dummyJobs = [
+            { id: "1001", customer: "Priya Sharma", customerEmail: "priya@example.com", contact: "9876543210", type: "Color Print", description: "50 copies of brochure.", department: "Printing", assignedTo: "Rajesh", urgency: "Very Urgent", deliveryDate: "2025-12-08", amount: "550", advance: "200", status: 'Working', createdAt: new Date(Date.now() - 3600000).toISOString(), createdBy: "Admin User" },
+            { id: "1002", customer: "Alok Industries", customerEmail: "alok@ind.com", contact: "9912345678", type: "Design", description: "Design new business card layout.", department: "Designing", assignedTo: "Sneha", urgency: "Normal", deliveryDate: "2025-12-10", amount: "1200", advance: "500", status: 'Pending', createdAt: new Date(Date.now() - 7200000).toISOString(), createdBy: "Staff" },
+            { id: "1003", customer: "Local Cafe", customerEmail: "cafe@local.in", contact: "8888877777", type: "Binding", description: "Bind 20 menus (Spiral)", department: "Finishing", assignedTo: "Karan", urgency: "Low", deliveryDate: "2025-12-15", amount: "300", advance: "0", status: 'Hold', createdAt: new Date(Date.now() - 10800000).toISOString(), createdBy: "Admin User" },
+            { id: "1004", customer: "Ravi K.", customerEmail: "ravi@home.net", contact: "7777711111", type: "Lamination", description: "Laminate 10 certificates.", department: "Finishing", assignedTo: "Karan", urgency: "Urgent", deliveryDate: "2025-12-09", amount: "150", advance: "150", status: 'Completed', createdAt: new Date(Date.now() - 14400000).toISOString(), createdBy: "Staff" },
+            { id: "1005", customer: "College Project", customerEmail: "project@stud.org", contact: "9000055555", type: "B/W Print", description: "500 pages project report print.", department: "Printing", assignedTo: "Rajesh", urgency: "Normal", deliveryDate: "2025-12-12", amount: "800", advance: "300", status: 'Pending', createdAt: new Date(Date.now() - 18000000).toISOString(), createdBy: "Admin User" },
+        ];
+        localStorage.setItem('sv_jobs', JSON.stringify(dummyJobs));
+        console.log("5 dummy jobs created for testing.");
+        return dummyJobs;
+    }
+    
+    // 2. Load Jobs, Generate Next ID, and Handle Dummies
+    function initJobEntryPage() {
+        // Load existing jobs, or create dummies if none exist
+        existingJobs = JSON.parse(localStorage.getItem('sv_jobs') || '[]');
+        if (existingJobs.length === 0) {
+            existingJobs = createDummyJobs();
+        }
+
+        // Generate the next Job ID based on the highest existing ID
+        const lastJob = existingJobs.length > 0 ? existingJobs[existingJobs.length - 1] : null;
+        // Use a safe ID generation method: if no jobs, start at 1001; otherwise, increment the last ID.
+        const nextId = lastJob && lastJob.id ? parseInt(lastJob.id) + 1 : 1001;
+        const jobId = String(nextId);
+
+        // Display the next ID in the read-only field
+        const jobIdEl = document.getElementById('jobId');
+        if (jobIdEl) {
+            jobIdEl.value = jobId;
+        }
+        
+        // Ensure the form submission logic is attached
+        const form = document.getElementById("jobEntryForm");
+        if (form) {
+            form.addEventListener("submit", submitJob);
+        }
+    }
+
+
+    // 3. Job Submission Logic
     async function submitJob(event) {
-      event.preventDefault(); // Stop the page from reloading
+      event.preventDefault();
 
       const form = document.getElementById('jobEntryForm');
       const alertEl = document.getElementById('alertMessage');
       
       if (!form.checkValidity()) {
-          form.reportValidity(); // Show native browser errors
+          form.reportValidity();
           return;
       }
-
-      const existingJobs = JSON.parse(localStorage.getItem('sv_jobs') || '[]');
-
-      // 3. Generate a simple unique ID
-      const lastJob = existingJobs.length > 0 ? existingJobs[existingJobs.length - 1] : null;
-      const nextId = lastJob && lastJob.id ? parseInt(lastJob.id) + 1 : 1001;
-      const jobId = String(nextId);
+      
+      // Get the final ID displayed in the read-only field
+      const jobId = form.jobId.value;
 
       // 4. Construct the job data object
       const newJob = {
         id: jobId,
         customer: form.customerName.value,
+        customerEmail: form.customerEmail.value, // NEW: Email
         contact: form.customerContact.value,
         type: form.jobType.value,
-        quantity: form.quantity.value,
         description: form.jobDescription.value,
-        department: form.assignedDept.value,
+        department: form.assignedDept.value || 'Unassigned', // Now optional
         assignedTo: form.assignedTo.value || 'Unassigned',
-        urgency: form.urgency.value,
+        urgency: form.urgency.value, // UPDATED: New options used
         deliveryDate: form.expectedDelivery.value,
-        status: 'Pending',
+        amount: form.amount.value, // NEW: Amount (Rs.)
+        advance: form.advance.value || '0', // NEW: Advance Received (Rs.)
+        status: 'Pending', // Initial status
         createdAt: new Date().toISOString(),
         createdBy: localStorage.getItem('username') || 'Staff'
       };
 
-      // 5. Store the new job locally
+      // 5. Store the new job locally (Add to the end of the global list)
       existingJobs.push(newJob);
       localStorage.setItem('sv_jobs', JSON.stringify(existingJobs));
 
       // 6. Dispatch to GitHub (using the function from script.js)
       let success = false;
       try {
-          success = await saveJobToGitHub(newJob); // This call is asynchronous
+          // saveJobToGitHub must be defined in script.js
+          success = await saveJobToGitHub(newJob); 
       } catch (e) {
           console.error("Error during GitHub dispatch:", e);
       }
@@ -178,19 +234,22 @@
       }
 
       alertEl.style.display = 'block';
-      form.reset(); // Clear form fields
+      
+      // Reset all fields EXCEPT the new, automatically generated Order ID
+      form.reset(); 
+      
+      // Re-initialize the page to update the Order ID field for the NEXT entry
+      initJobEntryPage();
       
       setTimeout(() => {
         alertEl.style.display = 'none';
       }, 5000);
     }
     
-    // Attach the submit handler to the form
+    // 8. Initialize the page on load
     document.addEventListener("DOMContentLoaded", function () {
-      const form = document.getElementById("jobEntryForm");
-      if (form) {
-        form.addEventListener("submit", submitJob);
-      }
+      checkAuth();
+      initJobEntryPage();
     });
 
   </script>
