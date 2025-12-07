@@ -119,16 +119,20 @@
     checkAuth();
 
     // 2. Job Submission Logic
-    function submitJob(event) {
-      event.preventDefault();
+    async function submitJob(event) {
+      event.preventDefault(); // Stop the page from reloading
 
-      const form = event.target;
+      const form = document.getElementById('jobEntryForm');
       const alertEl = document.getElementById('alertMessage');
       
-      // Get the current list of jobs from local storage
+      if (!form.checkValidity()) {
+          form.reportValidity(); // Show native browser errors
+          return;
+      }
+
       const existingJobs = JSON.parse(localStorage.getItem('sv_jobs') || '[]');
 
-      // 3. Generate a simple unique ID (Increment last ID or start at 1000)
+      // 3. Generate a simple unique ID
       const lastJob = existingJobs.length > 0 ? existingJobs[existingJobs.length - 1] : null;
       const nextId = lastJob && lastJob.id ? parseInt(lastJob.id) + 1 : 1001;
       const jobId = String(nextId);
@@ -145,39 +149,43 @@
         assignedTo: form.assignedTo.value || 'Unassigned',
         urgency: form.urgency.value,
         deliveryDate: form.expectedDelivery.value,
-        status: 'Pending', // Initial status
+        status: 'Pending',
         createdAt: new Date().toISOString(),
         createdBy: localStorage.getItem('username') || 'Staff'
       };
 
-      // 5. Store the new job locally (for dashboard/queue display)
+      // 5. Store the new job locally
       existingJobs.push(newJob);
       localStorage.setItem('sv_jobs', JSON.stringify(existingJobs));
 
-      // 6. Dispatch to GitHub (defined in script.js)
-      // NOTE: saveJobToGitHub must be available globally from script.js
-      saveJobToGitHub(newJob).then(success => {
-        if (success) {
-          alertEl.textContent = `✅ Success! Job #${jobId} saved and dispatched to GitHub workflow.`;
-          alertEl.style.backgroundColor = '#d4edda';
-          alertEl.style.color = '#155724';
-        } else {
-          alertEl.textContent = `⚠️ Warning: Job #${jobId} saved locally but GitHub dispatch failed. Check console for error.`;
-          alertEl.style.backgroundColor = '#fff3cd';
-          alertEl.style.color = '#856404';
-        }
+      // 6. Dispatch to GitHub (using the function from script.js)
+      let success = false;
+      try {
+          success = await saveJobToGitHub(newJob); // This call is asynchronous
+      } catch (e) {
+          console.error("Error during GitHub dispatch:", e);
+      }
 
-        // Show alert, clear form, and hide alert after 5 seconds
-        alertEl.style.display = 'block';
-        form.reset(); 
-        
-        setTimeout(() => {
-          alertEl.style.display = 'none';
-        }, 5000);
-      });
+      // 7. Display Result and Clean Up
+      if (success) {
+        alertEl.textContent = `✅ Success! Job #${jobId} saved and dispatched to GitHub workflow.`;
+        alertEl.style.backgroundColor = '#d4edda';
+        alertEl.style.color = '#155724';
+      } else {
+        alertEl.textContent = `⚠️ Warning: Job #${jobId} saved locally but GitHub dispatch failed. Check the browser console (F12).`;
+        alertEl.style.backgroundColor = '#fff3cd';
+        alertEl.style.color = '#856404';
+      }
+
+      alertEl.style.display = 'block';
+      form.reset(); // Clear form fields
+      
+      setTimeout(() => {
+        alertEl.style.display = 'none';
+      }, 5000);
     }
-
-    // 7. Attach the submit handler to the form
+    
+    // Attach the submit handler to the form
     document.addEventListener("DOMContentLoaded", function () {
       const form = document.getElementById("jobEntryForm");
       if (form) {
