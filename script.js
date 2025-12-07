@@ -8,8 +8,8 @@ const HARDCODED_SECURITY_TOKEN = "Siddhivi!n@yakD1gital-T0ken-987";
 
 // --- SUPER ADMIN CREDENTIALS (NEW CONCEPT) ---
 // This is a permanent, hardcoded bypass for emergency access and setup.
-const SUPER_ADMIN_USERNAME = 'superadmin'; // Change this to your desired super admin name
-const SUPER_ADMIN_PASSWORD = 'superadminpass'; // Change this to a very strong password
+const SUPER_ADMIN_USERNAME = 'superadmin';
+const SUPER_ADMIN_PASSWORD = 'superadminpass';
 // -------------------------------------------------------------------
 
 // --------------------------------------------------
@@ -153,29 +153,45 @@ async function handleLogin(username, password) {
 }
 
 /**
- * Checks if a user is logged in.
- */
-function checkAuth() {
-    const userToken = localStorage.getItem('sv_user_token');
-    const userName = localStorage.getItem('sv_user_name');
-    
-    if (!userToken || !userName) {
-        window.location.href = '../index.html'; 
-    } else {
-        const userNameElement = document.getElementById('sv_user_name');
-        if (userNameElement) {
-            userNameElement.textContent = userName;
-        }
-    }
-}
-
-/**
  * Clears the session.
  */
 function logout() {
     localStorage.clear(); // Clear all keys
     window.location.href = '../index.html';
 }
+
+// --------------------------------------------------
+// --- AUTHENTICATION & AUTHORIZATION ---
+// --------------------------------------------------
+
+/**
+ * Checks if a user is logged in and authorized to view the page.
+ * This is the ONLY DEFINITION.
+ */
+function checkAuth() {
+    const userToken = localStorage.getItem('sv_user_token');
+    const userName = localStorage.getItem('sv_user_name');
+    // CRITICAL: This retrieves the flag set during successful login.
+    const isSuperAdmin = localStorage.getItem('sv_is_superadmin') === 'true'; 
+    
+    // Check 1: If no token or name, redirect to login (Standard failure)
+    if (!userToken || !userName) {
+        // The path needs to be absolute or reliably relative to the root index.html
+        window.location.href = '/Siddhivinayak_Digital/index.html'; 
+        return; 
+    } 
+    
+    // Check 2: Update the display name (Always runs if logged in)
+    const userNameElement = document.getElementById('sv_user_name');
+    if (userNameElement) {
+        userNameElement.textContent = userName;
+    }
+
+    // If the user reaches this point, they are logged in and authorized for a standard page.
+    // Further page-specific checks (e.g., locking down the "User Management" link) can happen in the HTML script block.
+    console.log(`User logged in: ${userName}. Super Admin: ${isSuperAdmin}`);
+}
+
 
 // --------------------------------------------------
 // --- GLOBAL EXPORTS ---
@@ -187,42 +203,3 @@ window.fetchSheetData = fetchSheetData;
 window.checkAuth = checkAuth;           
 window.logout = logout;
 window.handleLogin = handleLogin;
-
-/**
- * Checks if a user is logged in and authorized to view the page.
- * Updated to recognize the Super Admin bypass flag.
- */
-function checkAuth() {
-    const userToken = localStorage.getItem('sv_user_token');
-    const userName = localStorage.getItem('sv_user_name');
-    const isSuperAdmin = localStorage.getItem('sv_is_superadmin') === 'true'; // Check the new flag
-    
-    // Check 1: If no token or name, redirect to login (Standard failure)
-    if (!userToken || !userName) {
-        window.location.href = '../index.html'; 
-        return; // Stop execution
-    } 
-    
-    // Check 2: Update the display name (Always runs if logged in)
-    const userNameElement = document.getElementById('sv_user_name');
-    if (userNameElement) {
-        userNameElement.textContent = userName;
-    }
-
-    // Check 3 (Concept): Implement page restrictions here using isSuperAdmin or isManager flags.
-    // Example: If this were a "Reports" page restricted to Managers and Super Admins:
-    /*
-    const isManager = localStorage.getItem('sv_is_manager') === 'true';
-    if (!isSuperAdmin && !isManager) {
-        alert("Access Denied: You must be a Manager or Super Admin.");
-        window.location.href = './dashboard.html';
-        return;
-    }
-    */
-    
-    // If the user reaches this point, they are logged in and authorized for a standard page.
-    console.log(`User logged in: ${userName}. Super Admin: ${isSuperAdmin}`);
-}
-
-// Ensure the rest of your script.js remains intact, especially the global exports!
-// window.checkAuth = checkAuth;
