@@ -21,9 +21,7 @@
       <a href="dashboard.html" class="nav-link">Dashboard</a>
       <a href="job-entry.html" class="nav-link active">New Job Entry</a>
       <a href="job-queue.html" class="nav-link">Job Queue</a>
-      <a href="departments.html" class="nav-link">Departments</a>
-      <a href="materials.html" class="nav-link">Materials</a>
-      <a href="reports.html" class="nav-link">Reports</a>
+      <a href="customers.html" class="nav-link">Customers</a> <a href="reports.html" class="nav-link">Reports</a>
       <a href="settings.html" class="nav-link">Settings</a>
     </aside>
 
@@ -141,7 +139,7 @@
 
         // Generate the next Job ID based on the highest existing ID
         const lastJob = existingJobs.length > 0 ? existingJobs[existingJobs.length - 1] : null;
-        const nextId = lastJob && lastJob.id ? parseInt(lastJob.id) + 1 : 1001;
+        const nextId = lastJob && lastJob.id ? parseInt(lastJob.id) + 1 : 1006; // Start next ID after dummies
         const jobId = String(nextId);
 
         // Display the next ID in the read-only field
@@ -153,7 +151,6 @@
         // Ensure the form submission logic is attached
         const form = document.getElementById("jobEntryForm");
         if (form) {
-            // Remove any old listeners before attaching a new one
             form.removeEventListener("submit", submitJob); 
             form.addEventListener("submit", submitJob);
         }
@@ -181,7 +178,6 @@
         customerEmail: form.customerEmail.value || 'N/A',
         contact: form.customerContact.value,
         description: form.jobDescription.value,
-        // CRITICAL CHANGE: The 'assignedPerson' is now the logged-in user (the creator/manager)
         assignedPerson: loggedInUser,
         urgency: form.urgency.value,
         amount: form.amount.value,
