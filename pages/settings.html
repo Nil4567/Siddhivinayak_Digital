@@ -3,6 +3,7 @@
     const getUserCredentials = window.getUserCredentials;
     const saveUserCredentials = window.saveUserCredentials;
     const initManagers = window.initManagers;
+    // Ensure ACCESS_PERMISSIONS is available globally from script.js
     const ACCESS_PERMISSIONS = window.ACCESS_PERMISSIONS || {}; 
     const USER_ROLE = localStorage.getItem("sv_user_role");
     
@@ -100,7 +101,7 @@
         // Save the updated list back to local storage
         saveUserCredentials(users);
         initManagers();
-        renderUserList(); // Re-render the user list after saving
+        renderUserList(); 
         closeModal();
         alert(`Permissions for ${users[userIndex].name} updated.`);
         
@@ -143,9 +144,10 @@
         }
     }
 
-    // --- Add User Logic ---
+    // --- Add User Logic (FIXED) ---
     document.getElementById('addManagerForm').addEventListener('submit', function(e) {
         e.preventDefault();
+        
         const form = e.target;
         
         const name = form.newUserName.value.trim();
@@ -153,7 +155,11 @@
         const password = form.newUserPassword.value;
         const role = form.newUserRole.value;
         
-        if (!name || !username || !password || !role) return;
+        if (!name || !username || !password || !role) {
+             // Should not happen if fields are 'required' but good practice
+             alert("Please fill out all required fields.");
+             return;
+        }
 
         let users = getUserCredentials();
         if (users.map(u => u.username).includes(username)) {
@@ -161,7 +167,17 @@
             return;
         }
 
-        const templatePermissions = ACCESS_PERMISSIONS[role] || ACCESS_PERMISSIONS.viewer; 
+        // --- FIX: Ensure we use the correct ACCESS_PERMISSIONS template ---
+        // If the selected role is 'custom', we default to a viewer or manager template for the initial save.
+        // If it's a standard role (admin, manager, viewer), use that template.
+        let templateKey = (role === 'custom' || !ACCESS_PERMISSIONS[role]) ? 'viewer' : role;
+        const templatePermissions = ACCESS_PERMISSIONS[templateKey];
+
+        if (!templatePermissions) {
+             console.error(`Could not find permissions for template key: ${templateKey}`);
+             alert("System error: Could not retrieve role template permissions.");
+             return;
+        }
         
         const newUser = { name, username, password, role, permissions: templatePermissions };
         users.push(newUser);
@@ -169,17 +185,17 @@
         initManagers();
         
         form.reset();
-        renderUserList(); 
-        alert(`User "${name}" (${role}) added successfully. You can now adjust custom permissions.`);
+        renderUserList(); // Correctly render the updated list
+        alert(`User "${name}" (${role}) added successfully.`);
     });
     
     // --- Initialization and Role-Based Access Filter ---
     document.addEventListener("DOMContentLoaded", function() {
         checkAuth(); 
 
-        renderUserList(); // 👈 This is the critical line to ensure the user list is shown immediately.
+        renderUserList(); // 1. Initial render of the user list
         
-        // Hide sidebar links based on user's current permissions
+        // 2. Hide sidebar links based on user's current permissions
         const userPermissions = JSON.parse(localStorage.getItem("sv_user_permissions") || "{}");
         const features = ACCESS_PERMISSIONS.features;
 
