@@ -21,7 +21,7 @@
         color: var(--muted);
     }
     
-    /* Ensure table headers for new fields are compact */
+    /* Table Styling for better display */
     #jobQueueTable th {
         font-size: 11px;
         padding: 8px 6px;
@@ -29,10 +29,70 @@
     #jobQueueTable td {
         font-size: 13px;
         padding: 6px;
-        text-align: center; /* Center align TAT numbers */
+        text-align: center; 
     }
     #jobQueueTable td:nth-child(2) { text-align: left; } /* Customer name left align */
     #jobQueueTable td:nth-child(7), #jobQueueTable td:nth-child(8) { text-align: right; } /* Amount fields right align */
+    
+    /* Make the Status cell look clickable */
+    #jobQueueTable td.status-pending,
+    #jobQueueTable td.status-working,
+    #jobQueueTable td.status-hold {
+        cursor: pointer;
+        font-weight: 700;
+        position: relative;
+        transition: background 0.15s;
+    }
+    #jobQueueTable td.status-pending:hover,
+    #jobQueueTable td.status-working:hover,
+    #jobQueueTable td.status-hold:hover {
+        opacity: 0.9;
+    }
+    
+    /* --- Modal Styles --- */
+    .modal {
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4); 
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        padding: 20px;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 450px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        position: relative;
+    }
+
+    .close-button {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .close-button:hover,
+    .close-button:focus {
+        color: #000;
+        text-decoration: none;
+    }
+    /* Modal form field adjustments */
+    #statusUpdateForm .form-row {
+        gap: 0; 
+        flex-direction: column;
+        align-items: flex-start;
+    }
   </style>
 </head>
 <body>
@@ -60,7 +120,7 @@
       <div class="page-header">
         <div>
           <div class="page-title">Job Queue</div>
-          <div class="page-sub">Pending jobs with Turnaround Time (TAT) Tracking</div>
+          <div class="page-sub">Pending jobs with Turnaround Time (TAT) Tracking. **Click Status to Update.**</div>
         </div>
       </div>
 
@@ -116,6 +176,43 @@
         </table>
       </div>
       
+      <div id="statusModal" class="modal">
+          <div class="modal-content">
+              <span class="close-button" onclick="closeModal('statusModal')">&times;</span>
+              <h3>Update Job Status</h3>
+              <p>Order ID: **#<span id="modalJobId" style="font-weight:700;"></span>** for <span id="modalCustomerName"></span></p>
+              
+              <form id="statusUpdateForm">
+                  <input type="hidden" id="modalJobIndex">
+                  <input type="hidden" id="modalOriginalJobId">
+                  
+                  <div class="form-row">
+                      <div class="field">
+                          <label for="newStatus">New Status *</label>
+                          <select id="newStatus" name="newStatus" required onchange="togglePaymentFields(this.value)">
+                              <option value="Pending">Pending</option>
+                              <option value="Working">Working</option>
+                              <option value="Hold">Hold</option>
+                              <option value="Completed">Completed</option>
+                          </select>
+                      </div>
+                  </div>
+
+                  <div id="paymentCheckContainer" style="display:none; border: 1px solid #ff9800; padding: 10px; border-radius: 6px; margin-top: 10px; background: #fff3e0;">
+                      <p style="margin: 0 0 8px; font-size: 14px; font-weight: 700; color: #d84315;">Pending Amount: ₹ <span id="modalPendingAmount">0</span></p>
+                      <label for="paymentReceived">Pending Amount Received? *</label>
+                      <select id="paymentReceived" name="paymentReceived" required>
+                          <option value="">--- Select ---</option>
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                      </select>
+                  </div>
+
+                  <button type="submit" class="btn" style="width: 100%; margin-top: 15px;">Save Status Update</button>
+                  <p id="modalError" style="color: red; margin-top: 10px; display:none;"></p>
+              </form>
+          </div>
+      </div>
     </main>
   </div>
 
@@ -126,19 +223,18 @@
     
     // --- CONSTANTS ---
     const MS_PER_DAY = 1000 * 60 * 60 * 24;
-    // TAT is 0 days (Same Day)
     const DEFAULT_TAT_DAYS = 0; 
+    let activeJobsCache = []; // To store the currently displayed (filtered/sorted) jobs
+
     
     // --- Helper Functions ---
     
-    // Utility to calculate the difference in full days between two dates (A - B)
     function dateDiffInDays(dateA, dateB) {
         if (!dateA || !dateB) return 0;
         
         const date1 = new Date(dateA);
         const date2 = new Date(dateB);
         
-        // Reset time to midnight to ensure accurate day difference calculation
         date1.setUTCHours(0, 0, 0, 0);
         date2.setUTCHours(0, 0, 0, 0);
         
@@ -147,8 +243,12 @@
     }
     
     function loadLocalJobs() {
-      // Load jobs saved by job-entry.html
+      // Load all jobs from local storage
       return JSON.parse(localStorage.getItem('sv_jobs') || '[]');
+    }
+
+    function saveLocalJobs(jobs) {
+        localStorage.setItem('sv_jobs', JSON.stringify(jobs));
     }
     
     function getStatusClass(status) {
@@ -159,7 +259,60 @@
         default: return 'status-pending';
       }
     }
-    
+
+    // --- Modal Functions ---
+    function openModal(id) {
+        document.getElementById(id).style.display = 'flex';
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).style.display = 'none';
+        document.getElementById('modalError').style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+        const modal = document.getElementById('statusModal');
+        if (event.target === modal) {
+            closeModal('statusModal');
+        }
+    }
+
+    function togglePaymentFields(status) {
+        const paymentContainer = document.getElementById('paymentCheckContainer');
+        const paymentReceivedSelect = document.getElementById('paymentReceived');
+        
+        if (status === 'Completed') {
+            paymentContainer.style.display = 'block';
+            paymentReceivedSelect.setAttribute('required', 'required');
+        } else {
+            paymentContainer.style.display = 'none';
+            paymentReceivedSelect.removeAttribute('required');
+            paymentReceivedSelect.value = ''; // Reset value
+        }
+    }
+
+    function updateJobStatus(activeJobIndex) {
+        const job = activeJobsCache[activeJobIndex];
+        if (!job) return;
+
+        // Populate Modal Fields
+        document.getElementById('modalJobId').textContent = job.id;
+        document.getElementById('modalCustomerName').textContent = job.customer;
+        
+        // Use the index of the job in the ACTIVE JOBS array for lookup in saveStatusUpdate
+        document.getElementById('modalJobIndex').value = activeJobIndex; 
+        document.getElementById('modalOriginalJobId').value = job.id; 
+
+        // Set current status as default selected option
+        document.getElementById('newStatus').value = job.status;
+        
+        // Display pending amount and check conditional fields
+        document.getElementById('modalPendingAmount').textContent = job.pendingAmount;
+        togglePaymentFields(job.status); 
+
+        openModal('statusModal');
+    }
+
     // --- Main Rendering Logic ---
     function renderJobQueue() {
       const allJobs = loadLocalJobs();
@@ -171,8 +324,9 @@
       
       const today = new Date().toISOString().slice(0, 10);
       const activeJobs = allJobs.filter(job => job.status !== 'Completed'); 
+      activeJobsCache = activeJobs; // Store the active job list for modal lookup
 
-      let totalPendingTATDays = 0; // Tracks accumulated overdue days across all jobs
+      let totalPendingTATDays = 0; 
       let overdueCount = 0;
       const managerTATSummary = {}; 
       
@@ -185,27 +339,22 @@
             return new Date(a.orderDate) - new Date(b.orderDate);
         });
 
-        activeJobs.forEach(job => {
-            // Target Date is implicitly Order Date as TAT is 0 days (Same Day)
+        activeJobs.forEach((job, index) => {
             job.targetCompletionDate = job.orderDate; 
             
-            let pendingTATDays = 0; // The number to display
+            let pendingTATDays = 0; 
             let tatClass = 'tat-ontime';
-            let displayValue = 0; // Default to 0 days remaining
+            let displayValue = 0; 
 
             if (job.status !== 'Hold') { 
-                 // Calculate difference: Target Date (Order Date) minus Today's Date.
-                 // If the result is negative, the job is overdue.
                  const diff = dateDiffInDays(job.targetCompletionDate, today); 
 
                  if (diff < 0) {
-                     // Job is overdue. The number is the absolute days past target.
                      pendingTATDays = Math.abs(diff); 
                      tatClass = 'tat-overdue';
                      overdueCount++;
                      displayValue = pendingTATDays;
                  } else {
-                     // Job is on time (or due today).
                      pendingTATDays = 0;
                      displayValue = pendingTATDays;
                  }
@@ -219,7 +368,7 @@
                 totalPendingTATDays += pendingTATDays;
             }
 
-            // Update Manager TAT Summary (only count overdue days)
+            // Update Manager TAT Summary
             const manager = job.assignedPerson;
             if (!managerTATSummary[manager]) {
                 managerTATSummary[manager] = { pendingJobs: 0, totalPendingTAT: 0 };
@@ -232,13 +381,15 @@
             
             const row = document.createElement('tr');
             
-            // The table headers only show required data:
+            // Make Status column clickable and pass the INDEX in the activeJobsCache
             row.innerHTML = `
               <td>#${job.id}</td>
               <td style="text-align: left;">${job.customer}</td>
               <td>${job.assignedPerson}</td>
-              <td class="${getStatusClass(job.status)}">${job.status}</td>
-              <td>${DEFAULT_TAT_DAYS}</td> <td><span class="${tatClass}">${displayValue}</span></td> <td>₹ ${job.amount}</td>
+              <td class="${getStatusClass(job.status)}" onclick="updateJobStatus(${index})">${job.status}</td>
+              <td>${DEFAULT_TAT_DAYS}</td> 
+              <td><span class="${tatClass}">${displayValue}</span></td> 
+              <td>₹ ${job.amount}</td>
               <td>₹ ${job.pendingAmount}</td>
             `;
             tbody.appendChild(row);
@@ -260,7 +411,6 @@
           managerNames.forEach(manager => {
               const summary = managerTATSummary[manager];
               const summaryRow = document.createElement('tr');
-              // Display only the number for totalPendingTAT
               summaryRow.innerHTML = `
                   <td>${manager}</td>
                   <td>${summary.pendingJobs}</td>
@@ -270,6 +420,82 @@
           });
       }
     }
+    
+    // --- Submission Logic for Status Update ---
+    document.getElementById('statusUpdateForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const form = e.target;
+        const newStatus = form.newStatus.value;
+        const paymentReceived = form.paymentReceived.value;
+        const activeJobIndex = parseInt(form.modalJobIndex.value);
+        const originalJobId = form.modalOriginalJobId.value;
+        const modalError = document.getElementById('modalError');
+        modalError.style.display = 'none';
+
+        const jobToUpdate = activeJobsCache[activeJobIndex];
+        const pendingAmount = parseFloat(jobToUpdate.pendingAmount) || 0;
+
+        // 1. COMPULSORY CHECK: If status is 'Completed' and there's a pending amount
+        if (newStatus === 'Completed' && pendingAmount > 0) {
+            if (!paymentReceived) {
+                modalError.textContent = '❌ You must select "Pending Amount Received (Yes/No)" to complete this job.';
+                modalError.style.display = 'block';
+                return;
+            }
+            if (paymentReceived === 'No') {
+                modalError.textContent = '❌ Cannot mark as Completed. Pending amount must be collected (Yes) or the job status must remain non-completed.';
+                modalError.style.display = 'block';
+                return;
+            }
+        }
+
+        // 2. Find the job in the ALL jobs list (since the index is from the filtered activeJobsCache)
+        const allJobs = loadLocalJobs();
+        const globalJobIndex = allJobs.findIndex(job => job.id === originalJobId);
+
+        if (globalJobIndex === -1) {
+            modalError.textContent = '❌ Error: Job not found in global storage.';
+            modalError.style.display = 'block';
+            return;
+        }
+
+        // 3. Apply updates
+        const updatedJob = allJobs[globalJobIndex];
+        updatedJob.status = newStatus;
+
+        // If completed and payment was received (which is forced by validation)
+        if (newStatus === 'Completed' && pendingAmount > 0 && paymentReceived === 'Yes') {
+            updatedJob.advance = (parseFloat(updatedJob.advance) + pendingAmount).toFixed(0);
+            updatedJob.pendingAmount = '0';
+        }
+        
+        // 4. Save to Local Storage
+        allJobs[globalJobIndex] = updatedJob;
+        saveLocalJobs(allJobs);
+
+        // 5. Dispatch to GitHub (For permanent persistence)
+        let success = true;
+        try {
+            if (typeof saveJobToGitHub === 'function') {
+                 // Send the updated job object
+                success = await saveJobToGitHub(updatedJob); 
+            } else {
+                console.warn("saveJobToGitHub function not found. Job saved locally only.");
+            }
+        } catch (e) {
+            console.error("Error during GitHub dispatch:", e);
+            success = false;
+        }
+
+        // 6. Re-render queue and close modal
+        renderJobQueue();
+        closeModal('statusModal');
+        
+        // Optional: Provide feedback (console or temporary page alert)
+        console.log(`Job #${updatedJob.id} updated to status: ${newStatus}. GitHub success: ${success}`);
+    });
+
 
     // Initialize the page
     document.addEventListener("DOMContentLoaded", renderJobQueue);
