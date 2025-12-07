@@ -143,6 +143,9 @@
         .utility-bar {
             text-align: center;
             margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
         }
         
         /* Special styles for the draft watermark */
@@ -161,8 +164,7 @@
 </head>
 <body>
     <div class="utility-bar">
-        <button class="btn" onclick="shareAsJpeg()">Download Invoice (JPEG)</button>
-        <a href="javascript:void(0);" class="btn secondary" onclick="window.location.href='job-queue.html';">Back to Job Queue</a>
+        <button class="btn secondary" onclick="openImageInNewTab()">View Image</button> <button class="btn" onclick="shareInvoice()">Share / Download (JPEG)</button> <a href="javascript:void(0);" class="btn secondary" onclick="window.location.href='job-queue.html';">Back to Job Queue</a>
     </div>
 
     <div class="invoice-container" id="invoiceContent">
@@ -240,7 +242,7 @@
     <script src="../script.js"></script>
     <script>
         
-        // FIX 1: Helper function to safely extract number from a string (handles currency symbols, etc.)
+        // Helper function to safely extract number from a string (handles currency symbols, etc.)
         function cleanAndParseAmount(amountStr) {
             if (!amountStr) return 0;
             // Remove common currency symbols (₹, $, etc.) and commas, then parse
@@ -248,46 +250,102 @@
             return parseFloat(cleaned) || 0;
         }
 
-        function shareAsJpeg() {
+        // --- Core Image Generation Logic ---
+        async function generateInvoiceCanvas() {
             if (typeof html2canvas === 'undefined') {
-                alert("Image conversion is currently disabled. The 'html2canvas' script library failed to load.");
-                return;
+                alert("Image conversion is unavailable. The 'html2canvas' script library failed to load.");
+                return null;
             }
 
             const element = document.getElementById('invoiceContent');
             const utilityBar = document.querySelector('.utility-bar');
             const watermark = document.getElementById('invoiceDraftWatermark');
-
-            // Temporarily hide the utility bar and adjust watermark for screenshot
+            const jobId = document.getElementById('jobId').textContent;
+            
+            // Temporarily hide elements for clean screenshot
             utilityBar.style.display = 'none';
             watermark.style.color = 'rgba(255, 0, 0, 0.15)'; 
 
-            // Use html2canvas to capture the content
-            html2canvas(element, { 
-                scale: 2, // Higher scale for better quality JPEG
-                allowTaint: true,
-                useCORS: true // Allow cross-origin images if any are present
-            }).then(canvas => {
-                // Restore the hidden elements immediately
-                utilityBar.style.display = 'block';
+            try {
+                const canvas = await html2canvas(element, { 
+                    scale: 2, // Higher scale for better quality JPEG
+                    allowTaint: true,
+                    useCORS: true,
+                    logging: false // Disable console logging for cleaner output
+                });
+                
+                // Restore elements immediately after capture
+                utilityBar.style.display = 'flex';
                 watermark.style.color = 'rgba(255, 0, 0, 0.1)'; 
 
-                // Convert canvas to base64 JPEG
-                const image = canvas.toDataURL('image/jpeg', 0.9);
-                
-                // Trigger download
-                const link = document.createElement('a');
-                link.href = image;
-                link.download = `Invoice_Job_${document.getElementById('jobId').textContent}.jpg`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }).catch(error => {
+                return canvas;
+
+            } catch(error) {
                 console.error('Error generating image:', error);
                 alert('An error occurred during image generation.');
-            });
+                // Ensure elements are restored even on failure
+                utilityBar.style.display = 'flex';
+                watermark.style.color = 'rgba(255, 0, 0, 0.1)'; 
+                return null;
+            }
         }
         
+        // --- Sharing Function (Web Share API + Download Fallback) ---
+        async function shareInvoice() {
+            const canvas = await generateInvoiceCanvas();
+            if (!canvas) return;
+
+            const jobId = document.getElementById('jobId').textContent;
+            const fileName = `Invoice_Job_${jobId}.jpg`;
+            const imageURL = canvas.toDataURL('image/jpeg', 0.9);
+            
+            // 1. Attempt to use Web Share API (Best for WhatsApp/Email sharing)
+            if (navigator.share && navigator.canShare) {
+                try {
+                    // Convert Data URL to Blob for sharing (required for files)
+                    const blob = await (await fetch(imageURL)).blob();
+                    const file = new File([blob], fileName, { type: 'image/jpeg' });
+
+                    if (navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            title: `Siddhivinayak Digital - Invoice #${jobId} (DRAFT)`,
+                            text: `Please find the draft invoice for Job #${jobId}.`,
+                            files: [file],
+                        });
+                        console.log('Shared successfully via Web Share API');
+                        return;
+                    }
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        console.error('Web Share API failed, falling back to download:', error);
+                    } else {
+                         // User cancelled share
+                         return; 
+                    }
+                }
+            }
+
+            // 2. Fallback to standard download (if Web Share fails or is unavailable)
+            const link = document.createElement('a');
+            link.href = imageURL;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            alert("Download initiated. If this fails, please use the 'View Image' button to save/share manually.");
+        }
+        
+        // --- View Image in New Tab (Manual Save/Share) ---
+        async function openImageInNewTab() {
+            const canvas = await generateInvoiceCanvas();
+            if (!canvas) return;
+            
+            const imageURL = canvas.toDataURL('image/jpeg', 0.9);
+            window.open(imageURL, '_blank');
+        }
+
+
+        // --- Data Loading Logic ---
         function loadInvoiceData() {
             const params = new URLSearchParams(window.location.search);
             const jobId = params.get('jobId');
@@ -320,19 +378,16 @@
             document.getElementById('orderDate').textContent = job.orderDate;
             document.getElementById('urgency').textContent = job.urgency;
             
-            // FIX 1: Safely parse and calculate financials
+            // Safely parse and calculate financials
             const amount = cleanAndParseAmount(job.amount);
             const advance = cleanAndParseAmount(job.advance);
             const balance = cleanAndParseAmount(job.pendingAmount);
-            
-            // It's safer to re-calculate the balance to ensure consistency, but we'll use the stored pending amount if it seems right.
-            const calculatedBalance = Math.max(0, amount - advance); 
 
             // Display values
             document.getElementById('jobAmount').textContent = amount.toFixed(0);
             document.getElementById('subtotal').textContent = amount.toFixed(0);
             document.getElementById('advancePaid').textContent = advance.toFixed(0);
-            document.getElementById('balanceDue').textContent = balance.toFixed(0); // Use stored pending amount
+            document.getElementById('balanceDue').textContent = balance.toFixed(0);
         }
 
         document.addEventListener("DOMContentLoaded", loadInvoiceData);
