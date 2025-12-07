@@ -16,14 +16,42 @@
         align-items: center;
         padding: 10px 15px;
         border-bottom: 1px solid #eee;
-        font-size: 16px;
+        font-size: 14px;
     }
     .manager-list li:last-child {
         border-bottom: none;
     }
     .manager-list li span {
-        font-weight: 600;
+        font-weight: 500;
+        min-width: 100px;
     }
+    .manager-list li .user-name {
+        font-weight: 700;
+        min-width: 150px;
+    }
+    .manager-list li .password-display {
+        background: #fff3cd; /* Light yellow background for passwords */
+        color: #856404;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 13px;
+        min-width: 100px;
+    }
+    .manager-list li .role-tag {
+        font-size: 11px;
+        padding: 3px 6px;
+        border-radius: 4px;
+        color: white;
+        text-transform: uppercase;
+        font-weight: 700;
+        min-width: 50px;
+        text-align: center;
+    }
+    .role-admin { background: #dc3545; }
+    .role-manager { background: #ffc107; color: #343a40; }
+    .role-viewer { background: #007bff; }
+
     .manager-list li .delete-btn {
         background: #f44336;
         color: white;
@@ -32,6 +60,7 @@
         border-radius: 6px;
         cursor: pointer;
         font-size: 12px;
+        margin-left: 10px;
     }
     .user-display {
         background: #e9f2ff; 
@@ -76,28 +105,50 @@
     <main class="main">
       <div class="page-header">
         <div>
-          <div class="page-title">Settings & Managers</div>
-          <div class="page-sub">Manage the list of users assigned to jobs.</div>
+          <div class="page-title">User & Access Management</div>
+          <div class="page-sub">Add new users and manage their login credentials and roles.</div>
         </div>
       </div>
 
       <div class="grid-3">
         <div class="card">
-            <h3>Add New Manager</h3>
+            <h3>Add New User/Manager</h3>
             <form id="addManagerForm">
                 <div class="field">
-                    <label for="newManagerName">Manager Name *</label>
-                    <input type="text" id="newManagerName" required placeholder="e.g., Pooja or Ganesh">
+                    <label for="newUserName">User's Full Name *</label>
+                    <input type="text" id="newUserName" required placeholder="e.g., Pooja Singh">
                 </div>
-                <button type="submit" class="btn" style="width: 100%; margin-top: 10px;">Add Manager</button>
+                <div class="field">
+                    <label for="newUserUsername">Login Username *</label>
+                    <input type="text" id="newUserUsername" required placeholder="e.g., pooja.s">
+                </div>
+                <div class="field">
+                    <label for="newUserPassword">Password *</label>
+                    <input type="text" id="newUserPassword" required placeholder="e.g., pass123">
+                </div>
+                <div class="field">
+                    <label for="newUserRole">Access Role *</label>
+                    <select id="newUserRole" required>
+                        <option value="manager">Manager (Job Entry, Queue, Expenses)</option>
+                        <option value="viewer">Viewer (Dashboard, Queue, Customers)</option>
+                        <option value="admin">Admin (All Access)</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn" style="width: 100%; margin-top: 10px;">Add User</button>
             </form>
         </div>
 
         <div class="card" style="grid-column: span 2;">
-            <h3>Current Active Managers</h3>
+            <h3>Current Active Users & Credentials</h3>
+            <div style="display: flex; justify-content: space-between; padding: 0 15px 10px;">
+                <span style="font-weight: 700; min-width: 150px;">Name (Username)</span>
+                <span style="font-weight: 700; min-width: 100px;">Password</span>
+                <span style="font-weight: 700; min-width: 50px; text-align: center;">Role</span>
+                <span style="font-weight: 700;">Action</span>
+            </div>
             <ul id="managerList" class="manager-list">
                 </ul>
-            <p style="font-size: 12px; color: var(--muted); margin-top: 15px;">The manager list is shared across all shop PCs.</p>
+            <p style="font-size: 12px; color: var(--muted); margin-top: 15px;">Users with the 'manager' role are automatically added to the Job Assignment dropdown.</p>
         </div>
       </div>
     </main>
@@ -105,98 +156,113 @@
 
   <script src="../script.js"></script>
   <script>
-    // These constants/functions are expected to be available from script.js
-    const MANAGER_STORAGE_KEY = 'sv_managers'; 
-    const getManagers = window.getManagers;
-    const ACCESS_PERMISSIONS = window.ACCESS_PERMISSIONS; // For access checks
+    // Get the utility functions from script.js
+    const ACCESS_PERMISSIONS = window.ACCESS_PERMISSIONS || {}; 
+    const USER_CREDENTIALS_KEY = 'sv_user_credentials';
+    const getUserCredentials = window.getUserCredentials;
+    const saveUserCredentials = window.saveUserCredentials;
+    const initManagers = window.initManagers; // To refresh the manager list after changes
+
+    const USER_ROLE = localStorage.getItem("sv_user_role");
     
     // --- Rendering Logic ---
-    function renderManagerList() {
-        const managers = getManagers();
+    function renderUserList() {
+        const users = getUserCredentials();
         const listEl = document.getElementById('managerList');
         listEl.innerHTML = '';
         
-        managers.forEach(manager => {
+        users.forEach(user => {
             const li = document.createElement('li');
+            const isAdmin = user.username === 'admin';
+
             li.innerHTML = `
-                <span>${manager}</span>
-                ${manager.toLowerCase() !== 'admin user' ? 
-                    `<button class="delete-btn" onclick="deleteManager('${manager}')">Delete</button>` 
-                    : '<span style="color:#f44336; font-size: 12px;">(System Default)</span>'
+                <span class="user-name">${user.name} (${user.username})</span>
+                <span class="password-display">${user.password}</span>
+                <span class="role-tag role-${user.role}">${user.role}</span>
+                ${!isAdmin ? 
+                    `<button class="delete-btn" onclick="deleteUser('${user.username}')">Delete</button>` 
+                    : '<span style="color:var(--muted); font-size: 12px; margin-left: 10px;">(Primary Admin)</span>'
                 }
             `;
             listEl.appendChild(li);
         });
         
-        if (managers.length === 0) {
-             listEl.innerHTML = '<li>No managers found. Please add the first manager.</li>';
+        if (users.length === 0) {
+             listEl.innerHTML = '<li>No users found. Please add the first user.</li>';
         }
     }
 
-    // --- Add Manager Logic ---
+    // --- Add User Logic ---
     document.getElementById('addManagerForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        const inputEl = document.getElementById('newManagerName');
-        let newName = inputEl.value.trim();
+        const form = e.target;
         
-        if (!newName) return;
+        const name = form.newUserName.value.trim();
+        const username = form.newUserUsername.value.trim().toLowerCase();
+        const password = form.newUserPassword.value;
+        const role = form.newUserRole.value;
         
-        // Capitalize first letter for consistency
-        newName = newName.charAt(0).toUpperCase() + newName.slice(1);
+        if (!name || !username || !password || !role) return;
 
-        let managers = getManagers();
+        let users = getUserCredentials();
         
-        if (managers.map(m => m.toLowerCase()).includes(newName.toLowerCase())) {
-            alert(`Manager "${newName}" already exists.`);
+        if (users.map(u => u.username).includes(username)) {
+            alert(`User with username "${username}" already exists. Use a different username.`);
             return;
         }
 
-        managers.push(newName);
-        localStorage.setItem(MANAGER_STORAGE_KEY, JSON.stringify(managers));
-        
-        inputEl.value = '';
-        renderManagerList();
-        alert(`Manager "${newName}" added.`);
+        const newUser = { name, username, password, role };
+        users.push(newUser);
+        saveUserCredentials(users);
+        initManagers(); // Update the job assignment list
+
+        form.reset();
+        renderUserList();
+        alert(`User "${name}" (${role}) added successfully.`);
     });
     
-    // --- Delete Manager Logic ---
-    function deleteManager(name) {
-        if (name.toLowerCase() === 'admin user') {
-            alert('The "Admin User" manager cannot be deleted.');
+    // --- Delete User Logic ---
+    function deleteUser(username) {
+        if (username === 'admin') {
+            alert('The primary "admin" user cannot be deleted.');
             return;
         }
         
-        if (!confirm(`Are you sure you want to remove manager "${name}"?`)) {
+        if (!confirm(`Are you sure you want to remove user "${username}"? This action cannot be undone.`)) {
             return;
         }
 
-        let managers = getManagers();
-        managers = managers.filter(m => m !== name);
-        localStorage.setItem(MANAGER_STORAGE_KEY, JSON.stringify(managers));
+        let users = getUserCredentials();
+        users = users.filter(u => u.username !== username);
+        saveUserCredentials(users);
+        initManagers(); // Update the job assignment list
         
-        renderManagerList();
-        alert(`Manager "${name}" removed.`);
+        renderUserList();
+        alert(`User "${username}" removed.`);
     }
 
     // --- Initialization & Role-Based Access Filter ---
     document.addEventListener("DOMContentLoaded", function() {
         checkAuth(); // This also runs checkAccess()
-        renderManagerList();
+
+        // 1. Initial Render
+        renderUserList();
         
-        // Hide sidebar links based on role access
-        const userRole = localStorage.getItem("sv_user_role");
-        const allowedPages = ACCESS_PERMISSIONS[userRole] || [];
+        // 2. Hide sidebar links based on role access
+        const allowedPages = ACCESS_PERMISSIONS[USER_ROLE] || [];
         
         document.querySelectorAll('.sidebar .nav-link').forEach(link => {
-            const pageName = link.getAttribute('href').split('/').pop();
-            if (!allowedPages.includes(pageName)) {
+            const href = link.getAttribute('href');
+            const pageName = href ? href.split('/').pop() : '';
+            
+            if (pageName && !allowedPages.includes(pageName)) {
                 link.style.display = 'none';
             }
         });
     });
 
-    // Make deleteManager globally accessible for inline HTML calls
-    window.deleteManager = deleteManager;
+    // Make functions globally accessible for inline HTML calls
+    window.deleteUser = deleteUser;
   </script>
 </body>
 </html>
