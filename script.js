@@ -170,8 +170,6 @@ function checkAccess() {
         if (currentPage !== 'dashboard.html') {
              window.location.href = `${BASE}/pages/dashboard.html`;
         } else {
-             // If they are on dashboard and shouldn't be, log them out or show an empty screen
-             // For now, let's keep them logged in but show no content (handled by dashboard.html itself)
              console.warn("User is on dashboard but has no dashboard permission.");
         }
     }
