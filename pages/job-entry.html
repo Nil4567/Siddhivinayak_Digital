@@ -31,7 +31,7 @@
       <div class="page-header">
         <div>
           <div class="page-title">New Job Entry</div>
-          <div class="page-sub">Enter details for a new print or design request</div>
+          <div class="page-sub">Enter details for a new request</div>
         </div>
       </div>
 
@@ -64,20 +64,19 @@
 
           <div class="form-row">
             <div class="field">
-              <label for="jobType">Job Type</label>
-              <select id="jobType" name="jobType" required>
-                <option value="">Select Type...</option>
-                <option value="Color Print">Color Print</option>
-                <option value="B/W Print">B/W Print</option>
-                <option value="Design">Design</option>
-                <option value="Binding">Binding</option>
-                <option value="Lamination">Lamination</option>
-                <option value="Scanning">Scanning</option>
-              </select>
-            </div>
-            <div class="field">
               <label for="amount">Job Amount (Rs.)</label>
               <input type="number" id="amount" name="amount" min="0" required>
+            </div>
+            <div class="field">
+              <label for="assignedPerson">Assigned Person</label>
+              <select id="assignedPerson" name="assignedPerson">
+                <option value="">Select Person (Optional)...</option>
+                <option value="Rajesh (Printing)">Rajesh (Printing)</option>
+                <option value="Sneha (Design)">Sneha (Design)</option>
+                <option value="Karan (Finishing)">Karan (Finishing)</option>
+                <option value="Self">Self</option>
+                <option value="Unassigned">Unassigned</option>
+              </select>
             </div>
           </div>
           
@@ -104,22 +103,6 @@
             </div>
           </div>
           
-          <div class="form-row">
-            <div class="field">
-              <label for="assignedDept">Assigned Department</label>
-              <select id="assignedDept" name="assignedDept">
-                <option value="">Select Department (Optional)...</option>
-                <option value="Printing">Printing</option>
-                <option value="Designing">Designing</option>
-                <option value="Finishing">Finishing (Binding/Lamination)</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="expectedDelivery">Expected Delivery Date</label>
-              <input type="date" id="expectedDelivery" name="expectedDelivery" required>
-            </div>
-          </div>
-
           <button type="submit" class="btn" style="width:100%; margin-top:15px; padding:12px;">Submit New Job</button>
         </form>
       </div>
@@ -136,11 +119,12 @@
     // 1. Function to create dummy jobs if local storage is empty
     function createDummyJobs() {
         const dummyJobs = [
-            { id: "1001", customer: "Priya Sharma", customerEmail: "priya@example.com", contact: "9876543210", type: "Color Print", description: "50 copies of brochure.", department: "Printing", assignedTo: "Rajesh", urgency: "Very Urgent", deliveryDate: "2025-12-08", amount: "550", advance: "200", status: 'Working', createdAt: new Date(Date.now() - 3600000).toISOString(), createdBy: "Admin User" },
-            { id: "1002", customer: "Alok Industries", customerEmail: "alok@ind.com", contact: "9912345678", type: "Design", description: "Design new business card layout.", department: "Designing", assignedTo: "Sneha", urgency: "Normal", deliveryDate: "2025-12-10", amount: "1200", advance: "500", status: 'Pending', createdAt: new Date(Date.now() - 7200000).toISOString(), createdBy: "Staff" },
-            { id: "1003", customer: "Local Cafe", customerEmail: "cafe@local.in", contact: "8888877777", type: "Binding", description: "Bind 20 menus (Spiral)", department: "Finishing", assignedTo: "Karan", urgency: "Low", deliveryDate: "2025-12-15", amount: "300", advance: "0", status: 'Hold', createdAt: new Date(Date.now() - 10800000).toISOString(), createdBy: "Admin User" },
-            { id: "1004", customer: "Ravi K.", customerEmail: "ravi@home.net", contact: "7777711111", type: "Lamination", description: "Laminate 10 certificates.", department: "Finishing", assignedTo: "Karan", urgency: "Urgent", deliveryDate: "2025-12-09", amount: "150", advance: "150", status: 'Completed', createdAt: new Date(Date.now() - 14400000).toISOString(), createdBy: "Staff" },
-            { id: "1005", customer: "College Project", customerEmail: "project@stud.org", contact: "9000055555", type: "B/W Print", description: "500 pages project report print.", department: "Printing", assignedTo: "Rajesh", urgency: "Normal", deliveryDate: "2025-12-12", amount: "800", advance: "300", status: 'Pending', createdAt: new Date(Date.now() - 18000000).toISOString(), createdBy: "Admin User" },
+            // Dummy entries updated to reflect form changes (no type, no delivery date)
+            { id: "1001", customer: "Priya Sharma", customerEmail: "priya@example.com", contact: "9876543210", description: "50 copies of brochure.", assignedPerson: "Rajesh (Printing)", urgency: "Very Urgent", amount: "550", advance: "200", status: 'Working', createdAt: new Date(Date.now() - 3600000).toISOString(), createdBy: "Admin User" },
+            { id: "1002", customer: "Alok Industries", customerEmail: "alok@ind.com", contact: "9912345678", description: "Design new business card layout.", assignedPerson: "Sneha (Design)", urgency: "Normal", amount: "1200", advance: "500", status: 'Pending', createdAt: new Date(Date.now() - 7200000).toISOString(), createdBy: "Staff" },
+            { id: "1003", customer: "Local Cafe", customerEmail: "cafe@local.in", contact: "8888877777", description: "Bind 20 menus (Spiral)", assignedPerson: "Karan (Finishing)", urgency: "Low", amount: "300", advance: "0", status: 'Hold', createdAt: new Date(Date.now() - 10800000).toISOString(), createdBy: "Admin User" },
+            { id: "1004", customer: "Ravi K.", customerEmail: "ravi@home.net", contact: "7777711111", description: "Laminate 10 certificates.", assignedPerson: "Karan (Finishing)", urgency: "Urgent", amount: "150", advance: "150", status: 'Completed', createdAt: new Date(Date.now() - 14400000).toISOString(), createdBy: "Staff" },
+            { id: "1005", customer: "College Project", customerEmail: "project@stud.org", contact: "9000055555", description: "500 pages project report print.", assignedPerson: "Rajesh (Printing)", urgency: "Normal", amount: "800", advance: "300", status: 'Pending', createdAt: new Date(Date.now() - 18000000).toISOString(), createdBy: "Admin User" },
         ];
         localStorage.setItem('sv_jobs', JSON.stringify(dummyJobs));
         console.log("5 dummy jobs created for testing.");
@@ -157,7 +141,6 @@
 
         // Generate the next Job ID based on the highest existing ID
         const lastJob = existingJobs.length > 0 ? existingJobs[existingJobs.length - 1] : null;
-        // Use a safe ID generation method: if no jobs, start at 1001; otherwise, increment the last ID.
         const nextId = lastJob && lastJob.id ? parseInt(lastJob.id) + 1 : 1001;
         const jobId = String(nextId);
 
@@ -187,24 +170,23 @@
           return;
       }
       
-      // Get the final ID displayed in the read-only field
       const jobId = form.jobId.value;
 
       // 4. Construct the job data object
       const newJob = {
         id: jobId,
         customer: form.customerName.value,
-        customerEmail: form.customerEmail.value, // NEW: Email
+        customerEmail: form.customerEmail.value || 'N/A',
         contact: form.customerContact.value,
-        type: form.jobType.value,
+        // Removed: type field
         description: form.jobDescription.value,
-        department: form.assignedDept.value || 'Unassigned', // Now optional
-        assignedTo: form.assignedTo.value || 'Unassigned',
-        urgency: form.urgency.value, // UPDATED: New options used
-        deliveryDate: form.expectedDelivery.value,
-        amount: form.amount.value, // NEW: Amount (Rs.)
-        advance: form.advance.value || '0', // NEW: Advance Received (Rs.)
-        status: 'Pending', // Initial status
+        // Updated: Department field logic now uses Assigned Person
+        assignedPerson: form.assignedPerson.value || 'Unassigned',
+        urgency: form.urgency.value,
+        // Removed: deliveryDate field
+        amount: form.amount.value,
+        advance: form.advance.value || '0',
+        status: 'Pending',
         createdAt: new Date().toISOString(),
         createdBy: localStorage.getItem('username') || 'Staff'
       };
@@ -216,7 +198,7 @@
       // 6. Dispatch to GitHub (using the function from script.js)
       let success = false;
       try {
-          // saveJobToGitHub must be defined in script.js
+          // This calls the function from script.js
           success = await saveJobToGitHub(newJob); 
       } catch (e) {
           console.error("Error during GitHub dispatch:", e);
