@@ -1,4 +1,223 @@
-<script src="../script.js"></script>
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Settings — Siddhivinayak Digital</title>
+  <link rel="stylesheet" href="../styles/internal.css">
+  <style>
+    /* Settings-specific CSS for the new permission table */
+    .permission-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        margin-top: 15px;
+    }
+    .permission-table th, .permission-table td {
+        padding: 10px;
+        border: 1px solid #ddd;
+        text-align: left;
+    }
+    .permission-table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        text-align: center;
+    }
+    .permission-table td:first-child {
+        text-align: left;
+        font-weight: 600;
+        width: 180px;
+    }
+    .permission-table td {
+        text-align: center;
+    }
+    .permission-table label {
+        cursor: pointer;
+    }
+    /* User List Styling */
+    .manager-list {
+        list-style: none;
+        padding: 0;
+    }
+    .manager-list li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 15px;
+        border-bottom: 1px solid #eee;
+        font-size: 14px;
+    }
+    .manager-list li:hover {
+        background-color: #f9f9f9;
+        cursor: pointer;
+    }
+    .manager-list .user-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex-grow: 1;
+    }
+    .manager-list .user-info .user-name {
+        font-weight: 700;
+        color: var(--primary);
+    }
+    .manager-list .password-display {
+        background: #fff3cd; 
+        color: #856404;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 13px;
+    }
+    .manager-list .role-tag {
+        font-size: 11px;
+        padding: 3px 6px;
+        border-radius: 4px;
+        color: white;
+        text-transform: uppercase;
+        font-weight: 700;
+    }
+    .role-admin { background: #dc3545; }
+    .role-manager { background: #ffc107; color: #343a40; }
+    .role-viewer { background: #007bff; }
+    .role-custom { background: #6c757d; } /* New color for custom role */
+
+    .manager-list .edit-btn {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+    }
+    .permissions-modal {
+        display: none;
+        position: fixed;
+        z-index: 100;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4);
+    }
+    .modal-content {
+        background-color: #fefefe;
+        margin: 10% auto;
+        padding: 20px;
+        border-radius: 8px;
+        width: 80%;
+        max-width: 900px;
+        box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+    }
+    .modal-close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+    }
+    .modal-close:hover, .modal-close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">Siddhivinayak Digital</div>
+    <div class="controls">
+        <button class="btn secondary" onclick="history.back()">Back</button>
+        <a href="../index.html" class="btn secondary">Home</a>
+        <div class="user-display">Logged in as: <span id="sv_user_name"></span></div>
+        <span id="liveTime"></span>
+        <button class="btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand-small">Control Panel</div>
+      <a href="dashboard.html" class="nav-link">Dashboard</a>
+      <a href="job-entry.html" class="nav-link">New Job Entry</a>
+      <a href="job-queue.html" class="nav-link">Job Queue</a>
+      <a href="customers.html" class="nav-link">Customers</a>
+      <a href="expenses.html" class="nav-link">Daily Expenses</a>
+      <a href="reports.html" class="nav-link">Reports</a>
+      <a href="settings.html" class="nav-link active">Settings</a>
+    </aside>
+
+    <main class="main">
+      <div class="page-header">
+        <div>
+          <div class="page-title">User & Access Management</div>
+          <div class="page-sub">Add new users and manage their login credentials and permissions.</div>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="card">
+            <h3>Add New User</h3>
+            <form id="addManagerForm">
+                <div class="field">
+                    <label for="newUserName">User's Full Name *</label>
+                    <input type="text" id="newUserName" required placeholder="e.g., Pooja Singh">
+                </div>
+                <div class="field">
+                    <label for="newUserUsername">Login Username *</label>
+                    <input type="text" id="newUserUsername" required placeholder="e.g., pooja.s">
+                </div>
+                <div class="field">
+                    <label for="newUserPassword">Password *</label>
+                    <input type="text" id="newUserPassword" required placeholder="e.g., pass123">
+                </div>
+                <div class="field">
+                    <label for="newUserRole">Access Template *</label>
+                    <select id="newUserRole" required>
+                        <option value="manager">Manager Template</option>
+                        <option value="viewer">Viewer Template</option>
+                        <option value="admin">Admin Template</option>
+                        <option value="custom">Custom Permissions (Requires Admin to Set)</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn" style="width: 100%; margin-top: 10px;">Add User</button>
+            </form>
+        </div>
+
+        <div class="card" style="grid-column: span 2;">
+            <h3>Current Active Users & Credentials</h3>
+            <ul id="managerList" class="manager-list">
+                </ul>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="permissionsModal" class="permissions-modal">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeModal()">&times;</span>
+        <h3 id="modalUserName">Edit Permissions for User</h3>
+        <p id="modalUserInfo" style="font-size: 14px; color: var(--muted); margin-bottom: 20px;"></p>
+        
+        <table class="permission-table">
+            <thead>
+                <tr>
+                    <th>Feature</th>
+                    <th>View (Access Link)</th>
+                    <th>Manage (Create/Update/Delete)</th>
+                    <th>Custom Action (Future)</th>
+                </tr>
+            </thead>
+            <tbody id="permissionsTableBody">
+                </tbody>
+        </table>
+        
+        <button class="btn" style="margin-top: 20px;" onclick="savePermissions()">Save Changes</button>
+        <button class="btn secondary" style="margin-top: 20px; margin-left: 10px;" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+
+  <script src="../script.js"></script>
   <script>
     const getUserCredentials = window.getUserCredentials;
     const saveUserCredentials = window.saveUserCredentials;
@@ -156,7 +375,6 @@
         const role = form.newUserRole.value;
         
         if (!name || !username || !password || !role) {
-             // Should not happen if fields are 'required' but good practice
              alert("Please fill out all required fields.");
              return;
         }
@@ -169,8 +387,8 @@
 
         // --- FIX: Ensure we use the correct ACCESS_PERMISSIONS template ---
         // If the selected role is 'custom', we default to a viewer or manager template for the initial save.
-        // If it's a standard role (admin, manager, viewer), use that template.
-        let templateKey = (role === 'custom' || !ACCESS_PERMISSIONS[role]) ? 'viewer' : role;
+        // We use the selected role if it's a standard one.
+        let templateKey = (role === 'custom' || !ACCESS_PERMISSIONS[role]) ? 'manager' : role; // Default to 'manager' or selected role
         const templatePermissions = ACCESS_PERMISSIONS[templateKey];
 
         if (!templatePermissions) {
@@ -185,7 +403,7 @@
         initManagers();
         
         form.reset();
-        renderUserList(); // Correctly render the updated list
+        renderUserList(); 
         alert(`User "${name}" (${role}) added successfully.`);
     });
     
@@ -193,9 +411,9 @@
     document.addEventListener("DOMContentLoaded", function() {
         checkAuth(); 
 
-        renderUserList(); // 1. Initial render of the user list
+        renderUserList(); 
         
-        // 2. Hide sidebar links based on user's current permissions
+        // Hide sidebar links based on user's current permissions
         const userPermissions = JSON.parse(localStorage.getItem("sv_user_permissions") || "{}");
         const features = ACCESS_PERMISSIONS.features;
 
@@ -220,3 +438,5 @@
     window.closeModal = closeModal;
     window.savePermissions = savePermissions;
   </script>
+</body>
+</html>
