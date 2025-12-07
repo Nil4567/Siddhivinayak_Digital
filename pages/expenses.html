@@ -1,32 +1,283 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Expenses - Siddhivinayak Digital</title>
-  <link rel="stylesheet" href="../style.css">
+  <meta charset="utf-8">
+  <title>Daily Expenses — Siddhivinayak Digital</title>
+  <link rel="stylesheet" href="../styles/internal.css">
+  <style>
+    .expense-form-card {
+        max-width: 600px;
+        margin-bottom: 25px;
+    }
+    .expense-form-card .form-row {
+        align-items: flex-end;
+    }
+    #expenseTable thead {
+        background: #f0f4f7;
+    }
+    #expenseTable th, #expenseTable td {
+        padding: 8px 10px;
+        font-size: 13px;
+        text-align: left;
+    }
+    #expenseTable td:nth-child(4) { /* Amount column */
+        text-align: right;
+        font-weight: 700;
+    }
+    .summary-box {
+        background: var(--accent);
+        color: white;
+        padding: 15px;
+        border-radius: 12px;
+        text-align: center;
+        margin-top: 15px;
+    }
+    .summary-box h3 {
+        margin: 0;
+        font-size: 16px;
+        opacity: 0.8;
+    }
+    .summary-box .big {
+        font-size: 32px;
+        font-weight: 900;
+        margin-top: 5px;
+    }
+  </style>
 </head>
 <body>
+  <div class="topbar">
+    <div class="brand">Siddhivinayak Digital</div>
+    <div class="controls">
+      <span id="sv_user_name"></span>
+      <span id="liveTime"></span>
+      <button class="btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
 
-<header class="topbar">Siddhivinayak Digital</header>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand-small">Control Panel</div>
+      <a href="dashboard.html" class="nav-link">Dashboard</a>
+      <a href="job-entry.html" class="nav-link">New Job Entry</a>
+      <a href="job-queue.html" class="nav-link">Job Queue</a>
+      <a href="customers.html" class="nav-link">Customers</a>
+      <a href="expenses.html" class="nav-link active">Daily Expenses</a>
+      <a href="reports.html" class="nav-link">Reports</a>
+      <a href="settings.html" class="nav-link">Settings</a>
+    </aside>
 
-<nav class="sidebar">
-  <a href="../index.html">Home</a>
-  <a href="dashboard.html">Dashboard</a>
-  <a href="job_entry.html">Job Entry</a>
-  <a href="materials.html">Materials</a>
-  <a href="customers.html">Customers</a>
-  <a href="expenses.html" class="active">Expenses</a>
-  <a href="reports.html">Reports</a>
-  <a href="monitoring.html">Monitoring</a>
-  <a href="settings.html">Settings</a>
-</nav>
+    <main class="main">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Daily Shop Expenses</div>
+          <div class="page-sub">Track all non-job related costs here (rent, supplies, salaries, etc.).</div>
+        </div>
+      </div>
 
-<main>
-  <h1 class="page-title">Expenses</h1>
-  <p>Record daily business expenses, cost of materials, and operational spending.</p>
-</main>
+      <div class="card expense-form-card">
+        <h3>Log New Expense</h3>
+        <form id="expenseEntryForm">
+            <div class="form-row">
+                <div class="field" style="max-width: 150px;">
+                    <label for="expenseDate">Date *</label>
+                    <input type="date" id="expenseDate" name="expenseDate" required>
+                </div>
+                <div class="field" style="max-width: 150px;">
+                    <label for="expenseCategory">Category *</label>
+                    <select id="expenseCategory" name="expenseCategory" required>
+                        <option value="Supplies">Supplies</option>
+                        <option value="Rent">Rent</option>
+                        <option value="Salary">Salary/Wages</option>
+                        <option value="Electricity">Electricity/Utilities</option>
+                        <option value="Maintenance">Maintenance</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="field" style="flex: 2;">
+                    <label for="expenseDescription">Description</label>
+                    <input type="text" id="expenseDescription" name="expenseDescription">
+                </div>
+                <div class="field" style="max-width: 120px;">
+                    <label for="expenseAmount">Amount (₹) *</label>
+                    <input type="number" id="expenseAmount" name="expenseAmount" required min="0" step="1">
+                </div>
+                <div class="field" style="flex: 0; margin-left: 10px;">
+                    <button type="submit" class="btn">Add</button>
+                </div>
+            </div>
+            <p id="expenseError" style="color:red; display:none;"></p>
+        </form>
+      </div>
+      
+      <div class="grid-3">
+          <div class="card">
+              <h3>Today's Expenses</h3>
+              <div class="big" id="todayExpenseTotal">₹ 0</div>
+          </div>
+          <div class="card">
+              <h3>This Month's Expenses</h3>
+              <div class="big" id="monthExpenseTotal">₹ 0</div>
+          </div>
+          <div class="card" style="background: #ffebee;">
+              <h3>YTD Total Expenses</h3>
+              <div class="big" id="ytdExpenseTotal">₹ 0</div>
+          </div>
+      </div>
 
-<script src="../script.js"></script>
+      <div class="card">
+        <h3>Expense History (Last 30 Days)</h3>
+        <table class="table" id="expenseTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Category</th>
+              <th>Description</th>
+              <th style="text-align: right;">Amount (₹)</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="5" style="text-align: center;">No expenses recorded yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      
+    </main>
+  </div>
+
+  <script src="../script.js"></script>
+  <script>
+
+    const EXPENSE_STORAGE_KEY = 'sv_expenses';
+    
+    // Helper function to safely load expenses
+    function loadExpenses() {
+        return JSON.parse(localStorage.getItem(EXPENSE_STORAGE_KEY) || '[]');
+    }
+
+    // Helper function to save all expenses
+    function saveExpenses(expenses) {
+        localStorage.setItem(EXPENSE_STORAGE_KEY, JSON.stringify(expenses));
+    }
+
+    // --- RENDERING & SUMMARY LOGIC ---
+    function renderExpenses() {
+        const allExpenses = loadExpenses();
+        const tbody = document.querySelector('#expenseTable tbody');
+        const today = new Date();
+        const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+        
+        tbody.innerHTML = '';
+        
+        let todayTotal = 0;
+        let monthTotal = 0;
+        let ytdTotal = 0;
+
+        // Sort by date descending
+        allExpenses.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        allExpenses.forEach(expense => {
+            const expDate = new Date(expense.date);
+            const amount = parseFloat(expense.amount);
+            
+            // Calculate Totals
+            ytdTotal += amount;
+            
+            if (expDate.getFullYear() === today.getFullYear() && expDate.getMonth() === today.getMonth()) {
+                monthTotal += amount;
+            }
+            if (expDate.toDateString() === today.toDateString()) {
+                todayTotal += amount;
+            }
+
+            // Only display items from the last 30 days in the main table
+            if (expDate >= thirtyDaysAgo) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${expDate.toLocaleDateString('en-IN')}</td>
+                    <td>${expense.category}</td>
+                    <td>${expense.description}</td>
+                    <td style="text-align: right;">${amount.toFixed(0)}</td>
+                    <td><button class="btn secondary" onclick="deleteExpense('${expense.id}')" style="padding: 4px 8px; font-size: 10px;">Delete</button></td>
+                `;
+                tbody.appendChild(row);
+            }
+        });
+        
+        if (tbody.children.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No expenses logged in the last 30 days.</td></tr>';
+        }
+
+        // Update Summary Boxes
+        document.getElementById('todayExpenseTotal').textContent = `₹ ${todayTotal.toFixed(0)}`;
+        document.getElementById('monthExpenseTotal').textContent = `₹ ${monthTotal.toFixed(0)}`;
+        document.getElementById('ytdExpenseTotal').textContent = `₹ ${ytdTotal.toFixed(0)}`;
+    }
+
+    // --- SUBMISSION LOGIC ---
+    document.getElementById('expenseEntryForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const form = e.target;
+        const newExpense = {
+            id: 'EXP-' + Date.now(), // Unique ID
+            date: form.expenseDate.value,
+            category: form.expenseCategory.value,
+            description: form.expenseDescription.value.trim(),
+            amount: parseFloat(form.expenseAmount.value).toFixed(0), // Store as fixed 0 decimal
+            loggedBy: localStorage.getItem('username') || 'Unknown',
+            timestamp: new Date().toISOString()
+        };
+
+        let allExpenses = loadExpenses();
+        allExpenses.push(newExpense);
+        saveExpenses(allExpenses); // Save to Local Storage
+
+        form.reset();
+        document.getElementById('expenseDate').valueAsDate = new Date(); // Reset date to today
+
+        // Optional: Dispatch to GitHub for permanent persistence (using the function we add in step 2)
+        if (typeof saveExpenseToGitHub === 'function') {
+            const success = await saveExpenseToGitHub(newExpense);
+            console.log("GitHub Dispatch Success:", success);
+        } else {
+            console.warn("saveExpenseToGitHub function not found. Expense saved locally only.");
+        }
+        
+        renderExpenses();
+    });
+    
+    // --- DELETE LOGIC ---
+    function deleteExpense(expenseId) {
+        if (!confirm('Are you sure you want to delete this expense? This cannot be undone.')) {
+            return;
+        }
+
+        let allExpenses = loadExpenses();
+        const initialLength = allExpenses.length;
+        
+        // Filter out the expense to be deleted
+        allExpenses = allExpenses.filter(expense => expense.id !== expenseId);
+        
+        if (allExpenses.length < initialLength) {
+            saveExpenses(allExpenses);
+            renderExpenses();
+            alert('Expense deleted successfully.');
+            
+            // NOTE: Deletion from GitHub history is complex. We rely on the local record or a future reporting mechanism.
+        } else {
+            alert('Error: Expense not found.');
+        }
+    }
+
+
+    // --- INITIALIZATION ---
+    document.addEventListener("DOMContentLoaded", function() {
+        checkAuth();
+        document.getElementById('expenseDate').valueAsDate = new Date(); // Set default date to today
+        renderExpenses();
+    });
+
+  </script>
 </body>
 </html>
