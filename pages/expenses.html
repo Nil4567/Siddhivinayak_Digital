@@ -5,21 +5,7 @@
   <title>Daily Expenses — Siddhivinayak Digital</title>
   <link rel="stylesheet" href="../styles/internal.css">
   <style>
-    /* Styling for Topbar User Display */
-    .user-display {
-        background: #e9f2ff; 
-        color: #0b2540;
-        padding: 5px 10px;
-        border-radius: 8px;
-        font-size: 13px;
-        font-weight: 600;
-        margin-right: 15px;
-        border: 1px solid rgba(15,111,255,0.1);
-    }
-    .user-display span {
-        font-weight: 800;
-        color: var(--primary);
-    }
+    /* Expense specific styling */
     .expense-list {
         max-height: 400px;
         overflow-y: auto;
@@ -104,10 +90,10 @@
 
   <script src="../script.js"></script>
   <script>
-    // Constants and functions expected from script.js
-    const ACCESS_PERMISSIONS = window.ACCESS_PERMISSIONS || {}; 
+    // Functions are assumed to be available from script.js
     const saveExpenseToGitHub = window.saveExpenseToGitHub;
-    const EXPENSE_STORAGE_KEY = 'sv_expenses'; // Standard key for expense storage
+    const ACCESS_PERMISSIONS = window.ACCESS_PERMISSIONS || {};
+    const EXPENSE_STORAGE_KEY = 'sv_expenses'; 
     const USER_ROLE = localStorage.getItem("sv_user_role");
     
     // --- Expense Specific Functions ---
@@ -164,7 +150,7 @@
         allExpenses.push(newExpense);
         localStorage.setItem(EXPENSE_STORAGE_KEY, JSON.stringify(allExpenses));
 
-        // 2. Dispatch to GitHub (if function exists)
+        // 2. Dispatch to GitHub (Placeholder)
         const msgEl = document.getElementById('expenseMsg');
         msgEl.style.color = 'orange';
         msgEl.textContent = `Expense saved locally. Dispatching...`;
@@ -174,11 +160,8 @@
         try {
             if (typeof saveExpenseToGitHub === 'function') {
                 success = await saveExpenseToGitHub(newExpense); 
-            } else {
-                console.warn("saveExpenseToGitHub function not found. Expense saved locally only.");
             }
         } catch (e) {
-            console.error("Error during GitHub dispatch:", e);
             success = false;
         }
 
@@ -190,22 +173,15 @@
             msgEl.textContent = `❌ Expense saved locally, but failed to reach central record.`;
         }
         
-        // Reset form for next entry, keep date
         form.description.value = '';
         form.amount.value = '';
         
-        renderExpenses(); // Update the list
+        renderExpenses(); 
     });
 
-    // --- Initialization and Role-Based Access Filter (START) ---
+    // --- Initialization and Role-Based Access Filter ---
     document.addEventListener("DOMContentLoaded", function() {
-        // 1. Run the primary authentication check (includes initHeader and checkAccess)
-        if (typeof checkAuth === 'function') {
-            checkAuth(); 
-        } else {
-            console.error("checkAuth() function not found. Ensure script.js is loaded.");
-            return;
-        }
+        checkAuth(); // 1. Run Auth & Access Check
         
         // 2. Set default date to today and attach listener
         const dateInput = document.getElementById('expenseDate');
@@ -215,20 +191,16 @@
         // 3. Render initial expenses for today
         renderExpenses();
         
-        // 4. Access Control Navigation Filter
+        // 4. Hide sidebar links based on role access
         const allowedPages = ACCESS_PERMISSIONS[USER_ROLE] || [];
-        
         document.querySelectorAll('.sidebar .nav-link').forEach(link => {
             const href = link.getAttribute('href');
             const pageName = href ? href.split('/').pop() : '';
-            
-            // Hide the link if the current role doesn't have permission
             if (pageName && !allowedPages.includes(pageName)) {
                 link.style.display = 'none';
             }
         });
     });
-    // --- Initialization and Role-Based Access Filter (END) ---
   </script>
 </body>
 </html>
