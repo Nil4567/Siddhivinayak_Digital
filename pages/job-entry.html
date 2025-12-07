@@ -113,7 +113,7 @@
 
   <script src="../script.js"></script>
   <script>
-    // Access global functions from script.js
+    // Access global functions from script.js - DECLARED ONCE
     const saveJobToScript = window.saveJobToScript;
     const getManagers = window.getManagers;
     
@@ -126,7 +126,7 @@
       const balanceEl = document.getElementById('balanceAmount');
       balanceEl.textContent = balance.toFixed(2);
       
-      // Highlight if balance is negative or positive
+      // Highlight based on balance status
       balanceEl.style.color = balance > 0 ? 'var(--danger)' : (balance < 0 ? 'var(--primary)' : 'var(--success)');
     }
     
