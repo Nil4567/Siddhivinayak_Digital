@@ -2,9 +2,8 @@
 
 /* --------------------------------------------------
     BASE URL FOR REDIRECTION
-    (Used for internal redirects like logout and checkAuth)
+    (Use a relative path to the root of your GitHub Pages project for best reliability)
 -------------------------------------------------- */
-// Use the root directory path for reliable redirection from any page
 const BASE_PATH = "/Siddhivinayak_Digital"; 
 
 /* --------------------------------------------------
@@ -15,7 +14,7 @@ const USER_CREDENTIALS_KEY = 'sv_user_credentials';
 const ADMIN_CREDENTIALS_KEY = 'sv_admin_credentials'; 
 
 /* --------------------------------------------------
-    ROLES AND PERMISSIONS DEFINITION 🔑 (FINAL STRUCTURE)
+    ROLES AND PERMISSIONS DEFINITION 🔑
 -------------------------------------------------- */
 const ACCESS_PERMISSIONS = {
     'features': {
@@ -159,7 +158,7 @@ function checkAccess() {
 }
 
 function checkAuth() {
-    // CRITICAL FIX: Ensure user is logged in first.
+    // CRITICAL: Ensure user is logged in first.
     if (localStorage.getItem("loggedIn") !== "yes") {
         // Use relative path for redirection
         window.location.href = `${BASE_PATH}/index.html`; 
@@ -191,7 +190,14 @@ function initSidebarVisibility() {
             const hasViewPermission = userPermissions[featureKey] && userPermissions[featureKey].includes('view');
 
             if (!hasViewPermission) {
-                link.style.display = 'none';
+                // Ensure the link to the Admin Credentials page is hidden for non-admins
+                if (pageName === 'admin-credentials.html' && localStorage.getItem('sv_user_role') !== 'admin') {
+                     link.style.display = 'none';
+                }
+                // For all other pages, use the general permission check
+                else if (pageName !== 'admin-credentials.html') {
+                    link.style.display = 'none';
+                }
             }
         }
     });
