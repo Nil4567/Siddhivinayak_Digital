@@ -5,7 +5,7 @@
   <title>User Settings — Siddhivinayak Digital</title>
   <link rel="stylesheet" href="../styles/internal.css">
   <style>
-    /* Settings-specific CSS for the new permission table */
+    /* ... (CSS styles for manager-list, permission-table, etc., retained from previous version) ... */
     .permission-table {
         width: 100%;
         border-collapse: collapse;
@@ -33,7 +33,6 @@
     .permission-table label {
         cursor: pointer;
     }
-    /* User List Styling */
     .manager-list {
         list-style: none;
         padding: 0;
@@ -94,15 +93,6 @@
     .manager-list .delete-btn {
         background: #dc3545;
     }
-
-    /* Tab Control CSS */
-    .settings-tab {
-        display: none; /* Hide all content sections by default */
-    }
-    .settings-tab.active {
-        display: block; /* Only show the active section */
-    }
-    
     /* Permissions Modal (Retained) */
     .permissions-modal {
         display: none;
@@ -151,61 +141,59 @@
 
   <div class="app">
     <aside class="sidebar">
-      <div class="brand-small">Settings Menu</div>
-      
-      <a href="#user-management" class="nav-link settings-link active" onclick="showSettingsTab('user-management')">User Management</a>
-      
+      <div class="brand-small">Control Panel</div>
+      <a href="dashboard.html" class="nav-link">Dashboard</a>
+      <a href="job-entry.html" class="nav-link">New Job Entry</a>
+      <a href="job-queue.html" class="nav-link">Job Queue</a>
+      <a href="customers.html" class="nav-link">Customers</a>
+      <a href="expenses.html" class="nav-link">Daily Expenses</a>
+      <a href="reports.html" class="nav-link">Reports</a>
+      <a href="settings.html" class="nav-link active">User Settings</a>
       <a href="admin-credentials.html" class="nav-link">Admin Credentials</a>
-      
-      <a href="dashboard.html" class="nav-link mt-5">← Back to Dashboard</a>
     </aside>
 
     <main class="main">
-      
-      <div id="user-management" class="settings-tab active">
-          <div class="page-header">
-            <div>
-              <div class="page-title">User & Access Management</div>
-              <div class="page-sub">Add new users and manage their login credentials and specific menu permissions.</div>
-            </div>
-          </div>
-    
-          <div class="grid-3">
-            <div class="card">
-                <h3>Add New User</h3>
-                <form id="addManagerForm">
-                    <div class="field">
-                        <label for="newUserName">User's Full Name *</label>
-                        <input type="text" id="newUserName" required placeholder="e.g., Pooja Singh">
-                    </div>
-                    <div class="field">
-                        <label for="newUserUsername">Login Username *</label>
-                        <input type="text" id="newUserUsername" required placeholder="e.g., pooja.s">
-                    </div>
-                    <div class="field">
-                        <label for="newUserPassword">Password *</label>
-                        <input type="text" id="newUserPassword" required placeholder="e.g., pass123">
-                    </div>
-                    <div class="field">
-                        <label for="newUserRole">Access Template *</label>
-                        <select id="newUserRole" required>
-                            <option value="manager">Manager Template (View/Manage Jobs, Expenses)</option>
-                            <option value="viewer">Viewer Template (View Queue/Customers, Entry Rights)</option>
-                            <option value="admin">Admin Template (Full Access)</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn" style="width: 100%; margin-top: 10px;">Add User</button>
-                </form>
-            </div>
-    
-            <div class="card" style="grid-column: span 2;">
-                <h3>Current Active Users & Credentials</h3>
-                <ul id="managerList" class="manager-list">
-                    </ul>
-            </div>
-          </div>
+      <div class="page-header">
+        <div>
+          <div class="page-title">User & Access Management</div>
+          <div class="page-sub">Add new users and manage their login credentials and specific menu permissions.</div>
+        </div>
       </div>
-      
+
+      <div class="grid-3">
+        <div class="card">
+            <h3>Add New User</h3>
+            <form id="addManagerForm">
+                <div class="field">
+                    <label for="newUserName">User's Full Name *</label>
+                    <input type="text" id="newUserName" required placeholder="e.g., Pooja Singh">
+                </div>
+                <div class="field">
+                    <label for="newUserUsername">Login Username *</label>
+                    <input type="text" id="newUserUsername" required placeholder="e.g., pooja.s">
+                </div>
+                <div class="field">
+                    <label for="newUserPassword">Password *</label>
+                    <input type="text" id="newUserPassword" required placeholder="e.g., pass123">
+                </div>
+                <div class="field">
+                    <label for="newUserRole">Access Template *</label>
+                    <select id="newUserRole" required>
+                        <option value="manager">Manager Template (View/Manage Jobs, Expenses)</option>
+                        <option value="viewer">Viewer Template (View Queue/Customers, Entry Rights)</option>
+                        <option value="admin">Admin Template (Full Access)</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn" style="width: 100%; margin-top: 10px;">Add User</button>
+            </form>
+        </div>
+
+        <div class="card" style="grid-column: span 2;">
+            <h3>Current Active Users & Credentials</h3>
+            <ul id="managerList" class="manager-list">
+                </ul>
+        </div>
+      </div>
     </main>
   </div>
 
@@ -241,35 +229,6 @@
     const ACCESS_PERMISSIONS = window.ACCESS_PERMISSIONS; 
     
     let editingUserUsername = null; 
-    
-    // ----------------------------------------------------------------
-    // NEW CORE LOGIC: TAB SWITCHING
-    // ----------------------------------------------------------------
-    function showSettingsTab(tabId) {
-        // 1. Hide all tabs
-        document.querySelectorAll('.settings-tab').forEach(tab => {
-            tab.classList.remove('active');
-        });
-        
-        // 2. Deactivate all sidebar links
-        document.querySelectorAll('.settings-link').forEach(link => {
-            link.classList.remove('active');
-        });
-        
-        // 3. Show the requested tab
-        const activeTab = document.getElementById(tabId);
-        if (activeTab) {
-            activeTab.classList.add('active');
-        }
-        
-        // 4. Activate the corresponding sidebar link
-        const activeLink = document.querySelector(`.settings-link[href="#${tabId}"]`);
-        if (activeLink) {
-            activeLink.classList.add('active');
-        }
-    }
-    window.showSettingsTab = showSettingsTab; // Make function globally accessible
-    // ----------------------------------------------------------------
 
     // --- Modal Functions ---
     function openModal(username) {
@@ -391,7 +350,7 @@
     function renderUserList() {
         const users = getUserCredentials();
         const listEl = document.getElementById('managerList');
-        if (!listEl) return; // Add check in case the tab isn't visible (though it should be the default)
+        if (!listEl) return;
         
         listEl.innerHTML = '';
         
@@ -465,4 +424,20 @@
         
         form.reset();
         renderUserList(); 
-        alert(`User "${
+        alert(`User "${name}" (${role}) added successfully.`);
+    });
+    
+    // --- Initialization ---
+    document.addEventListener("DOMContentLoaded", function() {
+        checkAuth(); 
+        renderUserList(); 
+    });
+
+    // Make functions globally accessible for inline HTML calls
+    window.openModal = openModal;
+    window.closeModal = closeModal;
+    window.savePermissions = savePermissions;
+    window.deleteUser = deleteUser;
+  </script>
+</body>
+</html>
