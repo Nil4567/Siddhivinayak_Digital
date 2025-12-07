@@ -1,25 +1,3 @@
-<script>
-    // Run this function after checkAuth() has ensured the user is logged in
-    document.addEventListener("DOMContentLoaded", function() {
-        // --- Access Control Navigation Filter ---
-        const userRole = localStorage.getItem("sv_user_role");
-        const allowedPages = ACCESS_PERMISSIONS[userRole] || [];
-        
-        const navLinks = document.querySelectorAll('.sidebar .nav-link');
-        
-        navLinks.forEach(link => {
-            const href = link.getAttribute('href');
-            if (href) {
-                const pageName = href.split('/').pop();
-                
-                // Hide the link if the current role doesn't have permission
-                if (!allowedPages.includes(pageName)) {
-                    link.style.display = 'none';
-                }
-            }
-        });
-    });
-</script>
 <!doctype html>
 <html>
 <head>
@@ -27,6 +5,7 @@
   <title>New Job Entry — Siddhivinayak Digital</title>
   <link rel="stylesheet" href="../styles/internal.css">
   <style>
+    /* Styling for Topbar User Display */
     .user-display {
         background: #e9f2ff; 
         color: #0b2540;
@@ -111,7 +90,7 @@
                 <div class="field">
                     <label for="assignedPerson">Assigned Manager *</label>
                     <select id="assignedPerson" name="assignedPerson" required>
-                        <option value="Admin">Loading Managers...</option> 
+                        <option value="Admin User">Loading Managers...</option> 
                     </select>
                 </div>
                 <div class="field">
@@ -129,13 +108,15 @@
 
   <script src="../script.js"></script>
   <script>
-    // Get the utility functions from script.js
+    // These constants/functions are expected to be available from script.js
     const getManagers = window.getManagers;
+    const saveJobToGitHub = window.saveJobToGitHub;
+    const ACCESS_PERMISSIONS = window.ACCESS_PERMISSIONS;
     
     // --- Helper function to populate managers ---
     function populateManagers() {
         const select = document.getElementById('assignedPerson');
-        const managers = getManagers(); // Fetches the list from localStorage via script.js
+        const managers = getManagers(); 
         
         select.innerHTML = ''; // Clear existing options
         
@@ -147,18 +128,18 @@
                 select.appendChild(option);
             });
             
-            // Set the default selection: current user > 'Admin' > first manager
+            // Set the default selection: current user > 'Admin User' > first manager
             const currentUser = localStorage.getItem('username');
             if (managers.includes(currentUser)) {
                 select.value = currentUser;
-            } else if (managers.includes('Admin')) {
-                 select.value = 'Admin';
+            } else if (managers.includes('Admin User')) {
+                 select.value = 'Admin User';
             } else {
                 select.value = managers[0];
             }
         } else {
              // Fallback if list is empty
-             select.innerHTML = '<option value="Admin">Admin</option>';
+             select.innerHTML = '<option value="Admin User">Admin User</option>';
         }
     }
 
@@ -182,11 +163,10 @@
             customer: form.customer.value.trim(),
             contact: form.contact.value.trim(),
             description: form.description.value.trim(),
-            amount: amount.toFixed(0), // Store as whole number string
+            amount: amount.toFixed(0),
             advance: advance.toFixed(0),
             pendingAmount: pendingAmount.toFixed(0),
             orderDate: form.orderDate.value,
-            // Capture the manager from the dynamic dropdown
             assignedPerson: form.assignedPerson.value, 
             status: 'Pending',
             createdAt: new Date().toISOString(),
@@ -221,7 +201,7 @@
             msgEl.textContent = `✅ Job #${newJob.id} submitted successfully and saved to central record!`;
         } else {
             msgEl.style.color = 'red';
-            msgEl.textContent = `❌ Job #${newJob.id} saved locally, but failed to reach central record (GitHub/Sheet). Check console for error.`;
+            msgEl.textContent = `❌ Job #${newJob.id} saved locally, but failed to reach central record (GitHub). Check console for error.`;
         }
         
         // Reset form for next entry
@@ -230,12 +210,23 @@
         populateManagers(); // Re-populate to ensure default selection is correct
     });
 
-    // --- Initialization ---
+    // --- Initialization & Role-Based Access Filter ---
     document.addEventListener("DOMContentLoaded", function() {
-        checkAuth();
+        checkAuth(); // This also runs checkAccess()
         populateManagers();
         // Set default date to today
         document.getElementById('orderDate').valueAsDate = new Date();
+        
+        // Hide sidebar links based on role access
+        const userRole = localStorage.getItem("sv_user_role");
+        const allowedPages = ACCESS_PERMISSIONS[userRole] || [];
+        
+        document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+            const pageName = link.getAttribute('href').split('/').pop();
+            if (!allowedPages.includes(pageName)) {
+                link.style.display = 'none';
+            }
+        });
     });
   </script>
 </body>
