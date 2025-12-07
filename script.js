@@ -1,20 +1,23 @@
 /* --------------------------------------------------
-   *** HARDCODED CREDENTIALS (NO LOCAL STORAGE) ***
+   *** CONFIGURATION & HARDCODED CREDENTIALS ***
    
-   CRITICAL: REPLACE THESE PLACEHOLDERS WITH YOUR ACTUAL VALUES
+   CRITICAL: Ensure these values match Code.gs and your deployment.
 -------------------------------------------------- */
 const HARDCODED_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVcME3Xb95pDU8faZ1HhGGB1k5hYiBhSlx6GPFUcE2CbCtzO5_9Y3KLv12aoFF70M8sQ/exec"; 
 const HARDCODED_SECURITY_TOKEN = "Siddhivi!n@yakD1gital-T0ken-987"; 
+
+// --- Fallback Admin Credentials (New Addition for initial access) ---
+// Used only if the application cannot fetch the user list OR if the fetched list is empty.
+const FALLBACK_USERNAME = 'admin';
+const FALLBACK_PASSWORD = 'admin123';
+// -------------------------------------------------------------------
 
 // --------------------------------------------------
 // --- CORE DATA SUBMISSION (POST) ---
 // --------------------------------------------------
 
 /**
- * Core function to FETCH data (using POST request) to the Google Apps Script.
- * @param {object} dataObject - The payload to send (e.g., jobData or expenseData).
- * @param {string} dataType - Identifier for the script ('JOB_ENTRY', 'DAILY_EXPENSE', etc.).
- * @returns {Promise<boolean>} True if submission was successful.
+ * Core function to send data to the Google Apps Script (POST).
  */
 async function sendDataToScript(dataObject, dataType) {
     const url = HARDCODED_SCRIPT_URL;
@@ -35,9 +38,7 @@ async function sendDataToScript(dataObject, dataType) {
         const response = await fetch(url, {
             method: 'POST',
             mode: 'cors',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
         
@@ -59,13 +60,9 @@ async function sendDataToScript(dataObject, dataType) {
 }
 
 /**
- * Core function to send Settings (Users/Managers) data to the Google Apps Script.
- * This is a specialized POST request using the USER_SETTINGS identifier.
- * @param {object} settingsData - The payload containing managers and users array.
- * @returns {Promise<boolean>} True if submission was successful.
+ * Specialized POST request for saving user settings.
  */
 async function saveUserSettingsToSheet(settingsData) {
-    // Re-use the existing sendDataToScript logic but with the correct type
     return sendDataToScript(settingsData, 'USER_SETTINGS');
 }
 
@@ -75,9 +72,6 @@ async function saveUserSettingsToSheet(settingsData) {
 
 /**
  * Core function to RETRIEVE data (GET request) from the Google Apps Script.
- * This is crucial for fetching user lists, customer lists, job queue, etc.
- * @param {string} dataType - Identifier for the script ('USER_CREDENTIALS', 'JOB_QUEUE', 'CUSTOMER_LIST').
- * @returns {Promise<Array | null>} Array of data rows, or null on failure.
  */
 async function fetchSheetData(dataType) {
     const url = HARDCODED_SCRIPT_URL;
@@ -88,19 +82,14 @@ async function fetchSheetData(dataType) {
         return null;
     }
 
-    // Construct the GET URL with parameters
     const fetchUrl = `${url}?appToken=${token}&dataType=${dataType}`;
     
     try {
-        const response = await fetch(fetchUrl, {
-            method: 'GET',
-            mode: 'cors'
-        });
-
+        const response = await fetch(fetchUrl, { method: 'GET', mode: 'cors' });
         const result = await response.json();
 
         if (result.result === 'success' && Array.isArray(result.data)) {
-            return result.data; // Returns the array of sheet data
+            return result.data; 
         } else {
             console.error(`Server Error fetching ${dataType}:`, result.error || 'Unknown error');
             return null;
@@ -112,24 +101,63 @@ async function fetchSheetData(dataType) {
     }
 }
 
-
 // --------------------------------------------------
 // --- AUTHENTICATION & SESSION MANAGEMENT ---
 // --------------------------------------------------
 
 /**
- * Checks if a user is logged in (session token exists).
- * Required by settings.html to prevent unauthorized access.
+ * Helper function to store session data.
+ */
+function completeLogin(username, isManager) {
+    // Generate a simple token (e.g., base64 encoding username + timestamp)
+    const token = btoa(`${username}:${Date.now()}`); 
+    localStorage.setItem('sv_user_token', token);
+    localStorage.setItem('sv_user_name', username);
+    localStorage.setItem('sv_is_manager', isManager ? 'true' : 'false');
+    window.location.href = './dashboard.html';
+}
+
+/**
+ * The core login logic with the new Fallback Admin check.
+ */
+async function handleLogin(username, password) {
+    // 1. Attempt to fetch credentials from the Google Sheet
+    const usersList = await fetchSheetData('USER_CREDENTIALS');
+    
+    // Check if the input matches the Fallback Admin credentials first
+    if (username === FALLBACK_USERNAME && password === FALLBACK_PASSWORD) {
+         // This check runs regardless of the sheet state
+         console.warn("Using fallback admin credentials.");
+         completeLogin(username, true); 
+         return; // Exit successfully
+    }
+
+    // 2. If it's NOT the fallback admin, we MUST rely on the sheet data.
+    if (usersList && usersList.length > 0) {
+        const match = usersList.find(row => row[0] === username && row[1] === password);
+        
+        if (match) {
+            // Success: Found user in the Sheet
+            const isManager = match[2] === 'Yes'; 
+            completeLogin(username, isManager);
+            return; // Exit successfully
+        }
+    }
+    
+    // Login Failed
+    throw new Error("Invalid username or password.");
+}
+
+/**
+ * Checks if a user is logged in.
  */
 function checkAuth() {
     const userToken = localStorage.getItem('sv_user_token');
     const userName = localStorage.getItem('sv_user_name');
     
     if (!userToken || !userName) {
-        // Redirects user to the login page
         window.location.href = '../index.html'; 
     } else {
-        // Update user display element
         const userNameElement = document.getElementById('sv_user_name');
         if (userNameElement) {
             userNameElement.textContent = userName;
@@ -138,21 +166,20 @@ function checkAuth() {
 }
 
 /**
- * Clears the session and redirects to the login page.
+ * Clears the session.
  */
 function logout() {
-    localStorage.removeItem('sv_user_token');
-    localStorage.removeItem('sv_user_name');
+    localStorage.clear(); // Clear all keys
     window.location.href = '../index.html';
 }
 
 // --------------------------------------------------
-// --- GLOBAL EXPORTS (THE FIX) ---
+// --- GLOBAL EXPORTS (CRITICAL FIX FOR TYPEERRORS) ---
 // --------------------------------------------------
 
-// CRITICAL: Attaches all necessary functions to the global window object.
 window.sendDataToScript = sendDataToScript;
 window.saveUserSettingsToSheet = saveUserSettingsToSheet;
-window.fetchSheetData = fetchSheetData; // FIX for fetchSheetData is not a function
-window.checkAuth = checkAuth;           // FIX for checkAuth is not a function
+window.fetchSheetData = fetchSheetData; 
+window.checkAuth = checkAuth;           
 window.logout = logout;
+window.handleLogin = handleLogin;
