@@ -1,0 +1,261 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Invoice - Siddhivinayak Digital</title>
+    <link rel="stylesheet" href="../styles/internal.css"> 
+    <style>
+        body { background: #f4f7f9; }
+        .invoice-container {
+            max-width: 800px;
+            margin: 30px auto;
+            background: #fff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+        .invoice-header h1 {
+            color: var(--primary);
+            font-size: 32px;
+            margin: 0;
+        }
+        .shop-details p {
+            margin: 2px 0;
+            font-size: 14px;
+        }
+        .customer-details {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .customer-details div {
+            flex-basis: 48%;
+        }
+        .customer-details h4 {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+            color: var(--muted);
+        }
+        .invoice-details table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .invoice-details th, .invoice-details td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        .invoice-details th {
+            background-color: #f7f7f7;
+            font-size: 14px;
+        }
+        .summary-row td {
+            font-weight: 700;
+        }
+        .total-amount {
+            font-size: 18px;
+            color: #d84315;
+            font-weight: 800;
+        }
+        .signature-area {
+            text-align: right;
+            margin-top: 50px;
+            padding-top: 15px;
+            border-top: 1px dashed #ccc;
+        }
+        
+        /* Utility bar for print/share actions (Hidden in the final JPEG) */
+        .utility-bar {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        /* Special styles for the draft watermark */
+        #invoiceDraftWatermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 70px;
+            font-weight: 900;
+            color: rgba(255, 0, 0, 0.1); /* Very light red */
+            pointer-events: none; /* Allows clicks to pass through */
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="utility-bar">
+        <button class="btn" onclick="shareAsJpeg()">Download Invoice (JPEG)</button>
+        <a href="javascript:void(0);" class="btn secondary" onclick="window.location.href='job-queue.html';">Back to Job Queue</a>
+    </div>
+
+    <div class="invoice-container" id="invoiceContent">
+        <div id="invoiceDraftWatermark">DRAFT</div> <div class="invoice-header">
+            <div class="shop-details">
+                <h1>INVOICE</h1>
+                <p><strong>Siddhivinayak Digital</strong></p>
+                <p>Printing, Xerox, & Design Services</p>
+                <p>Contact: [Your Shop Number]</p>
+            </div>
+            <div class="job-info">
+                <h4>Invoice Date: <span id="invoiceDate"></span></h4>
+                <h4>Job ID: <span id="jobId"></span></h4>
+            </div>
+        </div>
+
+        <div class="customer-details">
+            <div>
+                <h4>Billed To:</h4>
+                <p id="customerName"></p>
+                <p id="customerContact"></p>
+                <p id="customerEmail"></p>
+            </div>
+            <div>
+                <h4>Managed By:</h4>
+                <p id="assignedPerson"></p>
+            </div>
+        </div>
+
+        <div class="invoice-details">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Description / Service Details</th>
+                        <th style="text-align: right;">Amount (₹)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>
+                            <span id="jobDescription"></span>
+                            <br><small style="color:var(--muted)">Order Date: <span id="orderDate"></span> | Urgency: <span id="urgency"></span></small>
+                        </td>
+                        <td style="text-align: right;"><span id="jobAmount"></span></td>
+                    </tr>
+                    <tr class="summary-row" style="background: #f7f7f7;">
+                        <td colspan="2" style="text-align: right; font-weight: bold;">Subtotal</td>
+                        <td style="text-align: right;">₹ <span id="subtotal"></span></td>
+                    </tr>
+                    <tr class="summary-row">
+                        <td colspan="2" style="text-align: right; font-weight: bold; color: var(--primary);">Advance Paid</td>
+                        <td style="text-align: right; color: var(--primary);">₹ <span id="advancePaid"></span></td>
+                    </tr>
+                    <tr class="summary-row" style="background: #fff3e0;">
+                        <td colspan="2" style="text-align: right; font-weight: bold; color: #d84315;">BALANCE DUE</td>
+                        <td style="text-align: right;" class="total-amount">₹ <span id="balanceDue"></span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="signature-area">
+            <p style="font-style: italic; font-size: 12px; margin-bottom: 5px;">Thank you for your business!</p>
+            <p>_________________________</p>
+            <p>Signature (Manager)</p>
+        </div>
+    </div>
+
+    <script src="../script.js"></script>
+    <script>
+        // Placeholder function for client-side image generation
+        function shareAsJpeg() {
+            // Check if html2canvas is available (requires external script)
+            if (typeof html2canvas === 'undefined') {
+                alert("Image conversion is currently disabled. Please add the html2canvas script to the <head> to enable JPEG download.");
+                return;
+            }
+
+            const element = document.getElementById('invoiceContent');
+            const utilityBar = document.querySelector('.utility-bar');
+            const watermark = document.getElementById('invoiceDraftWatermark');
+
+            // Temporarily hide the utility bar and display the watermark clearly for the screenshot
+            utilityBar.style.display = 'none';
+            watermark.style.color = 'rgba(255, 0, 0, 0.15)'; // Make watermark a bit clearer for the image
+
+            // Use html2canvas to capture the content
+            html2canvas(element, { 
+                scale: 2, // Use a higher scale for better quality
+                allowTaint: true 
+            }).then(canvas => {
+                // Restore the hidden elements immediately
+                utilityBar.style.display = 'block';
+                watermark.style.color = 'rgba(255, 0, 0, 0.1)'; // Restore original transparency
+
+                // Convert canvas to base64 JPEG
+                const image = canvas.toDataURL('image/jpeg', 0.9);
+                
+                // Create a download link
+                const link = document.createElement('a');
+                link.href = image;
+                link.download = `Invoice_Job_${document.getElementById('jobId').textContent}.jpg`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }
+        
+        function loadInvoiceData() {
+            // 1. Get Job ID from URL parameters
+            const params = new URLSearchParams(window.location.search);
+            const jobId = params.get('jobId');
+
+            if (!jobId) {
+                document.getElementById('invoiceContent').innerHTML = '<p style="text-align:center;">Error: No Job ID specified.</p>';
+                return;
+            }
+
+            // 2. Load Job Data from Local Storage
+            const allJobs = JSON.parse(localStorage.getItem('sv_jobs') || '[]');
+            const job = allJobs.find(j => j.id === jobId);
+
+            if (!job) {
+                document.getElementById('invoiceContent').innerHTML = `<p style="text-align:center;">Error: Job ID #${jobId} not found.</p>`;
+                return;
+            }
+
+            // 3. Populate Template Fields
+            document.getElementById('jobId').textContent = job.id;
+            document.getElementById('invoiceDate').textContent = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+            
+            // Customer Details
+            document.getElementById('customerName').textContent = job.customer;
+            document.getElementById('customerContact').textContent = `Ph: ${job.contact}`;
+            document.getElementById('customerEmail').textContent = `Email: ${job.customerEmail}`;
+            
+            // Job Details
+            document.getElementById('assignedPerson').textContent = job.assignedPerson;
+            document.getElementById('jobDescription').textContent = job.description;
+            document.getElementById('orderDate').textContent = job.orderDate;
+            document.getElementById('urgency').textContent = job.urgency;
+            
+            // Financials
+            const amount = parseFloat(job.amount) || 0;
+            const advance = parseFloat(job.advance) || 0;
+            const balance = parseFloat(job.pendingAmount) || 0;
+
+            document.getElementById('jobAmount').textContent = amount.toFixed(0);
+            document.getElementById('subtotal').textContent = amount.toFixed(0);
+            document.getElementById('advancePaid').textContent = advance.toFixed(0);
+            document.getElementById('balanceDue').textContent = balance.toFixed(0);
+        }
+
+        document.addEventListener("DOMContentLoaded", loadInvoiceData);
+        
+    </script>
+</body>
+</html>
