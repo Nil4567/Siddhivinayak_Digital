@@ -418,4 +418,21 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     
     startLiveClock();
+    /* 
+    --------------------------------------------------
+    GOOGLE SCRIPT CREDENTIAL MANAGEMENT (MISSING BLOCK)
+-------------------------------------------------- */
+function getAdminCredentials() {
+    // Uses the key 'sv_admin_credentials' to retrieve the saved URL and token
+    return JSON.parse(localStorage.getItem(ADMIN_CREDENTIALS_KEY)) || { url: '', token: '' };
+}
+
+function saveAdminCredentials(url, token) {
+    const creds = { url, token };
+    // Saves the URL and token as a JSON object in Local Storage
+    localStorage.setItem(ADMIN_CREDENTIALS_KEY, JSON.stringify(creds));
+    return creds;
+}
+window.getAdminCredentials = getAdminCredentials; // Expose to the HTML page
+window.saveAdminCredentials = saveAdminCredentials; // Expose to the HTML page
 });
