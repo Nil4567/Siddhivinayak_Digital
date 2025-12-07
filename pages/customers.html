@@ -1,32 +1,120 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Customers - Siddhivinayak Digital</title>
-  <link rel="stylesheet" href="../style.css">
+  <meta charset="utf-8">
+  <title>Customers — Siddhivinayak Digital</title>
+  <link rel="stylesheet" href="../styles/internal.css">
 </head>
 <body>
+  <div class="topbar">
+    <div class="brand">Siddhivinayak Digital</div>
+    <div class="controls">
+      <span id="sv_user_name"></span>
+      <span id="liveTime"></span>
+      <button class="btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
 
-<header class="topbar">Siddhivinayak Digital</header>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand-small">Control Panel</div>
+      <a href="dashboard.html" class="nav-link">Dashboard</a>
+      <a href="job-entry.html" class="nav-link">New Job Entry</a>
+      <a href="job-queue.html" class="nav-link">Job Queue</a>
+      <a href="customers.html" class="nav-link active">Customers</a> <a href="reports.html" class="nav-link">Reports</a>
+      <a href="settings.html" class="nav-link">Settings</a>
+    </aside>
 
-<nav class="sidebar">
-  <a href="../index.html">Home</a>
-  <a href="dashboard.html">Dashboard</a>
-  <a href="job_entry.html">Job Entry</a>
-  <a href="materials.html">Materials</a>
-  <a href="customers.html" class="active">Customers</a>
-  <a href="expenses.html">Expenses</a>
-  <a href="reports.html">Reports</a>
-  <a href="monitoring.html">Monitoring</a>
-  <a href="settings.html">Settings</a>
-</nav>
+    <main class="main">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Customer List</div>
+          <div class="page-sub">All unique customers from job entries</div>
+        </div>
+      </div>
 
-<main>
-  <h1 class="page-title">Customers</h1>
-  <p>Manage customer details, contact information, past jobs, and credit accounts.</p>
-</main>
+      <div class="card" style="margin-bottom:16px">
+        <h3>Customer Details</h3>
+        <table class="table" id="customerTable">
+          <thead>
+            <tr><th>Customer Name</th><th>Contact Number</th><th>Email ID</th><th>Total Jobs</th><th>Last Job ID</th></tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="5" class="muted">Loading customers...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
 
-<script src="../script.js"></script>
+  <script src="../script.js"></script>
+  <script>
+    // 1. Authentication Check
+    checkAuth();
+
+    function loadLocalJobs() {
+      // Loads job data from the browser's local storage
+      return JSON.parse(localStorage.getItem('sv_jobs') || '[]');
+    }
+
+    function renderCustomers() {
+      const allJobs = loadLocalJobs();
+      const tbody = document.querySelector('#customerTable tbody');
+      
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      if (allJobs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="muted">No customers found.</td></tr>';
+        return;
+      }
+      
+      // Use a Map to consolidate customer data based on a unique key
+      const customersMap = new Map(); // Key: customer name + contact
+
+      allJobs.forEach(job => {
+        // Normalize customer name and use contact number for unique identification
+        const key = `${job.customer.trim().toLowerCase()}||${job.contact}`;
+        
+        if (customersMap.has(key)) {
+          const customerData = customersMap.get(key);
+          customerData.totalJobs++;
+          // Update last job ID if the current job is newer
+          if (new Date(job.createdAt) > new Date(customerData.lastJobCreatedAt)) {
+            customerData.lastJobId = job.id;
+            customerData.lastJobCreatedAt = job.createdAt;
+          }
+        } else {
+          customersMap.set(key, {
+            name: job.customer,
+            contact: job.contact,
+            email: job.customerEmail || 'N/A',
+            totalJobs: 1,
+            lastJobId: job.id,
+            lastJobCreatedAt: job.createdAt
+          });
+        }
+      });
+      
+      // Convert Map values to an array and sort by customer name
+      const uniqueCustomers = Array.from(customersMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+
+      uniqueCustomers.forEach(customer => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${customer.name}</td>
+          <td>${customer.contact}</td>
+          <td>${customer.email}</td>
+          <td>${customer.totalJobs}</td>
+          <td><span style="font-weight:700;">#${customer.lastJobId}</span></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // Initialize the page
+    document.addEventListener("DOMContentLoaded", renderCustomers);
+
+  </script>
 </body>
 </html>
