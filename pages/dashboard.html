@@ -5,8 +5,53 @@
   <title>Dashboard — Siddhivinayak Digital</title>
   <link rel="stylesheet" href="../styles/internal.css">
   <style>
-    /* Dashboard specific styling is mostly covered in internal.css, 
-       but you can add more here if needed. */
+    /* Dashboard specific styles */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .summary-card {
+      background: white;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+      text-align: center;
+    }
+    .summary-card h4 {
+      margin-top: 0;
+      color: var(--muted);
+      font-size: 14px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .summary-card .value {
+      font-size: 36px;
+      font-weight: 900;
+      color: var(--primary);
+    }
+    .summary-card .link {
+      font-size: 14px;
+      color: var(--text-color);
+      display: block;
+      margin-top: 10px;
+    }
+    .recent-activity {
+      margin-top: 30px;
+    }
+    .recent-activity h3 {
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
+    .no-data {
+      color: var(--muted);
+      text-align: center;
+      padding: 40px;
+      background: #f8f8f8;
+      border-radius: 8px;
+    }
   </style>
 </head>
 <body>
@@ -14,7 +59,7 @@
     <div class="brand">Siddhivinayak Digital</div>
     <div class="controls">
         <button class="btn secondary" onclick="history.back()">Back</button>
-        <a href="../index.html" class="btn secondary">Home</a>
+        <a href="../index.html" class="btn secondary">Home</a> 
         <div class="user-display">Logged in as: <span id="sv_user_name"></span></div>
         <span id="liveTime"></span>
         <button class="btn" onclick="logout()">Logout</button>
@@ -36,131 +81,76 @@
     <main class="main">
       <div class="page-header">
         <div>
-          <div class="page-title">Dashboard Overview</div>
-          <div class="page-sub">Quick view of shop performance and pending tasks.</div>
+          <div class="page-title">Welcome to the Dashboard!</div>
+          <div class="page-sub">Quick summary of today's activities and system health.</div>
         </div>
       </div>
 
-      <div class="grid-4">
-        <div class="card stat-card primary">
-          <h4>Total Jobs Today</h4>
-          <p id="statTodayJobs">0</p>
+      <div class="summary-grid">
+        <div class="summary-card">
+          <h4>Jobs in Queue</h4>
+          <div class="value">12</div>
+          <a href="job-queue.html" class="link">View Full Queue →</a>
         </div>
-        <div class="card stat-card accent">
-          <h4>Pending Jobs</h4>
-          <p id="statPendingJobs">0</p>
+        <div class="summary-card">
+          <h4>New Jobs Today</h4>
+          <div class="value">5</div>
+          <a href="job-entry.html" class="link">Add New Job →</a>
         </div>
-        <div class="card stat-card danger">
-          <h4>Total Due Amount (₹)</h4>
-          <p id="statDueAmount">₹ 0</p>
+        <div class="summary-card">
+          <h4>Total Expenses (Today)</h4>
+          <div class="value">₹ 2,500</div>
+          <a href="expenses.html" class="link">View Expenses →</a>
         </div>
-        <div class="card stat-card info">
-          <h4>Today's Expenses (₹)</h4>
-          <p id="statExpenses">₹ 0</p>
+        <div class="summary-card">
+          <h4>Active Users</h4>
+          <div class="value">3</div>
+          <a href="settings.html" class="link">Manage Users →</a>
         </div>
       </div>
 
-      <div class="card" style="margin-top: 20px;">
-        <h3>Latest 5 Job Entries</h3>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Customer</th>
-              <th>Amount (₹)</th>
-              <th>Assigned</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="latestJobsTableBody">
-            <tr><td colspan="5" style="text-align: center;">Loading data...</td></tr>
-          </tbody>
-        </table>
+      <div class="recent-activity">
+        <h3>Recent Activity</h3>
+        <div class="no-data">
+          Activity log feature pending implementation.
+        </div>
       </div>
+      
     </main>
   </div>
 
   <script src="../script.js"></script>
   <script>
-    // Functions are assumed to be available from script.js
-    const ACCESS_PERMISSIONS = window.ACCESS_PERMISSIONS || {}; 
-    const USER_ROLE = localStorage.getItem("sv_user_role");
-    
-    // --- Dashboard Specific Functions ---
-    function getStatusClass(status) {
-        if (status === 'Pending') return 'status-pending';
-        if (status === 'Completed') return 'status-completed';
-        if (status === 'Cancelled') return 'status-cancelled';
-        return 'status-default';
-    }
+    const ACCESS_PERMISSIONS = window.ACCESS_PERMISSIONS || {};
 
-    function renderDashboard() {
-        const allJobs = JSON.parse(localStorage.getItem('sv_jobs') || '[]');
-        const allExpenses = JSON.parse(localStorage.getItem('sv_expenses') || '[]');
-        const today = new Date().toISOString().slice(0, 10);
-        
-        // --- Stats Calculation ---
-        const stats = allJobs.reduce((acc, job) => {
-            const jobDate = job.orderDate;
-            const pending = parseFloat(job.pendingAmount) || 0;
-            const isToday = jobDate === today;
-
-            if (isToday) { acc.todayJobs += 1; }
-            if (job.status === 'Pending') {
-                acc.pendingJobs += 1;
-                acc.dueAmount += pending;
-            }
-            return acc;
-        }, { todayJobs: 0, pendingJobs: 0, dueAmount: 0 });
-
-        const todayExpenseTotal = allExpenses
-            .filter(e => e.date === today)
-            .reduce((sum, e) => sum + parseFloat(e.amount), 0);
-
-        // --- Render Stats ---
-        document.getElementById('statTodayJobs').textContent = stats.todayJobs;
-        document.getElementById('statPendingJobs').textContent = stats.pendingJobs;
-        document.getElementById('statDueAmount').textContent = `₹ ${stats.dueAmount.toFixed(0)}`;
-        document.getElementById('statExpenses').textContent = `₹ ${todayExpenseTotal.toFixed(0)}`; 
-
-        // --- Render Latest Jobs ---
-        const latestJobs = allJobs.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
-        const tableBody = document.getElementById('latestJobsTableBody');
-        tableBody.innerHTML = '';
-
-        if (latestJobs.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No jobs entered yet.</td></tr>';
-            return;
-        }
-
-        latestJobs.forEach(job => {
-            const row = tableBody.insertRow();
-            row.innerHTML = `
-                <td>${job.id}</td>
-                <td>${job.customer}</td>
-                <td>₹ ${job.amount}</td>
-                <td>${job.assignedPerson || 'N/A'}</td>
-                <td><span class="status-badge ${getStatusClass(job.status)}">${job.status}</span></td>
-            `;
-        });
-    }
-    
-    // --- Initialization and Role-Based Access Filter ---
     document.addEventListener("DOMContentLoaded", function() {
-        checkAuth(); // 1. Run Auth & Access Check
+        // 1. Authentication Check (from script.js)
+        checkAuth(); 
         
-        // 2. Run dashboard rendering function
-        renderDashboard();
-        
-        // 3. Hide sidebar links based on role access
-        const allowedPages = ACCESS_PERMISSIONS[USER_ROLE] || [];
+        // 2. Hide sidebar links based on user's current permissions
+        const userPermissions = JSON.parse(localStorage.getItem("sv_user_permissions") || "{}");
+        const features = ACCESS_PERMISSIONS.features;
+
         document.querySelectorAll('.sidebar .nav-link').forEach(link => {
             const href = link.getAttribute('href');
             const pageName = href ? href.split('/').pop() : '';
-            if (pageName && !allowedPages.includes(pageName)) {
+
+            // Map page file name to a feature key (e.g., 'job-entry.html' -> 'job_entry')
+            const featureKey = Object.keys(features).find(key => 
+                features[key].page === pageName
+            );
+
+            // Check if user has 'view' permission for this feature
+            const hasViewPermission = userPermissions[featureKey] && userPermissions[featureKey].includes('view');
+
+            if (featureKey && !hasViewPermission) {
+                // If a feature is mapped but the user lacks permission, hide the link
                 link.style.display = 'none';
             }
         });
+        
+        // 3. Start live clock (from script.js)
+        startLiveClock();
     });
   </script>
 </body>
