@@ -5,34 +5,63 @@
     <title>Login - Siddhivinayak Digital</title>
     <link rel="stylesheet" href="../styles/internal.css">
     <style>
-        /* Login Page Specific Styles (ensures it looks good without the sidebar) */
+        /* Login Page Specific Styles */
         body {
+            /* Use a slightly darker background for contrast */
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background-color: var(--background);
+            background-color: #f0f2f5; /* Light subtle background */
             flex-direction: column;
+            padding: 20px;
         }
 
-        .login-container {
+        .login-wrapper {
             width: 100%;
+            max-width: 900px;
+            display: flex;
+            gap: 50px;
+            align-items: center;
+        }
+
+        .company-info {
+            flex: 1;
+            padding: 20px;
+        }
+
+        .login-card {
+            flex: 1;
             max-width: 400px;
             padding: 30px;
             background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1); /* Stronger shadow for depth */
         }
 
-        .login-container h2 {
+        .company-info h1 {
+            font-size: 3em;
+            color: var(--primary); /* Primary brand color */
+            margin-bottom: 10px;
+        }
+        
+        .company-info p {
+            font-size: 1.1em;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .login-card h2 {
             text-align: center;
-            color: var(--primary);
+            color: var(--text-color);
             margin-bottom: 25px;
-            font-size: 24px;
+            font-size: 20px;
+            font-weight: 600;
         }
 
         .field label {
             font-weight: 600;
+            margin-bottom: 5px;
         }
 
         #error {
@@ -42,23 +71,51 @@
             text-align: center;
             display: none;
         }
+        
+        .back-button-container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            justify-content: flex-start;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <h2>Siddhivinayak Digital - Login</h2>
-        <form id="loginForm">
-            <div class="field">
-                <label for="username">Username</label>
-                <input type="text" id="username" required autocomplete="username" placeholder="Enter your username">
-            </div>
-            <div class="field">
-                <label for="password">Password</label>
-                <input type="password" id="password" required autocomplete="current-password" placeholder="Enter your password">
-            </div>
-            <p id="error"></p>
-            <button type="submit" class="btn primary" style="width: 100%; margin-top: 20px;">Log In</button>
-        </form>
+    <div class="back-button-container">
+        <button class="btn secondary" onclick="history.back()">Back</button>
+    </div>
+
+    <div class="login-wrapper">
+        <div class="company-info">
+            <h1>Siddhivinayak Digital</h1>
+            <p>
+                **Internal Management Portal**
+            </p>
+            <p>
+                Welcome back! This system is designed to streamline job entry, queue management, daily expenses, and customer tracking for efficient operation of the shop. Please log in with your assigned credentials to access the control panel.
+            </p>
+            <p style="margin-top: 20px; font-size: 0.9em; color: #777;">
+                *For support or access issues, please contact the system administrator.*
+            </p>
+        </div>
+        
+        <div class="login-card">
+            <h2>Access Control Panel</h2>
+            <form id="loginForm">
+                <div class="field">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" required autocomplete="username" placeholder="admin, ganesh, or pooja" value="admin"> </div>
+                <div class="field">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" required autocomplete="current-password" placeholder="***">
+                </div>
+                <p id="error"></p>
+                <button type="submit" class="btn primary" style="width: 100%; margin-top: 20px; font-size: 16px; padding: 10px;">
+                    <span style="font-weight: 700;">Sign In</span>
+                </button>
+            </form>
+        </div>
     </div>
 
     <script src="../script.js"></script>
