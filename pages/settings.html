@@ -2,40 +2,72 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>User Management & Settings — Siddhivinayak Digital</title>
+    <title>User Management — Siddhivinayak Digital</title>
     <link rel="stylesheet" href="../styles/internal.css">
     <style>
-        .settings-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
+        /* Base styles from internal.css are assumed. Adding specific styles: */
+        .table-container {
+            overflow-x: auto;
+            max-width: 100%;
         }
-        .settings-grid .card {
-            padding: 20px;
-        }
-        .field {
-            margin-bottom: 20px;
-        }
-        .field label {
-            font-weight: bold;
-            display: block;
-            margin-bottom: 8px;
-            font-size: 1.1em;
-        }
-        textarea {
-            resize: vertical;
-            min-height: 120px;
-        }
-        .btn-save {
-            background-color: var(--primary);
-            color: white;
-            padding: 10px 20px;
-            font-size: 1.05em;
-        }
-        .note {
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
             font-size: 0.9em;
-            color: var(--info);
-            margin-top: 5px;
+        }
+        .user-table th, .user-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .user-table th {
+            background-color: var(--highlight);
+            color: var(--text-color);
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        .user-table tr:hover {
+            background-color: var(--hover-color);
+        }
+        .status-manager {
+            color: var(--success);
+            font-weight: bold;
+        }
+        .status-user {
+            color: var(--primary);
+        }
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.4); 
+        }
+        .modal-content {
+            background-color: white;
+            margin: 10% auto; 
+            padding: 30px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .close-btn {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close-btn:hover,
+        .close-btn:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -61,169 +93,283 @@
             <a href="expenses.html" class="nav-link">Daily Expenses</a>
             <a href="reports.html" class="nav-link">Reports</a>
             <a href="settings.html" class="nav-link active">User Management</a>
-            </aside>
+        </aside>
 
         <main class="main">
             <div class="page-header">
                 <div>
-                    <div class="page-title">User Management & Global Settings</div>
-                    <div class="page-sub">Define authorized users and managers for the application.</div>
+                    <div class="page-title">User Management Dashboard</div>
+                    <div class="page-sub">Add, edit, and view all authorized users and managers.</div>
+                </div>
+                <div>
+                    <button class="btn" id="addUserBtn">➕ Add New User</button>
+                    <button class="btn secondary" id="refreshBtn">🔄 Refresh Data</button>
                 </div>
             </div>
 
-            <div class="settings-grid">
-                <div class="card">
-                    <form id="userSettingsForm">
-                        <div class="field">
-                            <label for="managerList">Managers List (One name per line)</label>
-                            <textarea id="managerList" required placeholder="Enter the names of all managers who can be assigned jobs.&#10;e.g.,&#10;Amit Sharma&#10;Priya Yadav"></textarea>
-                            <div class="note">These names will populate the "Manager" dropdown on the New Job Entry form.</div>
-                        </div>
-
-                        <div class="field">
-                            <label for="allUsersList">All Authorized Users (Username:Password - One per line)</label>
-                            <textarea id="allUsersList" required placeholder="Enter all authorized users with their passwords.&#10;e.g.,&#10;admin:123456&#10;user1:password123&#10;amit:amit@123"></textarea>
-                            <div class="note">These users can log in. User credentials are now stored in the Google Sheet.</div>
-                        </div>
-
-                        <button type="submit" class="btn btn-save" id="saveButton">Save Settings</button>
-                        <p id="saveMessage" style="color: var(--success); margin-top: 10px; display: none;">Settings saved successfully!</p>
-                    </form>
+            <div class="card">
+                <h3>Authorized Users</h3>
+                <p id="loadingMessage">Loading user data from Google Sheet...</p>
+                <p id="errorMessage" style="color: var(--danger); display: none;"></p>
+                
+                <div class="table-container">
+                    <table class="user-table" id="usersTable" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Manager Status</th>
+                                <th>Password (Hidden)</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            </tbody>
+                    </table>
                 </div>
             </div>
         </main>
     </div>
+    
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Add New User</h2>
+            <form id="userForm">
+                <div class="field">
+                    <label for="modalUsername">Username</label>
+                    <input type="text" id="modalUsername" required>
+                </div>
+                <div class="field">
+                    <label for="modalPassword">Password</label>
+                    <input type="password" id="modalPassword" required>
+                </div>
+                <div class="field">
+                    <input type="checkbox" id="modalIsManager">
+                    <label for="modalIsManager" style="display: inline; margin-left: 10px;">Is Manager (Can be assigned jobs)</label>
+                </div>
+                <button type="submit" class="btn btn-save" id="modalSaveBtn">Save User</button>
+            </form>
+        </div>
+    </div>
 
     <script src="../script.js"></script>
     <script>
-        // Access global functions from script.js
+        // Global functions needed from script.js
         checkAuth = window.checkAuth;
-        saveUserSettingsToSheet = window.saveUserSettingsToSheet; 
+        fetchSheetData = window.fetchSheetData;
+        saveUserSettingsToSheet = window.saveUserSettingsToSheet;
         
-        const managerListInput = document.getElementById('managerList');
-        const allUsersListInput = document.getElementById('allUsersList');
-        const userSettingsForm = document.getElementById('userSettingsForm');
-        const saveButton = document.getElementById('saveButton');
-        const saveMessage = document.getElementById('saveMessage');
+        const usersTableBody = document.getElementById('usersTableBody');
+        const usersTable = document.getElementById('usersTable');
+        const loadingMessage = document.getElementById('loadingMessage');
+        const errorMessage = document.getElementById('errorMessage');
+        const addUserBtn = document.getElementById('addUserBtn');
+        const refreshBtn = document.getElementById('refreshBtn');
 
-        // Local Storage Keys for loading (we still use Local Storage to quickly fetch manager list)
-        const MANAGER_KEY = 'managersList';
-        const USERS_KEY = 'usersCredentials'; // Retained for backwards compatibility if needed
+        // Modal Elements
+        const userModal = document.getElementById('userModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const userForm = document.getElementById('userForm');
+        const modalUsername = document.getElementById('modalUsername');
+        const modalPassword = document.getElementById('modalPassword');
+        const modalIsManager = document.getElementById('modalIsManager');
+        const modalSaveBtn = document.getElementById('modalSaveBtn');
+
+        let currentUsers = []; // Holds the master list of users fetched from the sheet
+
+        // --- MODAL FUNCTIONS ---
+
+        function openModal() {
+            modalTitle.textContent = 'Add New User';
+            modalUsername.value = '';
+            modalPassword.value = '';
+            modalIsManager.checked = false;
+            modalUsername.disabled = false; // Enable username editing for new user
+            userModal.style.display = 'block';
+        }
+
+        function closeModal() {
+            userModal.style.display = 'none';
+        }
+
+        function editUser(username) {
+            const user = currentUsers.find(u => u.username === username);
+            if (!user) return;
+            
+            modalTitle.textContent = 'Edit User: ' + username;
+            modalUsername.value = user.username;
+            modalPassword.value = user.password; // Passwords are read from the sheet
+            modalIsManager.checked = user.isManager;
+            modalUsername.disabled = true; // Disable username editing for existing user
+            userModal.style.display = 'block';
+        }
+
+        // --- DATA HANDLING ---
 
         /**
-         * Loads settings from Local Storage (for manager dropdown) and logs in credentials 
-         * (which will soon be obsolete, but we keep it for fallback).
+         * Renders the user list into the HTML table.
+         * @param {Array<Object>} users - Array of user objects {username, password, isManager}
          */
-        function loadSettings() {
-            // Managers List: Still loaded locally, but saved to the Sheet as well
-            const managersJSON = localStorage.getItem(MANAGER_KEY);
-            if (managersJSON) {
-                try {
-                    const managers = JSON.parse(managersJSON);
-                    managerListInput.value = managers.join('\n');
-                } catch (e) {
-                    managerListInput.value = '';
-                }
-            } else {
-                 managerListInput.value = 'Amit Sharma\nPriya Yadav'; // Default
+        function renderUsers(users) {
+            usersTableBody.innerHTML = '';
+            if (users.length === 0) {
+                usersTableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No users defined. Click "Add New User" to start.</td></tr>';
             }
+            
+            users.forEach(user => {
+                const row = usersTableBody.insertRow();
+                row.insertCell().textContent = user.username;
+                
+                const managerStatusCell = row.insertCell();
+                managerStatusCell.textContent = user.isManager ? 'Manager' : 'Standard User';
+                managerStatusCell.className = user.isManager ? 'status-manager' : 'status-user';
+                
+                // NOTE: Password is intentionally displayed as hidden text
+                row.insertCell().textContent = '******'; 
 
-            // All Users List: Since saving is now to the sheet, we load defaults for initial setup
-            // NOTE: The user list should ideally be fetched from the Google Sheet via a GET request
-            // but we use defaults here to allow initial setup via the settings page.
-            allUsersListInput.value = 'admin:admin123\nmanager:manager123';
+                const actionsCell = row.insertCell();
+                const editBtn = document.createElement('button');
+                editBtn.textContent = 'Edit';
+                editBtn.className = 'btn secondary small';
+                editBtn.style.marginRight = '5px';
+                editBtn.onclick = () => editUser(user.username);
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.className = 'btn danger small';
+                deleteBtn.onclick = () => deleteUser(user.username);
+                
+                actionsCell.appendChild(editBtn);
+                actionsCell.appendChild(deleteBtn);
+            });
+            
+            usersTable.style.display = 'table';
         }
 
         /**
-         * Handles form submission to save settings to the Google Sheet.
+         * Fetches user data from the Google Sheet via the Apps Script (GET request).
          */
-        userSettingsForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            saveButton.disabled = true;
-            saveMessage.style.display = 'none';
-            saveMessage.style.color = 'var(--success)';
-
-            // 1. Process Managers List
-            const managerLines = managerListInput.value
-                .split('\n')
-                .map(line => line.trim())
-                .filter(line => line.length > 0);
-            
-            // Save managers list locally for IMMEDIATE use in the Job Entry dropdown
-            localStorage.setItem(MANAGER_KEY, JSON.stringify(managerLines)); 
-
-            // 2. Process All Users List (Username:Password)
-            const userLines = allUsersListInput.value
-                .split('\n')
-                .map(line => line.trim())
-                .filter(line => line.length > 0);
-
-            const userMap = {};
-            let parseError = false;
-
-            userLines.forEach(line => {
-                const parts = line.split(':');
-                if (parts.length === 2) {
-                    const username = parts[0].trim();
-                    const password = parts[1].trim();
-                    if (username && password) {
-                        userMap[username] = password;
-                    }
-                } else {
-                    parseError = true;
-                }
-            });
-
-            if (parseError) {
-                alert("Warning: Some user lines were not in the 'username:password' format and were ignored.");
-            }
-            
-            // Prepare the data to send to the Google Sheet
-            const settingsData = {
-                managers: managerLines,
-                users: Object.entries(userMap).map(([user, pass]) => ({ username: user, password: pass }))
-            };
+        async function fetchUsers() {
+            loadingMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+            usersTable.style.display = 'none';
+            currentUsers = [];
 
             try {
-                // Call the new global function to send data to the script
-                const success = await saveUserSettingsToSheet(settingsData); 
-
-                if (success) {
-                    saveMessage.textContent = 'Settings and User Credentials saved to Google Sheet successfully!';
-                    saveMessage.style.display = 'block';
+                // Calls the function in script.js which sends a GET request
+                const data = await fetchSheetData('USER_CREDENTIALS'); 
+                
+                if (data && data.length > 0) {
+                    // Assuming data format: [ [Username, Password, Manager Status] ]
+                    currentUsers = data.map(row => ({
+                        username: row[0],
+                        password: row[1],
+                        isManager: row[2] === 'Yes'
+                    }));
+                    renderUsers(currentUsers);
                 } else {
-                    // saveUserSettingsToSheet will alert the failure, just update the message here
-                    saveMessage.textContent = 'ERROR: Submission failed. Check script credentials.';
-                    saveMessage.style.color = 'var(--danger)';
-                    saveMessage.style.display = 'block';
+                    errorMessage.textContent = 'No user credentials found in the Google Sheet.';
+                    errorMessage.style.display = 'block';
+                    renderUsers([]);
                 }
             } catch (error) {
-                console.error("Settings submission failed:", error);
-                saveMessage.textContent = 'CRITICAL NETWORK ERROR. Could not reach the Apps Script.';
-                saveMessage.style.color = 'var(--danger)';
-                saveMessage.style.display = 'block';
+                console.error("Failed to fetch user data:", error);
+                errorMessage.textContent = 'Error fetching user data. Check Apps Script deployment and logs.';
+                errorMessage.style.display = 'block';
+                renderUsers([]);
+            } finally {
+                loadingMessage.style.display = 'none';
             }
+        }
+        
+        /**
+         * Deletes a user from the master list and resubmits the entire list.
+         */
+        function deleteUser(username) {
+            if (!confirm(`Are you sure you want to delete user "${username}"?`)) return;
 
-            saveButton.disabled = false;
+            currentUsers = currentUsers.filter(u => u.username !== username);
+            submitMasterList();
+        }
+
+        /**
+         * Submits the entire currentUsers array to the Google Sheet (via saveUserSettingsToSheet in script.js).
+         */
+        async function submitMasterList() {
+            modalSaveBtn.disabled = true;
+            loadingMessage.textContent = 'Saving changes to Google Sheet...';
+            loadingMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
             
-            // Clear message after a short delay
-            setTimeout(() => {
-                saveMessage.style.display = 'none';
-            }, 5000);
+            // Reconstruct the managers list from the updated currentUsers array
+            const managersList = currentUsers
+                .filter(u => u.isManager)
+                .map(u => u.username);
+            
+            const settingsData = {
+                managers: managersList,
+                users: currentUsers.map(u => ({ username: u.username, password: u.password }))
+            };
+            
+            // Send to Google Sheet
+            const success = await saveUserSettingsToSheet(settingsData);
+            
+            if (success) {
+                // Update local manager list for Job Entry dropdown
+                localStorage.setItem('managersList', JSON.stringify(managersList));
+                fetchUsers(); // Refresh the table from the Sheet
+            } else {
+                errorMessage.textContent = 'Failed to save changes to the sheet. Check script logs.';
+                errorMessage.style.display = 'block';
+                loadingMessage.style.display = 'none';
+            }
+            modalSaveBtn.disabled = false;
+        }
+
+
+        // --- EVENT LISTENERS ---
+
+        addUserBtn.addEventListener('click', openModal);
+        refreshBtn.addEventListener('click', fetchUsers);
+        
+        // Handle form submission inside the modal (Add/Edit)
+        userForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const username = modalUsername.value.trim();
+            const password = modalPassword.value.trim();
+            const isManager = modalIsManager.checked;
+            
+            // Check if user already exists (for "Edit" mode)
+            const existingIndex = currentUsers.findIndex(u => u.username === username);
+
+            if (existingIndex !== -1) {
+                // Edit existing user
+                currentUsers[existingIndex] = { username, password, isManager };
+            } else {
+                // Add new user
+                if (currentUsers.some(u => u.username === username)) {
+                    alert('Error: Username already exists!');
+                    return;
+                }
+                currentUsers.push({ username, password, isManager });
+            }
+            
+            closeModal();
+            submitMasterList();
         });
 
-
-        // --- Initialization ---
-        document.addEventListener("DOMContentLoaded", function() {
-            // checkAuth() MUST be called first to ensure the user is logged in
-            if (typeof checkAuth === 'function') {
-                 checkAuth(); 
-            } else {
-                 console.error("checkAuth function is missing from script.js");
+        // Close modal when user clicks outside of it
+        window.onclick = function(event) {
+            if (event.target == userModal) {
+                closeModal();
             }
-            
-            loadSettings(); 
+        }
+
+        // --- INITIALIZATION ---
+        document.addEventListener("DOMContentLoaded", function() {
+            checkAuth(); 
+            fetchUsers(); // Load users on page startup
         });
     </script>
 </body>
