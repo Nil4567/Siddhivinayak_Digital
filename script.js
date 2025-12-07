@@ -56,6 +56,55 @@ async function sendDataToScript(dataObject, dataType) {
         console.error("Fetch API (POST) error:", error);
         alert("Could not connect to the Google Apps Script URL. Check your URL and internet connection.");
         return false;
+     /**
+ * Core function to send Settings (Users/Managers) data to the Google Apps Script.
+ * @param {object} settingsData - The payload containing managers and users array.
+ * @returns {Promise<boolean>} True if submission was successful.
+ */
+async function saveUserSettingsToSheet(settingsData) {
+    // Re-use the existing sendDataToScript logic but adapt the payload
+    
+    const url = HARDCODED_SCRIPT_URL;
+    const token = HARDCODED_SECURITY_TOKEN;
+
+    if (url.includes('YOUR_DEPLOYED') || token.includes('YOUR_UNIQUE')) {
+        alert("CRITICAL ERROR: Google Apps Script URL or Token is not configured in script.js.");
+        return false;
+    }
+    
+    const payload = {
+        appToken: token,
+        dataType: 'USER_SETTINGS', // New data type identifier
+        data: settingsData
+    };
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            mode: 'cors',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        const result = await response.json();
+
+        if (result.result === 'success') {
+            return true;
+        } else {
+            console.error("Server Error:", result.error);
+            alert(`Settings Submission failed! Server responded with: ${result.error}`);
+            return false;
+        }
+
+    } catch (error) {
+        console.error("Fetch API (POST) error for settings:", error);
+        alert("Could not connect to the Google Apps Script URL for settings submission.");
+        return false;
+    }
+}
+window.saveUserSettingsToSheet = saveUserSettingsToSheet; // Export globally
     }
 }
 window.sendDataToScript = sendDataToScript; // Ensure this is still exported
