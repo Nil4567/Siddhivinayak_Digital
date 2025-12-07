@@ -1,56 +1,129 @@
 <!doctype html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>Siddhivinayak Digital</title>
-  <link rel="stylesheet" href="styles/internal.css">
-  <style>
-    /* Styling for the main entry page */
-    body {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      background-color: var(--background);
-      flex-direction: column;
-      text-align: center;
-      font-family: Arial, sans-serif;
-    }
-    .loading-message {
-      font-size: 1.5em;
-      color: var(--primary);
-      animation: pulse 1.5s infinite;
-    }
-    @keyframes pulse {
-      0% { opacity: 0.5; }
-      50% { opacity: 1; }
-      100% { opacity: 0.5; }
-    }
-  </style>
+    <meta charset="utf-8">
+    <title>Login - Siddhivinayak Digital</title>
+    <link rel="stylesheet" href="../styles/internal.css">
+    <style>
+        /* Login Page Specific Styles */
+        body {
+            /* Use a slightly darker background for contrast */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f2f5; /* Light subtle background */
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .login-wrapper {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            gap: 50px;
+            align-items: center;
+        }
+
+        .company-info {
+            flex: 1;
+            padding: 20px;
+        }
+
+        .login-card {
+            flex: 1;
+            max-width: 400px;
+            padding: 30px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1); /* Stronger shadow for depth */
+        }
+
+        .company-info h1 {
+            font-size: 3em;
+            color: var(--primary); /* Primary brand color */
+            margin-bottom: 10px;
+        }
+        
+        .company-info p {
+            font-size: 1.1em;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .login-card h2 {
+            text-align: center;
+            color: var(--text-color);
+            margin-bottom: 25px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .field label {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        #error {
+            color: var(--danger);
+            font-weight: 700;
+            margin-top: 15px;
+            text-align: center;
+            display: none;
+        }
+        
+        .back-button-container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            justify-content: flex-start;
+            margin-bottom: 20px;
+        }
+    </style>
 </head>
 <body>
-  <div class="loading-message">
-    Redirecting to Login or Dashboard...
-  </div>
+    <div class="back-button-container">
+        <button class="btn secondary" onclick="history.back()">Back</button>
+    </div>
 
-  <script src="script.js"></script>
-  <script>
-    // This script block overrides the default behavior of checkLogin() 
-    // to act as a proper gatekeeper for the home page.
-    
-    document.addEventListener("DOMContentLoaded", function() {
-        const loggedIn = localStorage.getItem("loggedIn") === "yes";
-        const BASE = "https://nil4567.github.io/Siddhivinayak_Digital";
+    <div class="login-wrapper">
+        <div class="company-info">
+            <h1>Siddhivinayak Digital</h1>
+            <p>
+                **Internal Management Portal**
+            </p>
+            <p>
+                Welcome back! This system is designed to streamline job entry, queue management, daily expenses, and customer tracking for efficient operation of the shop. Please log in with your assigned credentials to access the control panel.
+            </p>
+            <p style="margin-top: 20px; font-size: 0.9em; color: #777;">
+                *For support or access issues, please contact the system administrator.*
+            </p>
+        </div>
+        
+        <div class="login-card">
+            <h2>Access Control Panel</h2>
+            <form id="loginForm">
+                <div class="field">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" required autocomplete="username" placeholder="admin, ganesh, or pooja" value="admin"> </div>
+                <div class="field">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" required autocomplete="current-password" placeholder="***">
+                </div>
+                <p id="error"></p>
+                <button type="submit" class="btn primary" style="width: 100%; margin-top: 20px; font-size: 16px; padding: 10px;">
+                    <span style="font-weight: 700;">Sign In</span>
+                </button>
+            </form>
+        </div>
+    </div>
 
-        if (loggedIn) {
-            // User is already logged in, send them directly to the dashboard
-            window.location.href = `${BASE}/pages/dashboard.html`;
-        } else {
-            // User is NOT logged in, send them to the login page
-            window.location.href = `${BASE}/pages/login.html`;
-        }
-    });
-
-  </script>
+    <script src="../script.js"></script>
+    <script>
+        // Calls the function defined in script.js to check if the user is already logged in
+        document.addEventListener("DOMContentLoaded", function() {
+            checkLogin(); 
+        });
+    </script>
 </body>
 </html>
