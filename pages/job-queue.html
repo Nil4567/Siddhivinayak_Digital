@@ -32,7 +32,8 @@
         text-align: center; 
     }
     #jobQueueTable td:nth-child(2) { text-align: left; } /* Customer name left align */
-    #jobQueueTable td:nth-child(7), #jobQueueTable td:nth-child(8) { text-align: right; } /* Amount fields right align */
+    /* Adjusting column number for amount fields due to new 'Description' column */
+    #jobQueueTable td:nth-child(8), #jobQueueTable td:nth-child(9) { text-align: right; } /* Amount fields right align */
     
     /* Make the Status cell look clickable */
     #jobQueueTable td.status-pending,
@@ -47,6 +48,19 @@
     #jobQueueTable td.status-working:hover,
     #jobQueueTable td.status-hold:hover {
         opacity: 0.9;
+    }
+    
+    /* Style for the Description link */
+    .description-cell {
+        font-size: 11px !important;
+    }
+    .description-cell a {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 700;
+    }
+    .description-cell a:hover {
+        text-decoration: underline;
     }
     
     /* --- Modal Styles --- */
@@ -147,7 +161,7 @@
               <th>ID</th>
               <th>Customer</th>
               <th>Manager</th>
-              <th>Status</th>
+              <th>Description</th> <th>Status</th>
               <th>Total TAT (Days)</th>
               <th>Pending TAT (Days)</th>
               <th>Amount (Rs.)</th>
@@ -155,7 +169,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr><td colspan="8" class="muted">Loading job queue...</td></tr>
+            <tr><td colspan="9" class="muted">Loading job queue...</td></tr>
           </tbody>
         </table>
       </div>
@@ -185,6 +199,13 @@
               <form id="statusUpdateForm">
                   <input type="hidden" id="modalJobIndex">
                   <input type="hidden" id="modalOriginalJobId">
+                  
+                  <div class="form-row">
+                      <div class="field">
+                          <label style="font-weight:700;">Job Description / Instructions</label>
+                          <p id="modalDescription" style="border: 1px solid #ccc; padding: 8px; border-radius: 4px; background: #f9f9f9; font-style: italic; font-size: 13px;"></p>
+                      </div>
+                  </div>
                   
                   <div class="form-row">
                       <div class="field">
@@ -224,7 +245,7 @@
     // --- CONSTANTS ---
     const MS_PER_DAY = 1000 * 60 * 60 * 24;
     const DEFAULT_TAT_DAYS = 0; 
-    let activeJobsCache = []; // To store the currently displayed (filtered/sorted) jobs
+    let activeJobsCache = []; 
 
     
     // --- Helper Functions ---
@@ -259,6 +280,13 @@
         default: return 'status-pending';
       }
     }
+
+    // NEW: Function to show job description via alert (fulfills 'hyperlink' request)
+    function viewDescription(description, event) {
+        if (event) event.preventDefault();
+        alert(`Job Instructions:\n\n=====================\n${description}`);
+    }
+
 
     // --- Modal Functions ---
     function openModal(id) {
@@ -298,6 +326,7 @@
         // Populate Modal Fields
         document.getElementById('modalJobId').textContent = job.id;
         document.getElementById('modalCustomerName').textContent = job.customer;
+        document.getElementById('modalDescription').textContent = job.description; // <--- NEW: Populate description
         
         // Use the index of the job in the ACTIVE JOBS array for lookup in saveStatusUpdate
         document.getElementById('modalJobIndex').value = activeJobIndex; 
@@ -331,7 +360,7 @@
       const managerTATSummary = {}; 
       
       if (activeJobs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="muted">The Job Queue is empty! 🎉</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="muted">The Job Queue is empty! 🎉</td></tr>';
       } else {
         
         // Sort by Order Date (Oldest/Overdue first)
@@ -379,14 +408,17 @@
                  managerTATSummary[manager].totalPendingTAT += pendingTATDays;
             }
             
+            // Prepare description string for safe inline function call
+            // Escapes single quotes to prevent breaking the string literal
+            const safeDescription = job.description.replace(/'/g, "\\'");
+            
             const row = document.createElement('tr');
             
-            // Make Status column clickable and pass the INDEX in the activeJobsCache
             row.innerHTML = `
               <td>#${job.id}</td>
               <td style="text-align: left;">${job.customer}</td>
               <td>${job.assignedPerson}</td>
-              <td class="${getStatusClass(job.status)}" onclick="updateJobStatus(${index})">${job.status}</td>
+              <td class="description-cell"><a href="#" onclick="viewDescription('${safeDescription}', event)">[View]</a></td> <td class="${getStatusClass(job.status)}" onclick="updateJobStatus(${index})">${job.status}</td>
               <td>${DEFAULT_TAT_DAYS}</td> 
               <td><span class="${tatClass}">${displayValue}</span></td> 
               <td>₹ ${job.amount}</td>
@@ -421,7 +453,7 @@
       }
     }
     
-    // --- Submission Logic for Status Update ---
+    // --- Submission Logic for Status Update (Unchanged) ---
     document.getElementById('statusUpdateForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
@@ -450,7 +482,7 @@
             }
         }
 
-        // 2. Find the job in the ALL jobs list (since the index is from the filtered activeJobsCache)
+        // 2. Find the job in the ALL jobs list 
         const allJobs = loadLocalJobs();
         const globalJobIndex = allJobs.findIndex(job => job.id === originalJobId);
 
