@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "job_id": "SV0001",
+    "customer_name": "Initial Test Customer",
+    "description": "500 Business Cards",
+    "status": "In Queue",
+    "manager": "Admin User",
+    "date_entered": "2025-12-07T10:00:00Z"
+  }
+]
