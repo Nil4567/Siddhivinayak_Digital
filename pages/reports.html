@@ -2,70 +2,71 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Reports — Siddhivinayak Digital</title>
+    <title>Reports & Analytics — Siddhivinayak Digital</title>
     <link rel="stylesheet" href="../styles/internal.css">
     <style>
-        /* Report specific styles */
-        .report-grid {
+        /* Specific Styles for Reports Dashboard */
+        .reports-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 20px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
-        .report-card {
+        .summary-card {
             padding: 20px;
-            border-radius: 8px;
             text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .report-card h4 {
-            margin-top: 0;
+        .summary-card.total-revenue { background-color: var(--success-light); border-left: 5px solid var(--success); }
+        .summary-card.total-jobs { background-color: var(--primary-light); border-left: 5px solid var(--primary); }
+        .summary-card.total-expenses { background-color: var(--danger-light); border-left: 5px solid var(--danger); }
+
+        .summary-title {
             font-size: 1.1em;
-            color: var(--text-muted);
+            color: var(--text-secondary);
+            margin-bottom: 5px;
         }
-        .report-value {
+        .summary-value {
             font-size: 2.2em;
             font-weight: bold;
-            margin-top: 5px;
+            color: var(--text-color);
         }
         
-        /* Color themes for metrics */
-        .card-income {
-            background-color: #e6ffed; /* Light green */
-            border-left: 5px solid var(--success);
-        }
-        .card-expense {
-            background-color: #ffe6e6; /* Light red */
-            border-left: 5px solid var(--danger);
-        }
-        .card-balance {
-            background-color: #e0f7fa; /* Light blue */
-            border-left: 5px solid var(--primary);
-        }
-        .card-pending {
-            background-color: #fff8e1; /* Light yellow */
-            border-left: 5px solid #ffc107;
-        }
-
-        .data-source-status {
+        /* Filter and Table Styles */
+        .filter-controls {
+            display: flex;
+            gap: 20px;
             margin-bottom: 20px;
-            padding: 10px;
+            padding: 15px;
             background-color: var(--highlight);
-            border-radius: 6px;
+            border-radius: 8px;
+            flex-wrap: wrap;
         }
-        
-        .recent-data-table {
+        .filter-controls label {
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        .data-table-container {
+            overflow-x: auto;
+        }
+        .report-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 0.9em;
         }
-        .recent-data-table th, .recent-data-table td {
-            padding: 8px 10px;
+        .report-table th, .report-table td {
+            padding: 12px 15px;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
         }
-        .recent-data-table th {
+        .report-table th {
             background-color: var(--highlight);
+            color: var(--text-color);
+            text-transform: uppercase;
+        }
+        .report-table tr:hover {
+            background-color: var(--hover-color);
         }
     </style>
 </head>
@@ -91,59 +92,78 @@
             <a href="expenses.html" class="nav-link">Daily Expenses</a>
             <a href="reports.html" class="nav-link active">Reports</a>
             <a href="settings.html" class="nav-link">User Management</a>
-            <a href="admin-credentials.html" class="nav-link">Admin Credentials</a>
-        </aside>
+            </aside>
 
         <main class="main">
             <div class="page-header">
                 <div>
-                    <div class="page-title">Financial Reports Overview</div>
-                    <div class="page-sub">Aggregated financial data from all jobs and expenses.</div>
+                    <div class="page-title">Financial Reports & Analytics</div>
+                    <div class="page-sub">Comprehensive view of business performance.</div>
+                </div>
+                <div>
+                    <button class="btn" id="exportDataBtn">Export to CSV</button>
                 </div>
             </div>
-            
-            <div class="data-source-status" id="loadingStatus">
-                <p>Loading data from external source... Please wait.</p>
+
+            <div class="reports-grid">
+                <div class="card summary-card total-revenue">
+                    <div class="summary-title">Total Revenue</div>
+                    <div class="summary-value" id="totalRevenue">---</div>
+                </div>
+                <div class="card summary-card total-jobs">
+                    <div class="summary-title">Total Jobs Completed</div>
+                    <div class="summary-value" id="totalJobs">---</div>
+                </div>
+                <div class="card summary-card total-expenses">
+                    <div class="summary-title">Total Expenses</div>
+                    <div class="summary-value" id="totalExpenses">---</div>
+                </div>
+                <div class="card summary-card total-revenue">
+                    <div class="summary-title">Net Profit (Revenue - Expenses)</div>
+                    <div class="summary-value" id="netProfit">---</div>
+                </div>
             </div>
 
-            <div class="report-grid">
-                <div class="card report-card card-income">
-                    <h4>Total Income (Received)</h4>
-                    <div class="report-value">₹<span id="totalIncome">0.00</span></div>
-                </div>
-
-                <div class="card report-card card-expense">
-                    <h4>Total Expenses</h4>
-                    <div class="report-value">₹<span id="totalExpenses">0.00</span></div>
-                </div>
-                
-                <div class="card report-card card-balance">
-                    <h4>Net Balance (Income - Expense)</h4>
-                    <div class="report-value">₹<span id="netBalance">0.00</span></div>
-                </div>
-
-                <div class="card report-card card-pending">
-                    <h4>Total Pending Receivables</h4>
-                    <div class="report-value">₹<span id="totalReceivables">0.00</span></div>
-                </div>
-            </div>
-            
             <div class="card">
-                <h3>Recent Job Activity (Last 10 Entries)</h3>
+                <h3>Report Filters</h3>
+                <div class="filter-controls">
+                    <div class="field-inline">
+                        <label for="reportType">View:</label>
+                        <select id="reportType">
+                            <option value="jobs">Job Entries</option>
+                            <option value="expenses">Daily Expenses</option>
+                            <option value="all">All Transactions</option>
+                        </select>
+                    </div>
+                    <div class="field-inline">
+                        <label for="startDate">From:</label>
+                        <input type="date" id="startDate">
+                    </div>
+                    <div class="field-inline">
+                        <label for="endDate">To:</label>
+                        <input type="date" id="endDate">
+                    </div>
+                    <div class="field-inline">
+                        <button class="btn secondary" id="applyFiltersBtn">Apply Filters</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Detailed Data View (<span id="currentViewTitle">Job Entries</span>)</h3>
+                <p id="loadingMessage" style="color: var(--info);">Click 'Apply Filters' to load data.</p>
                 <div class="data-table-container">
-                    <table class="recent-data-table">
+                    <table class="report-table" id="reportTable">
                         <thead>
-                            <tr>
+                            <tr id="reportTableHeader">
                                 <th>Date</th>
-                                <th>Customer</th>
-                                <th>Amount (₹)</th>
-                                <th>Status</th>
-                                <th>Manager</th>
+                                <th>Description</th>
+                                <th>Type</th>
+                                <th>Amount</th>
                             </tr>
                         </thead>
-                        <tbody id="recentJobsBody">
-                            <tr><td colspan="5">No recent job data.</td></tr>
-                        </tbody>
+                        <tbody id="reportTableBody">
+                            </tbody>
                     </table>
                 </div>
             </div>
@@ -152,15 +172,218 @@
 
     <script src="../script.js"></script>
     <script>
-        // Access global functions from script.js
-        const getAllJobs = window.getAllJobs;
-        const getAllExpenses = window.getAllExpenses;
+        // Global functions needed from script.js
+        checkAuth = window.checkAuth;
+        fetchSheetData = window.fetchSheetData;
+
+        const reportType = document.getElementById('reportType');
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        const applyFiltersBtn = document.getElementById('applyFiltersBtn');
+        const reportTableBody = document.getElementById('reportTableBody');
+        const reportTableHeader = document.getElementById('reportTableHeader');
+        const loadingMessage = document.getElementById('loadingMessage');
+        const currentViewTitle = document.getElementById('currentViewTitle');
         
-        // --- Core Reporting Logic ---
-        async function loadReportData() {
-            const loadingStatus = document.getElementById('loadingStatus');
-            loadingStatus.textContent = "Fetching jobs and expenses data...";
+        // Summary Card Elements
+        const totalRevenue = document.getElementById('totalRevenue');
+        const totalJobs = document.getElementById('totalJobs');
+        const totalExpenses = document.getElementById('totalExpenses');
+        const netProfit = document.getElementById('netProfit');
+
+        let allJobData = [];
+        let allExpenseData = [];
+
+        /**
+         * Converts a date string to a Date object for comparison.
+         */
+        function parseDate(dateStr) {
+            // Assumes yyyy-mm-dd format if using standard date input
+            return new Date(dateStr);
+        }
+
+        /**
+         * Calculates and updates the summary cards.
+         */
+        function updateSummaryCards(jobs, expenses) {
+            const revenue = jobs.reduce((sum, job) => sum + parseFloat(job.revenue || 0), 0);
+            const numJobs = jobs.length;
+            const expenseTotal = expenses.reduce((sum, expense) => sum + parseFloat(expense.amount || 0), 0);
+            const profit = revenue - expenseTotal;
+
+            totalRevenue.textContent = `₹ ${revenue.toFixed(2)}`;
+            totalJobs.textContent = numJobs.toString();
+            totalExpenses.textContent = `₹ ${expenseTotal.toFixed(2)}`;
+            netProfit.textContent = `₹ ${profit.toFixed(2)}`;
+        }
+
+        /**
+         * Renders the filtered data into the detailed table view.
+         */
+        function renderTable(data, type) {
+            reportTableBody.innerHTML = '';
             
+            // Define headers based on data type
+            if (type === 'jobs') {
+                 reportTableHeader.innerHTML = '<th>Date</th><th>Job ID</th><th>Customer</th><th>Manager</th><th>Status</th><th>Revenue (₹)</th>';
+                 currentViewTitle.textContent = 'Job Entries';
+            } else if (type === 'expenses') {
+                 reportTableHeader.innerHTML = '<th>Date</th><th>Category</th><th>Description</th><th>Amount (₹)</th><th>Entered By</th>';
+                 currentViewTitle.textContent = 'Daily Expenses';
+            } else { // 'all'
+                 reportTableHeader.innerHTML = '<th>Date</th><th>Type</th><th>Description/Customer</th><th>Amount (₹)</th><th>Status/Category</th>';
+                 currentViewTitle.textContent = 'All Transactions';
+            }
+
+
+            if (data.length === 0) {
+                reportTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No data found for the selected filters.</td></tr>';
+                return;
+            }
+            
+            // Render rows based on type
+            data.forEach(item => {
+                const row = reportTableBody.insertRow();
+                if (type === 'jobs') {
+                    // Assuming job data structure: { date, jobId, customerName, manager, status, revenue }
+                    row.insertCell().textContent = item.date;
+                    row.insertCell().textContent = item.jobId;
+                    row.insertCell().textContent = item.customerName;
+                    row.insertCell().textContent = item.manager;
+                    row.insertCell().textContent = item.status;
+                    row.insertCell().textContent = item.revenue;
+                } else if (type === 'expenses') {
+                    // Assuming expense data structure: { date, category, description, amount, user }
+                    row.insertCell().textContent = item.date;
+                    row.insertCell().textContent = item.category;
+                    row.insertCell().textContent = item.description;
+                    row.insertCell().textContent = item.amount;
+                    row.insertCell().textContent = item.user;
+                } else { // 'all'
+                    // Mix job and expense data
+                    row.insertCell().textContent = item.date;
+                    row.insertCell().textContent = item.type; // 'Job' or 'Expense'
+                    row.insertCell().textContent = item.type === 'Job' ? item.customerName : item.description;
+                    row.insertCell().textContent = item.type === 'Job' ? item.revenue : item.amount;
+                    row.insertCell().textContent = item.type === 'Job' ? item.status : item.category;
+                }
+            });
+        }
+
+        /**
+         * Filters the global data based on user inputs (Type, Start/End Date).
+         */
+        function applyFilters() {
+            loadingMessage.textContent = 'Filtering data...';
+            loadingMessage.style.display = 'block';
+
+            const type = reportType.value;
+            const start = startDateInput.value ? parseDate(startDateInput.value) : null;
+            const end = endDateInput.value ? parseDate(endDateInput.value) : null;
+
+            // 1. Filter Job Data
+            const filteredJobs = allJobData.filter(job => {
+                const jobDate = parseDate(job.date);
+                if (start && jobDate < start) return false;
+                if (end && jobDate > end) return false;
+                return true;
+            });
+
+            // 2. Filter Expense Data
+            const filteredExpenses = allExpenseData.filter(expense => {
+                const expenseDate = parseDate(expense.date);
+                if (start && expenseDate < start) return false;
+                if (end && expenseDate > end) return false;
+                return true;
+            });
+            
+            // 3. Update Summaries
+            updateSummaryCards(filteredJobs, filteredExpenses);
+
+            // 4. Update Detailed Table
+            let displayData = [];
+            if (type === 'jobs') {
+                displayData = filteredJobs;
+                renderTable(displayData, 'jobs');
+            } else if (type === 'expenses') {
+                displayData = filteredExpenses;
+                renderTable(displayData, 'expenses');
+            } else { // 'all'
+                // Combine and sort all transactions
+                const combined = filteredJobs.map(j => ({ ...j, type: 'Job', amount: j.revenue }))
+                                             .concat(filteredExpenses.map(e => ({ ...e, type: 'Expense' })));
+                
+                displayData = combined.sort((a, b) => parseDate(a.date) - parseDate(b.date));
+                renderTable(displayData, 'all');
+            }
+
+            loadingMessage.style.display = 'none';
+        }
+
+        /**
+         * Fetches ALL required raw data from the Google Sheet (Job Entries and Daily Expenses).
+         */
+        async function fetchAllData() {
+            loadingMessage.textContent = 'Fetching all job and expense data from Google Sheet...';
+            loadingMessage.style.display = 'block';
+
             try {
-                // Fetch data concurrently
-                const [jobs, expenses] = await Promise.all([getAllJobs(), getAllExpenses()]);
+                // You will need a new handler in Code.gs to fetch ALL job data
+                const jobResults = await fetchSheetData('ALL_JOB_ENTRIES');
+                // You will need a new handler in Code.gs to fetch ALL expense data
+                const expenseResults = await fetchSheetData('ALL_EXPENSE_ENTRIES');
+
+                // NOTE: The data parsing logic here depends entirely on the array format returned by your Code.gs handlers.
+                // Assuming your Code.gs returns data in a structured way (e.g., array of objects or an array of arrays that you can map to objects).
+                
+                // --- Placeholder Parsing (You MUST adjust this based on your Code.gs structure) ---
+                // Example structure if Code.gs returns Array of Arrays:
+                // [[date, jobId, customer, manager, status, revenue, ...], ...]
+                allJobData = jobResults.map(row => ({
+                    date: row[0] || '', jobId: row[1] || '', customerName: row[2] || '',
+                    manager: row[3] || '', status: row[4] || '', revenue: parseFloat(row[5]) || 0
+                }));
+                
+                // [[date, category, description, amount, user, ...], ...]
+                allExpenseData = expenseResults.map(row => ({
+                    date: row[0] || '', category: row[1] || '', description: row[2] || '', 
+                    amount: parseFloat(row[3]) || 0, user: row[4] || ''
+                }));
+                // --- End Placeholder Parsing ---
+
+                loadingMessage.textContent = `Data fetched successfully: ${allJobData.length} Jobs, ${allExpenseData.length} Expenses.`;
+                applyFilters(); // Apply default filters (usually everything) upon load
+
+            } catch (error) {
+                console.error("Failed to fetch data for reports:", error);
+                loadingMessage.textContent = 'CRITICAL ERROR: Failed to fetch data. Check network or Apps Script.';
+                loadingMessage.style.color = 'var(--danger)';
+            }
+        }
+
+
+        // --- EVENT LISTENERS ---
+        applyFiltersBtn.addEventListener('click', applyFilters);
+        
+        // Re-apply filters whenever the report type is changed
+        reportType.addEventListener('change', applyFilters); 
+
+        // Placeholder for Export Button (Implementation needs CSV generation logic)
+        document.getElementById('exportDataBtn').addEventListener('click', function() {
+            alert('Export to CSV functionality needs to be implemented. Current view data can be exported here.');
+        });
+
+
+        // --- INITIALIZATION ---
+        document.addEventListener("DOMContentLoaded", function() {
+            checkAuth(); 
+            // Set default date range to the start of the current month
+            const today = new Date();
+            startDateInput.valueAsDate = new Date(today.getFullYear(), today.getMonth(), 1);
+            endDateInput.valueAsDate = today; 
+            
+            fetchAllData();
+        });
+    </script>
+</body>
+</html>
