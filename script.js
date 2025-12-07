@@ -1,4 +1,4 @@
-/* script.js - Auth + Roles + Header + Clock + Dispatch + Manager Management */
+/* script.js - Auth + Roles + Header + Clock + Dispatch + Centralized User/Manager Management */
 
 /* --------------------------------------------------
     BASE URL FOR REDIRECTION
@@ -6,58 +6,68 @@
 const BASE = "https://nil4567.github.io/Siddhivinayak_Digital";
 
 /* --------------------------------------------------
+    LOCAL STORAGE KEYS
+-------------------------------------------------- */
+const MANAGER_STORAGE_KEY = 'sv_managers'; // For job assignment dropdown
+const USER_CREDENTIALS_KEY = 'sv_user_credentials'; // NEW: For secure user list
+
+/* --------------------------------------------------
     ROLES AND PERMISSIONS DEFINITION 🔑
-    Defines which user role can access which pages.
 -------------------------------------------------- */
 const ACCESS_PERMISSIONS = {
-    // Admin: Full access to everything
     'admin': ['dashboard.html', 'job-entry.html', 'job-queue.html', 'customers.html', 'expenses.html', 'reports.html', 'settings.html'],
-    // Manager: Access to operational pages only (can't see global settings/reports)
     'manager': ['dashboard.html', 'job-entry.html', 'job-queue.html', 'customers.html', 'expenses.html'],
-    // Viewer: Can only see the dashboard and queue (read-only)
     'viewer': ['dashboard.html', 'job-queue.html', 'customers.html']
 };
 
 /* --------------------------------------------------
-    LOGIN CREDENTIALS (You can add more users here later, or move to settings)
+    INITIAL LOGIN CREDENTIALS 🔒
 -------------------------------------------------- */
-// NOTE: For security in a real system, do not store passwords in plaintext JS.
-const USER_CREDENTIALS = [
+const INITIAL_CREDENTIALS = [
     { username: "admin", password: "admin123", name: "Admin User", role: "admin" },
     { username: "ganesh", password: "ganesh123", name: "Ganesh Sharma", role: "manager" },
     { username: "pooja", password: "pooja456", name: "Pooja Singh", role: "viewer" }
 ];
 
 /* --------------------------------------------------
-    MANAGER/USER MANAGEMENT FUNCTIONS
-    Stores an array of manager names for job assignment dropdown.
+    USER CREDENTIAL MANAGEMENT (NEW CORE UTILITY)
 -------------------------------------------------- */
-const MANAGER_STORAGE_KEY = 'sv_managers';
-
-function initManagers() {
-    let managers = JSON.parse(localStorage.getItem(MANAGER_STORAGE_KEY));
-    if (!managers || managers.length === 0) {
-        // Initialize from the list of users who are not just 'viewer'
-        const initialManagers = USER_CREDENTIALS
-            .filter(user => user.role !== 'viewer')
-            .map(user => user.name);
-            
-        // Ensure 'Admin User' is always present
-        if (!initialManagers.includes('Admin User')) {
-             initialManagers.unshift('Admin User');
-        }
-
-        managers = [...new Set(initialManagers)].sort((a, b) => {
-            if (a === 'Admin User') return -1;
-            return a.localeCompare(b);
-        });
-
-        localStorage.setItem(MANAGER_STORAGE_KEY, JSON.stringify(managers));
+function getUserCredentials() {
+    let users = JSON.parse(localStorage.getItem(USER_CREDENTIALS_KEY));
+    if (!users || users.length === 0) {
+        // Initialize if empty, and save it back
+        users = INITIAL_CREDENTIALS;
+        localStorage.setItem(USER_CREDENTIALS_KEY, JSON.stringify(users));
     }
+    return users;
+}
+
+function saveUserCredentials(users) {
+    localStorage.setItem(USER_CREDENTIALS_KEY, JSON.stringify(users));
+}
+
+/* --------------------------------------------------
+    MANAGER/USER MANAGEMENT FUNCTIONS
+-------------------------------------------------- */
+function initManagers() {
+    const users = getUserCredentials();
+    
+    // Managers for the job assignment dropdown should be all users who are NOT just 'viewer'
+    let managers = users
+        .filter(user => user.role !== 'viewer')
+        .map(user => user.name);
+            
+    // Ensure uniqueness and sort, with 'Admin User' first
+    managers = [...new Set(managers)].sort((a, b) => {
+        if (a === 'Admin User') return -1;
+        return a.localeCompare(b);
+    });
+
+    localStorage.setItem(MANAGER_STORAGE_KEY, JSON.stringify(managers));
 }
 
 function getManagers() {
-    initManagers(); 
+    initManagers(); // Always ensure manager list is derived from user list
     return JSON.parse(localStorage.getItem(MANAGER_STORAGE_KEY));
 }
 
@@ -75,7 +85,8 @@ function login() {
     const user = userEl.value.trim();
     const pass = passEl.value;
     
-    const validUser = USER_CREDENTIALS.find(u => u.username === user && u.password === pass);
+    const users = getUserCredentials();
+    const validUser = users.find(u => u.username === user && u.password === pass);
 
     if (validUser) {
         // Store user details
@@ -94,13 +105,12 @@ function login() {
 }
 
 /* --------------------------------------------------
-    ACCESS CONTROL CHECK 🛑 (New core function)
+    ACCESS CONTROL CHECK 🛑
 -------------------------------------------------- */
 function checkAccess() {
     const userRole = localStorage.getItem("sv_user_role");
     const currentPage = window.location.pathname.split('/').pop();
     
-    // If user is not logged in, redirect them immediately (handled by checkAuth)
     if (!userRole) return; 
 
     const allowedPages = ACCESS_PERMISSIONS[userRole] || [];
@@ -109,7 +119,7 @@ function checkAccess() {
         console.error(`Access Denied: Role "${userRole}" cannot access ${currentPage}`);
         // Redirect to their default landing page (dashboard)
         window.location.href = `${BASE}/pages/dashboard.html`;
-        alert("Access Denied: You do not have permission to view this page.");
+        // alert("Access Denied: You do not have permission to view this page."); // Optional alert
     }
 }
 
@@ -127,7 +137,6 @@ function checkAuth() {
     if (localStorage.getItem("loggedIn") !== "yes") {
         window.location.href = `${BASE}/index.html`;
     }
-    // Perform access check and header initialization only if authenticated
     checkAccess();
     initHeader();
 }
@@ -141,7 +150,7 @@ function logout() {
 
 
 /* --------------------------------------------------
-    HEADER & CLOCK
+    HEADER & CLOCK (Unchanged)
 -------------------------------------------------- */
 function initHeader() {
     const nameEl = document.getElementById("sv_user_name");
@@ -169,9 +178,8 @@ function startLiveClock() {
 
 
 /* --------------------------------------------------
-    SAVE JOB/EXPENSE (REPO DISPATCH)
+    SAVE JOB/EXPENSE (REPO DISPATCH) (Unchanged)
 -------------------------------------------------- */
-// NOTE: These rely on GITHUB_SITE_KEY defined in data/config.js
 async function saveJobToGitHub(newJob) {
     if (typeof GITHUB_SITE_KEY === "undefined" || !GITHUB_SITE_KEY) {
         console.error("❌ ERROR: GITHUB_SITE_KEY missing.");
@@ -202,11 +210,12 @@ async function saveExpenseToGitHub(newExpense) {
 
 
 /* --------------------------------------------------
-    AUTO INIT
+    AUTO INIT (Updated)
 -------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", function () {
-    
-    // Handle form submission on the login page
+    // Ensure initial users are loaded into storage if not present
+    getUserCredentials();
+
     const form = document.getElementById("loginForm");
     if (form) {
         form.addEventListener("submit", function (e) {
