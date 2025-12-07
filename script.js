@@ -11,12 +11,11 @@ const BASE_PATH = "/Siddhivinayak_Digital";
 -------------------------------------------------- */
 const MANAGER_STORAGE_KEY = 'sv_managers'; 
 const USER_CREDENTIALS_KEY = 'sv_user_credentials'; 
-const ADMIN_CREDENTIALS_KEY = 'sv_admin_credentials'; 
+const ADMIN_CREDENTIALS_KEY = 'sv_admin_credentials'; // Key for Google Script URL/Token
 
 /* --------------------------------------------------
-    ROLES AND PERMISSIONS DEFINITION 🔑 (UPDATED)
+    ROLES AND PERMISSIONS DEFINITION 🔑
 -------------------------------------------------- */
-// The 'settings' link is removed, replaced by 'user_management' as per your request.
 const ACCESS_PERMISSIONS = {
     'features': {
         'dashboard': { label: 'Dashboard', page: 'dashboard.html', actions: ['view'] },
@@ -25,7 +24,7 @@ const ACCESS_PERMISSIONS = {
         'customers': { label: 'Customers', page: 'customers.html', actions: ['view', 'manage'] },
         'expenses': { label: 'Daily Expenses', page: 'expenses.html', actions: ['view', 'manage'] },
         'reports': { label: 'Reports', page: 'reports.html', actions: ['view'] },
-        'user_management': { label: 'User Management', page: 'settings.html', actions: ['view', 'manage'] }, // Link to settings.html
+        'user_management': { label: 'User Management', page: 'settings.html', actions: ['view', 'manage'] },
         'admin_credentials': { label: 'Admin Credentials', page: 'admin-credentials.html', actions: ['view', 'manage'] } 
     },
     'admin': {
@@ -45,7 +44,7 @@ const ACCESS_PERMISSIONS = {
 window.ACCESS_PERMISSIONS = ACCESS_PERMISSIONS; 
 
 /* --------------------------------------------------
-    INITIAL LOGIN CREDENTIALS 🔒 (This section is only defined ONCE)
+    INITIAL LOGIN CREDENTIALS 🔒
 -------------------------------------------------- */
 const INITIAL_CREDENTIALS = [
     { username: "admin", password: "admin123", name: "Admin User", role: "admin", permissions: ACCESS_PERMISSIONS.admin }
@@ -62,7 +61,6 @@ function getUserCredentials() {
     }
     
     return users.map(user => {
-        // Ensure permissions object exists and is based on the role template
         if (!user.permissions || user.role !== 'custom') {
             user.permissions = ACCESS_PERMISSIONS[user.role] || ACCESS_PERMISSIONS.viewer; 
         }
@@ -77,9 +75,8 @@ function saveUserCredentials(users) {
 function addNewUser(newUserDetails) {
     const users = getUserCredentials();
     
-    // Check for duplicate username
     if (users.some(u => u.username === newUserDetails.username.toLowerCase())) {
-        return false; // User already exists
+        return false; 
     }
     
     const newUser = {
@@ -92,28 +89,31 @@ function addNewUser(newUserDetails) {
 
     users.push(newUser);
     saveUserCredentials(users);
-    initManagers(); // Recalculate and update the manager list
+    initManagers(); 
     return true;
 }
 
-window.getUserCredentials = getUserCredentials; // Expose
-window.saveUserCredentials = saveUserCredentials; // Expose
-window.addNewUser = addNewUser; // Expose
+window.getUserCredentials = getUserCredentials;
+window.saveUserCredentials = saveUserCredentials;
+window.addNewUser = addNewUser;
+
 
 /* --------------------------------------------------
-    GOOGLE SCRIPT CREDENTIAL MANAGEMENT
+    GOOGLE SCRIPT CREDENTIAL MANAGEMENT (THE CRITICAL SECTION)
 -------------------------------------------------- */
 function getAdminCredentials() {
+    // Retrieves the URL and Token from Local Storage
     return JSON.parse(localStorage.getItem(ADMIN_CREDENTIALS_KEY)) || { url: '', token: '' };
 }
 
 function saveAdminCredentials(url, token) {
     const creds = { url, token };
+    // Saves the URL and Token to Local Storage
     localStorage.setItem(ADMIN_CREDENTIALS_KEY, JSON.stringify(creds));
     return creds;
 }
-window.getAdminCredentials = getAdminCredentials;
-window.saveAdminCredentials = saveAdminCredentials;
+window.getAdminCredentials = getAdminCredentials; // Used by admin-credentials.html
+window.saveAdminCredentials = saveAdminCredentials; // Used by admin-credentials.html
 
 
 /* --------------------------------------------------
@@ -136,12 +136,10 @@ function login() {
         localStorage.setItem("loggedIn", "yes");
         localStorage.setItem("username", validUser.name);
         localStorage.setItem("sv_user_role", validUser.role);
-        // Store the specific, potentially customized, permissions
         localStorage.setItem("sv_user_permissions", JSON.stringify(validUser.permissions)); 
         
         initManagers();
         
-        // Use relative path for internal navigation
         window.location.href = `${BASE_PATH}/pages/dashboard.html`;
     } else {
         errEl.textContent = "Invalid username or password! Access Denied.";
@@ -154,10 +152,9 @@ function logout() {
     localStorage.removeItem("username");
     localStorage.removeItem("sv_user_role");
     localStorage.removeItem("sv_user_permissions"); 
-    // Use relative path for navigation back to index/login
     window.location.href = `${BASE_PATH}/index.html`;
 }
-window.logout = logout; // Expose to HTML buttons
+window.logout = logout;
 
 /* --------------------------------------------------
     ACCESS CONTROL CHECK
@@ -167,10 +164,8 @@ function checkAccess() {
     const currentPage = window.location.pathname.split('/').pop();
     const userRole = localStorage.getItem("sv_user_role");
     
-    // Admin always has access to all pages
     if (userRole === 'admin') return; 
 
-    // Find the feature key corresponding to the current page
     const currentFeatureKey = Object.keys(ACCESS_PERMISSIONS.features).find(key => 
         ACCESS_PERMISSIONS.features[key].page === currentPage
     );
@@ -182,30 +177,23 @@ function checkAccess() {
         
         if (currentPage !== 'dashboard.html') {
              alert("Access Denied: You do not have permission to view this page.");
-             // Use relative path for redirection
              window.location.href = `${BASE_PATH}/pages/dashboard.html`;
         }
     }
 }
 
 function checkAuth() {
-    // CRITICAL: Ensure user is logged in first.
     if (localStorage.getItem("loggedIn") !== "yes") {
-        // Use relative path for redirection
         window.location.href = `${BASE_PATH}/index.html`; 
-        return; // Stop execution if redirecting
+        return; 
     }
     
-    // If logged in, proceed with initialization
     checkAccess();
     initHeader(); 
     initSidebarVisibility();
 }
-window.checkAuth = checkAuth; // Expose to internal pages
+window.checkAuth = checkAuth;
 
-/**
- * Hides sidebar links the user does not have permission to view.
- */
 function initSidebarVisibility() {
     const userPermissions = JSON.parse(localStorage.getItem("sv_user_permissions") || "{}");
     const features = ACCESS_PERMISSIONS.features;
@@ -219,13 +207,8 @@ function initSidebarVisibility() {
         );
 
         if (featureKey) {
-            // Check for 'view' permission using the stored permissions
             const hasViewPermission = userPermissions[featureKey] && userPermissions[featureKey].includes('view');
 
-            // Admin Credentials is a special case: only visible if view/manage is explicitly set (only for admin by default)
-            const isCredentialsPage = featureKey === 'admin_credentials';
-            
-            // If the user is admin, they see everything (this is a redundant check but adds safety)
             const userRole = localStorage.getItem("sv_user_role");
             if (userRole === 'admin') {
                 link.style.display = '';
@@ -235,7 +218,7 @@ function initSidebarVisibility() {
             if (!hasViewPermission) {
                 link.style.display = 'none';
             } else {
-                link.style.display = ''; // Ensure it's visible if permissions exist
+                link.style.display = ''; 
             }
         }
     });
@@ -258,10 +241,9 @@ function initManagers() {
 
     localStorage.setItem(MANAGER_STORAGE_KEY, JSON.stringify(managers));
 }
-window.initManagers = initManagers; // Expose for settings page
+window.initManagers = initManagers;
 
 function getManagers() {
-    // Ensure managers are initialized before retrieving
     const managers = JSON.parse(localStorage.getItem(MANAGER_STORAGE_KEY));
     if (!managers) {
         initManagers();
@@ -269,7 +251,7 @@ function getManagers() {
     }
     return managers;
 }
-window.getManagers = getManagers; // Expose for job entry page
+window.getManagers = getManagers;
 
 function initHeader() {
     const nameEl = document.getElementById("sv_user_name");
@@ -299,7 +281,6 @@ function startLiveClock() {
 /* --------------------------------------------------
     DATA READING FUNCTIONS (from GitHub JSON files)
 -------------------------------------------------- */
-// DATA_HOST_BASE remains the full URL since it fetches external data (JSON from GitHub)
 const DATA_HOST_BASE = "https://raw.githubusercontent.com/nil4567/Siddhivinayak_Digital/main/data";
 const DATA_JOB_FILE = 'jobs.json';
 const DATA_EXPENSE_FILE = 'expenses.json';
@@ -342,11 +323,9 @@ async function sendDataToScript(type, data) {
     const scriptUrl = creds.url;
     const token = creds.token;
 
-    // Check 1: Ensure credentials are set
     if (!scriptUrl || !token) {
-        alert("CRITICAL ERROR: Google Apps Script URL or Token is not configured. Please contact the Admin.");
+        alert("CRITICAL ERROR: Google Apps Script URL or Token is not configured. Redirecting to Admin Credentials.");
         
-        // Redirect if the error occurs on any page other than the credentials page
         if (window.location.pathname.indexOf('admin-credentials.html') === -1) {
             window.location.href = `${BASE_PATH}/pages/admin-credentials.html`; 
         }
@@ -356,13 +335,12 @@ async function sendDataToScript(type, data) {
     try {
         const response = await fetch(scriptUrl, {
             method: 'POST',
-            mode: 'cors', // Essential for Google Apps Script interaction
+            mode: 'cors',
             headers: {
                 'Content-Type': 'application/json',
-                // Check 2: Include the security token in the header
                 'X-App-Security-Token': token 
             },
-            body: JSON.stringify({ type, data }) // 'type' determines which function runs in the Google Script
+            body: JSON.stringify({ type, data }) 
         });
 
         if (!response.ok) {
@@ -388,19 +366,17 @@ async function sendDataToScript(type, data) {
 async function saveJobToScript(newJob) { return sendDataToScript('new_job', newJob); }
 async function saveExpenseToScript(newExpense) { return sendDataToScript('new_expense', newExpense); }
 
-window.saveJobToScript = saveJobToScript; // Expose for job entry page
-window.saveExpenseToScript = saveExpenseToScript; // Expose for expense entry page
+window.saveJobToScript = saveJobToScript;
+window.saveExpenseToScript = saveExpenseToScript;
 
 
 /* --------------------------------------------------
     AUTO INIT
 -------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", function () {
-    // Ensure initial credentials and manager list are set up
     getUserCredentials(); 
     initManagers(); 
 
-    // Handle login form submission on index.html
     const loginForm = document.getElementById("loginForm");
     if (loginForm) {
         loginForm.addEventListener("submit", function (e) {
@@ -409,30 +385,12 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
     
-    // Run authentication and initialization for all internal pages
     const currentPage = window.location.pathname.split('/').pop();
     if (currentPage !== 'index.html' && currentPage !== 'login.html') {
         checkAuth(); 
     } else {
-        initHeader(); // Only set header if on index/login page
+        initHeader();
     }
     
     startLiveClock();
-    /* 
-    --------------------------------------------------
-    GOOGLE SCRIPT CREDENTIAL MANAGEMENT (MISSING BLOCK)
--------------------------------------------------- */
-function getAdminCredentials() {
-    // Uses the key 'sv_admin_credentials' to retrieve the saved URL and token
-    return JSON.parse(localStorage.getItem(ADMIN_CREDENTIALS_KEY)) || { url: '', token: '' };
-}
-
-function saveAdminCredentials(url, token) {
-    const creds = { url, token };
-    // Saves the URL and token as a JSON object in Local Storage
-    localStorage.setItem(ADMIN_CREDENTIALS_KEY, JSON.stringify(creds));
-    return creds;
-}
-window.getAdminCredentials = getAdminCredentials; // Expose to the HTML page
-window.saveAdminCredentials = saveAdminCredentials; // Expose to the HTML page
 });
