@@ -1,25 +1,3 @@
-<script>
-    // Run this function after checkAuth() has ensured the user is logged in
-    document.addEventListener("DOMContentLoaded", function() {
-        // --- Access Control Navigation Filter ---
-        const userRole = localStorage.getItem("sv_user_role");
-        const allowedPages = ACCESS_PERMISSIONS[userRole] || [];
-        
-        const navLinks = document.querySelectorAll('.sidebar .nav-link');
-        
-        navLinks.forEach(link => {
-            const href = link.getAttribute('href');
-            if (href) {
-                const pageName = href.split('/').pop();
-                
-                // Hide the link if the current role doesn't have permission
-                if (!allowedPages.includes(pageName)) {
-                    link.style.display = 'none';
-                }
-            }
-        });
-    });
-</script>
 <!doctype html>
 <html>
 <head>
@@ -27,6 +5,7 @@
   <title>Settings — Siddhivinayak Digital</title>
   <link rel="stylesheet" href="../styles/internal.css">
   <style>
+    /* Styling from previous steps */
     .manager-list {
         list-style: none;
         padding: 0;
@@ -126,9 +105,10 @@
 
   <script src="../script.js"></script>
   <script>
-    // Get the utility functions from script.js (getManagers is now available)
+    // These constants/functions are expected to be available from script.js
     const MANAGER_STORAGE_KEY = 'sv_managers'; 
     const getManagers = window.getManagers;
+    const ACCESS_PERMISSIONS = window.ACCESS_PERMISSIONS; // For access checks
     
     // --- Rendering Logic ---
     function renderManagerList() {
@@ -140,7 +120,7 @@
             const li = document.createElement('li');
             li.innerHTML = `
                 <span>${manager}</span>
-                ${manager.toLowerCase() !== 'admin' ? 
+                ${manager.toLowerCase() !== 'admin user' ? 
                     `<button class="delete-btn" onclick="deleteManager('${manager}')">Delete</button>` 
                     : '<span style="color:#f44336; font-size: 12px;">(System Default)</span>'
                 }
@@ -181,8 +161,8 @@
     
     // --- Delete Manager Logic ---
     function deleteManager(name) {
-        if (name.toLowerCase() === 'admin') {
-            alert('The "Admin" manager cannot be deleted.');
+        if (name.toLowerCase() === 'admin user') {
+            alert('The "Admin User" manager cannot be deleted.');
             return;
         }
         
@@ -198,13 +178,24 @@
         alert(`Manager "${name}" removed.`);
     }
 
-    // --- Initialization ---
+    // --- Initialization & Role-Based Access Filter ---
     document.addEventListener("DOMContentLoaded", function() {
-        checkAuth(); 
+        checkAuth(); // This also runs checkAccess()
         renderManagerList();
+        
+        // Hide sidebar links based on role access
+        const userRole = localStorage.getItem("sv_user_role");
+        const allowedPages = ACCESS_PERMISSIONS[userRole] || [];
+        
+        document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+            const pageName = link.getAttribute('href').split('/').pop();
+            if (!allowedPages.includes(pageName)) {
+                link.style.display = 'none';
+            }
+        });
     });
 
-    // Make functions globally accessible for inline HTML calls
+    // Make deleteManager globally accessible for inline HTML calls
     window.deleteManager = deleteManager;
   </script>
 </body>
