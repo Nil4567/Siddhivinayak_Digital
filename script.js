@@ -1,3 +1,33 @@
+
+ /**
+ * Adds a new user to local storage and updates the manager list.
+ * @param {object} newUserDetails - Contains username, password, name, and role.
+ * @returns {boolean} True if successful, false if username already exists.
+ */
+function addNewUser(newUserDetails) {
+    const users = getUserCredentials();
+    
+    // Check for duplicate username
+    if (users.some(u => u.username === newUserDetails.username.toLowerCase())) {
+        return false; // User already exists
+    }
+    
+    const newUser = {
+        username: newUserDetails.username.toLowerCase(),
+        password: newUserDetails.password,
+        name: newUserDetails.name,
+        role: newUserDetails.role,
+        // The role automatically maps to permissions based on ACCESS_PERMISSIONS in getUserCredentials
+    };
+
+    users.push(newUser);
+    saveUserCredentials(users);
+    initManagers(); // Recalculate and update the manager list
+    return true;
+}
+window.addNewUser = addNewUser; // Expose to the settings page
+// ...
+
 /* script.js - AUTHENTICATION, ROLES, ACCESS CONTROL, & USER MANAGEMENT */
 
 /* --------------------------------------------------
