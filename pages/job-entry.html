@@ -85,8 +85,9 @@
               <input type="text" id="jobId" name="jobId" readonly style="font-weight:700; background:#f4f4f4;">
             </div>
             <div class="field">
-              <label for="jobManager">Job Manager (You)</label>
-              <input type="text" id="jobManager" name="jobManager" readonly style="font-weight:700; background:#eef3ff; color:var(--primary);">
+              <label for="assignedPerson">Assigned Manager *</label>
+              <select id="assignedPerson" name="assignedPerson" required style="font-weight:700; background:#eef3ff; color:var(--primary);">
+                </select>
             </div>
           </div>
           
@@ -157,6 +158,9 @@
     const loggedInUser = localStorage.getItem('username') || 'Staff User'; 
     const defaultManager = "Admin User";
     
+    // Define all available staff members for assignment
+    const allManagers = [...new Set([defaultManager, "Sneha (Design)", "Karan (Finishing)", loggedInUser])].sort();
+
     // --- Helper Functions ---
 
     function getTodayDate() {
@@ -224,8 +228,7 @@
 
     // 3. Load Jobs, Generate Next ID, and Set Defaults
     function initJobEntryPage() {
-        document.getElementById('jobManager').value = loggedInUser;
-        // Set the VISIBLE Order Date value
+        // Set the Order Date value
         document.getElementById('orderDate').value = getTodayDate(); 
         
         // Load existing jobs, or create dummies
@@ -236,8 +239,33 @@
 
         // Generate the next Job ID (Starts at 1021 if 20 dummies are loaded)
         const lastJob = existingJobs.length > 0 ? existingJobs[existingJobs.length - 1] : null;
-        const nextId = lastJob && lastJob.id ? parseInt(lastJob.id) + 1 : 1021; // Updated initial ID
+        const nextId = lastJob && lastJob.id ? parseInt(lastJob.id) + 1 : 1021;
         document.getElementById('jobId').value = String(nextId);
+        
+        // Populate the Assigned Manager dropdown (REQUIRED LOGIC)
+        const assignedPersonEl = document.getElementById('assignedPerson');
+        assignedPersonEl.innerHTML = ''; // Clear existing options
+        
+        // Add a disabled/selected default option to allow form validation
+        const placeholderOption = document.createElement('option');
+        placeholderOption.value = "";
+        placeholderOption.textContent = "--- Select Staff ---";
+        placeholderOption.disabled = true;
+        placeholderOption.selected = true;
+        assignedPersonEl.appendChild(placeholderOption);
+
+
+        allManagers.forEach(manager => {
+            const option = document.createElement('option');
+            option.value = manager;
+            option.textContent = manager;
+            if (manager === loggedInUser) {
+                // Set the logged-in user as the default selected option
+                option.selected = true;
+                placeholderOption.selected = false; // Unselect placeholder
+            }
+            assignedPersonEl.appendChild(option);
+        });
         
         // Initial pending amount setup
         document.getElementById('pendingAmountDisplay').value = '0';
@@ -270,6 +298,7 @@
       const form = document.getElementById('jobEntryForm');
       const alertEl = document.getElementById('alertMessage');
       
+      // Form validation now enforces the required assignedPerson field
       if (!form.checkValidity()) {
           form.reportValidity();
           return;
@@ -286,7 +315,7 @@
         customerEmail: form.customerEmail.value || 'N/A',
         contact: form.customerContact.value,
         description: form.jobDescription.value,
-        assignedPerson: loggedInUser,
+        assignedPerson: form.assignedPerson.value, // <--- Now uses the required SELECT value
         urgency: form.urgency.value,
         orderDate: form.orderDate.value, 
         // targetCompletionDate is calculated as orderDate in job-queue.html
@@ -295,7 +324,7 @@
         pendingAmount: form.pendingAmount.value, 
         status: 'Pending',
         createdAt: new Date().toISOString(),
-        createdBy: loggedInUser
+        createdBy: loggedInUser // The person who entered the job
       };
 
       // 6. Store the new job locally
@@ -305,12 +334,11 @@
       // 7. Dispatch to GitHub (saveJobToGitHub must be defined in script.js)
       let success = false;
       try {
-          // This function must be defined in script.js to actually work with GitHub
           if (typeof saveJobToGitHub === 'function') {
               success = await saveJobToGitHub(newJob); 
           } else {
               console.warn("saveJobToGitHub function not found. Job saved locally only.");
-              success = true; // Assume local save is sufficient if dispatch fails/is missing
+              success = true; 
           }
       } catch (e) {
           console.error("Error during GitHub dispatch:", e);
