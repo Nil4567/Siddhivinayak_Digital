@@ -10,16 +10,15 @@
         font-weight: 700;
         color: #1b5e20; /* Dark Green */
     }
-    .tat-due-soon {
-        font-weight: 700;
-        color: #ffa000; /* Amber - Not really used here, but kept for context */
-    }
     .tat-overdue {
         font-weight: 700;
         color: #d84315; /* Dark Red-Orange */
         background: #ffebee; /* Lightest Red */
         padding: 2px 4px;
         border-radius: 4px;
+    }
+    .muted {
+        color: var(--muted);
     }
     
     /* Ensure table headers for new fields are compact */
@@ -30,7 +29,10 @@
     #jobQueueTable td {
         font-size: 13px;
         padding: 6px;
+        text-align: center; /* Center align TAT numbers */
     }
+    #jobQueueTable td:nth-child(2) { text-align: left; } /* Customer name left align */
+    #jobQueueTable td:nth-child(7), #jobQueueTable td:nth-child(8) { text-align: right; } /* Amount fields right align */
   </style>
 </head>
 <body>
@@ -85,16 +87,15 @@
               <th>ID</th>
               <th>Customer</th>
               <th>Manager</th>
-              <th>Order Date</th>
-              <th>Target Date</th>
               <th>Status</th>
               <th>Total TAT (Days)</th>
               <th>Pending TAT (Days)</th>
               <th>Amount (Rs.)</th>
+              <th>Pending Amount (Rs.)</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td colspan="9" class="muted">Loading job queue...</td></tr>
+            <tr><td colspan="8" class="muted">Loading job queue...</td></tr>
           </tbody>
         </table>
       </div>
@@ -142,11 +143,11 @@
         date2.setUTCHours(0, 0, 0, 0);
         
         const diffTime = date1.getTime() - date2.getTime();
-        // Math.ceil is used to ensure partial days are counted as 1 day for remaining TAT
         return Math.ceil(diffTime / MS_PER_DAY); 
     }
     
     function loadLocalJobs() {
+      // Load jobs saved by job-entry.html
       return JSON.parse(localStorage.getItem('sv_jobs') || '[]');
     }
     
@@ -169,15 +170,14 @@
       tbody.innerHTML = '';
       
       const today = new Date().toISOString().slice(0, 10);
-      // Only show jobs that are not 'Completed'
       const activeJobs = allJobs.filter(job => job.status !== 'Completed'); 
 
-      let totalPendingTATDays = 0;
+      let totalPendingTATDays = 0; // Tracks accumulated overdue days across all jobs
       let overdueCount = 0;
-      const managerTATSummary = {}; // To store TAT per manager
+      const managerTATSummary = {}; 
       
       if (activeJobs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="muted">The Job Queue is empty! 🎉</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="muted">The Job Queue is empty! 🎉</td></tr>';
       } else {
         
         // Sort by Order Date (Oldest/Overdue first)
@@ -186,67 +186,60 @@
         });
 
         activeJobs.forEach(job => {
-            // TARGET DATE IS THE SAME AS ORDER DATE
+            // Target Date is implicitly Order Date as TAT is 0 days (Same Day)
             job.targetCompletionDate = job.orderDate; 
             
-            let pendingTATDays = 0;
+            let pendingTATDays = 0; // The number to display
             let tatClass = 'tat-ontime';
-            
-            if (job.status !== 'Hold') { 
-                 // dateDiffInDays(Target Date (Order Date), Today's Date)
-                 pendingTATDays = dateDiffInDays(job.targetCompletionDate, today); 
+            let displayValue = 0; // Default to 0 days remaining
 
-                 if (pendingTATDays < 0) {
-                     // If target date is in the past, it's overdue
+            if (job.status !== 'Hold') { 
+                 // Calculate difference: Target Date (Order Date) minus Today's Date.
+                 // If the result is negative, the job is overdue.
+                 const diff = dateDiffInDays(job.targetCompletionDate, today); 
+
+                 if (diff < 0) {
+                     // Job is overdue. The number is the absolute days past target.
+                     pendingTATDays = Math.abs(diff); 
                      tatClass = 'tat-overdue';
                      overdueCount++;
-                     // Overdue days is the absolute value of the diff
-                     pendingTATDays = Math.abs(pendingTATDays); 
+                     displayValue = pendingTATDays;
                  } else {
-                     // If pendingTATDays is 0 or 1, it means the job is due today.
-                     // Since the target IS the order date, if it's today or later, it means 0 days remaining.
+                     // Job is on time (or due today).
                      pendingTATDays = 0;
+                     displayValue = pendingTATDays;
                  }
             } else {
-                // If on Hold, display 0 days pending
-                pendingTATDays = 0;
+                tatClass = 'muted';
+                displayValue = 'N/A';
             }
             
-            // Update global TAT counter: only count OVERDUE days in this scenario.
-            // If TAT is 0, the total pending TAT should reflect accumulated overdue days.
+            // Update global TAT counter: only count OVERDUE days
             if (job.status !== 'Hold' && tatClass === 'tat-overdue') {
                 totalPendingTATDays += pendingTATDays;
             }
 
-
-            // Update Manager TAT Summary
+            // Update Manager TAT Summary (only count overdue days)
             const manager = job.assignedPerson;
             if (!managerTATSummary[manager]) {
                 managerTATSummary[manager] = { pendingJobs: 0, totalPendingTAT: 0 };
             }
             managerTATSummary[manager].pendingJobs++;
             
-            // Manager Pending TAT = only count overdue days
             if (job.status !== 'Hold' && tatClass === 'tat-overdue') {
                  managerTATSummary[manager].totalPendingTAT += pendingTATDays;
             }
             
             const row = document.createElement('tr');
             
-            const pendingTATDisplay = tatClass === 'tat-overdue' 
-                                      ? `<span class="${tatClass}">${pendingTATDays} Days Overdue!</span>`
-                                      : (job.status === 'Hold' ? 'N/A (Hold)' : `<span class="tat-ontime">0 Days Remaining (Due Today)</span>`);
-          
+            // The table headers only show required data:
             row.innerHTML = `
               <td>#${job.id}</td>
-              <td>${job.customer}</td>
+              <td style="text-align: left;">${job.customer}</td>
               <td>${job.assignedPerson}</td>
-              <td>${job.orderDate}</td>
-              <td>${job.targetCompletionDate}</td>
               <td class="${getStatusClass(job.status)}">${job.status}</td>
-              <td>${DEFAULT_TAT_DAYS} (Same Day)</td>
-              <td>${pendingTATDisplay}</td>
-              <td>₹ ${job.amount}</td>
+              <td>${DEFAULT_TAT_DAYS}</td> <td><span class="${tatClass}">${displayValue}</span></td> <td>₹ ${job.amount}</td>
+              <td>₹ ${job.pendingAmount}</td>
             `;
             tbody.appendChild(row);
         });
@@ -267,10 +260,11 @@
           managerNames.forEach(manager => {
               const summary = managerTATSummary[manager];
               const summaryRow = document.createElement('tr');
+              // Display only the number for totalPendingTAT
               summaryRow.innerHTML = `
                   <td>${manager}</td>
                   <td>${summary.pendingJobs}</td>
-                  <td>${summary.totalPendingTAT} Days Overdue</td>
+                  <td>${summary.totalPendingTAT}</td> 
               `;
               summaryTbody.appendChild(summaryRow);
           });
