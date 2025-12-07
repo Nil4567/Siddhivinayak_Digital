@@ -2,38 +2,41 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>User Management — Siddhivinayak Digital</title>
+    <title>User Management & Settings — Siddhivinayak Digital</title>
     <link rel="stylesheet" href="../styles/internal.css">
     <style>
-        /* New CSS for the User Management layout */
-        .user-management-grid {
+        .settings-grid {
             display: grid;
-            grid-template-columns: 1fr 2fr; /* Make the list section wider than the form */
-            gap: 30px;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        .settings-grid .card {
             padding: 20px;
-            align-items: start;
         }
-        .add-user-section {
-            max-width: 400px;
+        .field {
+            margin-bottom: 20px;
         }
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .data-table th, .data-table td {
-            padding: 8px 10px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 0.9em;
-        }
-        .data-table th {
-            background-color: var(--highlight);
+        .field label {
             font-weight: bold;
+            display: block;
+            margin-bottom: 8px;
+            font-size: 1.1em;
         }
-        /* Custom styles for role tags */
-        .role-admin { color: var(--danger); }
-        .role-manager { color: var(--primary); }
-        .role-viewer { color: var(--success); }
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+        .btn-save {
+            background-color: var(--primary);
+            color: white;
+            padding: 10px 20px;
+            font-size: 1.05em;
+        }
+        .note {
+            font-size: 0.9em;
+            color: var(--info);
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -57,169 +60,144 @@
             <a href="customers.html" class="nav-link">Customers</a>
             <a href="expenses.html" class="nav-link">Daily Expenses</a>
             <a href="reports.html" class="nav-link">Reports</a>
-            <a href="settings.html" class="nav-link active">User Management</a> <a href="admin-credentials.html" class="nav-link">Admin Credentials</a>
+            <a href="settings.html" class="nav-link active">User Management</a>
+            <a href="admin-credentials.html" class="nav-link">Admin Credentials</a>
         </aside>
 
         <main class="main">
             <div class="page-header">
                 <div>
-                    <div class="page-title">User & Access Management</div>
-                    <div class="page-sub">Add new users and manage their login credentials and specific menu permissions.</div>
+                    <div class="page-title">User Management & Global Settings</div>
+                    <div class="page-sub">Define authorized users and managers for the application.</div>
                 </div>
             </div>
 
-            <div class="user-management-grid">
-                
-                <div class="card add-user-section">
-                    <h3>Add New User</h3>
-                    <form id="addUserForm">
+            <div class="settings-grid">
+                <div class="card">
+                    <form id="userSettingsForm">
                         <div class="field">
-                            <label for="userFullName">User's Full Name *</label>
-                            <input type="text" id="userFullName" name="userFullName" required placeholder="e.g., Pooja Singh">
+                            <label for="managerList">Managers List (One name per line)</label>
+                            <textarea id="managerList" required placeholder="Enter the names of all managers who can be assigned jobs.&#10;e.g.,&#10;Amit Sharma&#10;Priya Yadav"></textarea>
+                            <div class="note">These names will populate the "Manager" dropdown on the New Job Entry form.</div>
                         </div>
-                        
+
                         <div class="field">
-                            <label for="loginUsername">Login Username *</label>
-                            <input type="text" id="loginUsername" name="loginUsername" required placeholder="e.g., pooja.s">
+                            <label for="allUsersList">All Authorized Users (Username:Password - One per line)</label>
+                            <textarea id="allUsersList" required placeholder="Enter all authorized users with their passwords.&#10;e.g.,&#10;admin:123456&#10;user1:password123&#10;amit:amit@123"></textarea>
+                            <div class="note">These users can log in. Only users in the Managers List can be assigned jobs.</div>
                         </div>
-                        
-                        <div class="field">
-                            <label for="password">Password *</label>
-                            <input type="password" id="password" name="password" required placeholder="e.g., pass123">
-                        </div>
-                        
-                        <div class="field">
-                            <label for="accessTemplate">Access Template *</label>
-                            <select id="accessTemplate" name="accessTemplate" required>
-                                </select>
-                        </div>
-                        
-                        <button type="submit" class="btn full-width">Add User</button>
+
+                        <button type="submit" class="btn btn-save" id="saveButton">Save Settings</button>
+                        <p id="saveMessage" style="color: var(--success); margin-top: 10px; display: none;">Settings saved successfully!</p>
                     </form>
                 </div>
-                
-                <div class="card current-users-section">
-                    <h3>Current Active Users & Credentials</h3>
-                    <div id="currentUsersList">
-                        <p>Loading user list...</p>
-                    </div>
-                </div>
-                
             </div>
         </main>
     </div>
 
     <script src="../script.js"></script>
     <script>
-        // Access global functions from script.js
-        const addNewUser = window.addNewUser;
-        const getUserCredentials = window.getUserCredentials;
-        const ACCESS_PERMISSIONS = window.ACCESS_PERMISSIONS; // Get access definitions
-        
-        // --- Utility Functions ---
-        
-        function populateAccessTemplates() {
-            const select = document.getElementById('accessTemplate');
-            select.innerHTML = '<option value="">-- Select Template --</option>';
+        const managerListInput = document.getElementById('managerList');
+        const allUsersListInput = document.getElementById('allUsersList');
+        const userSettingsForm = document.getElementById('userSettingsForm');
+        const saveButton = document.getElementById('saveButton');
+        const saveMessage = document.getElementById('saveMessage');
 
-            // Iterate over roles defined in ACCESS_PERMISSIONS (excluding 'features')
-            const roles = Object.keys(ACCESS_PERMISSIONS).filter(key => key !== 'features');
-            
-            roles.forEach(roleKey => {
-                const option = document.createElement('option');
-                option.value = roleKey;
-                
-                // Create a friendly label
-                let label = roleKey.charAt(0).toUpperCase() + roleKey.slice(1);
-                if (roleKey === 'admin') label += ' (Full Access)';
-                if (roleKey === 'manager') label += ' (Manage Jobs, View Expenses)';
-                if (roleKey === 'viewer') label += ' (View Jobs)';
-                
-                option.textContent = label;
-                select.appendChild(option);
-            });
+        // Local Storage Keys
+        const MANAGER_KEY = 'managersList';
+        const USERS_KEY = 'usersCredentials';
+
+        /**
+         * Loads settings from Local Storage and populates the text areas.
+         */
+        function loadSettings() {
+            // Load Managers List
+            const managersJSON = localStorage.getItem(MANAGER_KEY);
+            if (managersJSON) {
+                try {
+                    const managers = JSON.parse(managersJSON);
+                    managerListInput.value = managers.join('\n');
+                } catch (e) {
+                    console.error("Error parsing stored managers list:", e);
+                }
+            }
+
+            // Load All Users List
+            const usersJSON = localStorage.getItem(USERS_KEY);
+            if (usersJSON) {
+                try {
+                    const users = JSON.parse(usersJSON);
+                    // Convert map of {user: pass} to the "user:pass" string format
+                    const userLines = Object.entries(users).map(([user, pass]) => `${user}:${pass}`);
+                    allUsersListInput.value = userLines.join('\n');
+                } catch (e) {
+                    console.error("Error parsing stored user credentials:", e);
+                }
+            }
         }
 
-        function displayCurrentUsers() {
-            const users = getUserCredentials();
-            const container = document.getElementById('currentUsersList');
-            
-            if (!container) return;
-            
-            container.innerHTML = '<table></table>'; 
-            const table = container.querySelector('table');
-            table.className = 'data-table';
-            
-            // Table Header
-            table.innerHTML = `
-                <thead>
-                    <tr>
-                        <th>Full Name</th>
-                        <th>Username</th>
-                        <th>Role</th>
-                        <th>Permissions</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            `;
-            const tbody = table.querySelector('tbody');
-
-            users.forEach(user => {
-                const row = tbody.insertRow();
-                
-                // Format permissions summary
-                const permissionsSummary = Object.entries(user.permissions || {})
-                    .map(([feature, actions]) => {
-                        const featureLabel = ACCESS_PERMISSIONS.features[feature] ? ACCESS_PERMISSIONS.features[feature].label : feature;
-                        return actions.length > 0 ? `${featureLabel} (${actions.join(', ')})` : null;
-                    })
-                    .filter(Boolean)
-                    .join(' | ');
-
-                row.innerHTML = `
-                    <td>${user.name}</td>
-                    <td>${user.username}</td>
-                    <td><span class="role-${user.role}">${user.role.toUpperCase()}</span></td>
-                    <td title="${permissionsSummary}">${user.role === 'admin' ? 'FULL SYSTEM ACCESS' : permissionsSummary.substring(0, 50) + '...'}</td>
-                `;
-            });
-        }
-
-        // --- Form Submission Handler ---
-        document.getElementById('addUserForm').addEventListener('submit', function(e) {
+        /**
+         * Handles form submission to save settings to Local Storage.
+         */
+        userSettingsForm.addEventListener('submit', function(e) {
             e.preventDefault();
+            saveButton.disabled = true;
+            saveMessage.style.display = 'none';
+
+            // 1. Process Managers List
+            const managerLines = managerListInput.value
+                .split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0);
             
-            const form = e.target;
-            const newUserDetails = {
-                name: form.userFullName.value.trim(),
-                username: form.loginUsername.value.trim(),
-                password: form.password.value,
-                role: form.accessTemplate.value
-            };
+            localStorage.setItem(MANAGER_KEY, JSON.stringify(managerLines));
 
-            if (!newUserDetails.name || !newUserDetails.username || !newUserDetails.password || !newUserDetails.role) {
-                alert("Please fill in all required fields.");
-                return;
+            // 2. Process All Users List (Username:Password)
+            const userLines = allUsersListInput.value
+                .split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0);
+
+            const userMap = {};
+            let parseError = false;
+
+            userLines.forEach(line => {
+                const parts = line.split(':');
+                if (parts.length === 2) {
+                    const username = parts[0].trim();
+                    const password = parts[1].trim();
+                    if (username && password) {
+                        userMap[username] = password;
+                    }
+                } else {
+                    parseError = true;
+                }
+            });
+
+            if (parseError) {
+                alert("Warning: Some user lines were not in the 'username:password' format and were ignored.");
             }
+            
+            localStorage.setItem(USERS_KEY, JSON.stringify(userMap));
 
-            const success = addNewUser(newUserDetails);
+            saveButton.disabled = false;
+            saveMessage.textContent = 'Settings saved successfully!';
+            saveMessage.style.display = 'block';
+            
+            // Re-load to confirm data integrity
+            loadSettings();
 
-            if (success) {
-                alert(`User '${newUserDetails.name}' added successfully!`);
-                form.reset();
-                displayCurrentUsers(); // Refresh the list
-            } else {
-                alert(`Error: Username '${newUserDetails.username}' already exists. Please choose a different username.`);
-            }
+            // Clear message after a short delay
+            setTimeout(() => {
+                saveMessage.style.display = 'none';
+            }, 3000);
         });
+
 
         // --- Initialization ---
         document.addEventListener("DOMContentLoaded", function() {
-            checkAuth(); 
-            populateAccessTemplates();
-            displayCurrentUsers();
-            
-            // Since this page is now the main User Management page, no need for sub-menu activation
+            checkAuth(); // Check for login status
+            loadSettings(); // Load existing configuration
         });
     </script>
 </body>
