@@ -1,6 +1,103 @@
-<script src="../script.js"></script>
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>User Management & Settings — Siddhivinayak Digital</title>
+    <link rel="stylesheet" href="../styles/internal.css">
+    <style>
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        .settings-grid .card {
+            padding: 20px;
+        }
+        .field {
+            margin-bottom: 20px;
+        }
+        .field label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+        .btn-save {
+            background-color: var(--primary);
+            color: white;
+            padding: 10px 20px;
+            font-size: 1.05em;
+        }
+        .note {
+            font-size: 0.9em;
+            color: var(--info);
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <div class="brand">Siddhivinayak Digital</div>
+        <div class="controls">
+            <button class="btn secondary" onclick="history.back()">Back</button>
+            <a href="../index.html" class="btn secondary">Home</a>
+            <div class="user-display">Logged in as: <span id="sv_user_name"></span></div>
+            <span id="liveTime"></span>
+            <button class="btn" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <div class="app">
+        <aside class="sidebar">
+            <div class="brand-small">Control Panel</div>
+            <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <a href="job-entry.html" class="nav-link">New Job Entry</a>
+            <a href="job-queue.html" class="nav-link">Job Queue</a>
+            <a href="customers.html" class="nav-link">Customers</a>
+            <a href="expenses.html" class="nav-link">Daily Expenses</a>
+            <a href="reports.html" class="nav-link">Reports</a>
+            <a href="settings.html" class="nav-link active">User Management</a>
+            </aside>
+
+        <main class="main">
+            <div class="page-header">
+                <div>
+                    <div class="page-title">User Management & Global Settings</div>
+                    <div class="page-sub">Define authorized users and managers for the application.</div>
+                </div>
+            </div>
+
+            <div class="settings-grid">
+                <div class="card">
+                    <form id="userSettingsForm">
+                        <div class="field">
+                            <label for="managerList">Managers List (One name per line)</label>
+                            <textarea id="managerList" required placeholder="Enter the names of all managers who can be assigned jobs.&#10;e.g.,&#10;Amit Sharma&#10;Priya Yadav"></textarea>
+                            <div class="note">These names will populate the "Manager" dropdown on the New Job Entry form.</div>
+                        </div>
+
+                        <div class="field">
+                            <label for="allUsersList">All Authorized Users (Username:Password - One per line)</label>
+                            <textarea id="allUsersList" required placeholder="Enter all authorized users with their passwords.&#10;e.g.,&#10;admin:123456&#10;user1:password123&#10;amit:amit@123"></textarea>
+                            <div class="note">These users can log in. User credentials are now stored in the Google Sheet.</div>
+                        </div>
+
+                        <button type="submit" class="btn btn-save" id="saveButton">Save Settings</button>
+                        <p id="saveMessage" style="color: var(--success); margin-top: 10px; display: none;">Settings saved successfully!</p>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../script.js"></script>
     <script>
-        // We will define a new global function for saving user data in script.js later
+        // Access global functions from script.js
+        checkAuth = window.checkAuth;
         saveUserSettingsToSheet = window.saveUserSettingsToSheet; 
         
         const managerListInput = document.getElementById('managerList');
@@ -9,9 +106,9 @@
         const saveButton = document.getElementById('saveButton');
         const saveMessage = document.getElementById('saveMessage');
 
-        // Local Storage Keys for loading (we will still load, but saving goes to the sheet)
+        // Local Storage Keys for loading (we still use Local Storage to quickly fetch manager list)
         const MANAGER_KEY = 'managersList';
-        const USERS_KEY = 'usersCredentials';
+        const USERS_KEY = 'usersCredentials'; // Retained for backwards compatibility if needed
 
         /**
          * Loads settings from Local Storage (for manager dropdown) and logs in credentials 
@@ -32,9 +129,9 @@
             }
 
             // All Users List: Since saving is now to the sheet, we load defaults for initial setup
-            allUsersListInput.value = 'admin:admin123\nuser1:password123';
-            // NOTE: Once the first user data is submitted, this page should be updated 
-            // to fetch the current user list from the Google Sheet via a GET request.
+            // NOTE: The user list should ideally be fetched from the Google Sheet via a GET request
+            // but we use defaults here to allow initial setup via the settings page.
+            allUsersListInput.value = 'admin:admin123\nmanager:manager123';
         }
 
         /**
@@ -108,7 +205,6 @@
                 saveMessage.style.display = 'block';
             }
 
-
             saveButton.disabled = false;
             
             // Clear message after a short delay
@@ -120,7 +216,15 @@
 
         // --- Initialization ---
         document.addEventListener("DOMContentLoaded", function() {
-            checkAuth(); 
+            // checkAuth() MUST be called first to ensure the user is logged in
+            if (typeof checkAuth === 'function') {
+                 checkAuth(); 
+            } else {
+                 console.error("checkAuth function is missing from script.js");
+            }
+            
             loadSettings(); 
         });
     </script>
+</body>
+</html>
