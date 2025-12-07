@@ -1,411 +1,186 @@
-/* --------------------------------------------------
-    GOOGLE SCRIPT CREDENTIAL MANAGEMENT
--------------------------------------------------- */
-function getAdminCredentials() {
-    return JSON.parse(localStorage.getItem(ADMIN_CREDENTIALS_KEY)) || { url: '', token: '' };
-}
-
-function saveAdminCredentials(url, token) {
-    const creds = { url, token };
-    localStorage.setItem(ADMIN_CREDENTIALS_KEY, JSON.stringify(creds));
-    return creds;
-}
-window.getAdminCredentials = getAdminCredentials; 
-window.saveAdminCredentials = saveAdminCredentials;
-
-/* script.js - AUTHENTICATION, ROLES, ACCESS CONTROL, & USER MANAGEMENT */
+// Global Constants
+const ADMIN_CREDENTIALS_KEY = 'sv_admin_credentials'; // Key for Google Script URL & Token
+const MANAGER_LIST_KEY = 'sv_manager_list'; // Key for the list of managers/users
+const APP_DATA_TYPE_JOB = 'JOB_ENTRY';
+const APP_DATA_TYPE_EXPENSE = 'DAILY_EXPENSE';
 
 /* --------------------------------------------------
-    BASE URL FOR REDIRECTION
-    (Use a relative path to the root of your GitHub Pages project for best reliability)
+    1. AUTHENTICATION AND UTILITY FUNCTIONS
 -------------------------------------------------- */
-const BASE_PATH = "/Siddhivinayak_Digital"; 
 
-/* --------------------------------------------------
-    LOCAL STORAGE KEYS
--------------------------------------------------- */
-const MANAGER_STORAGE_KEY = 'sv_managers'; 
-const USER_CREDENTIALS_KEY = 'sv_user_credentials'; 
-const ADMIN_CREDENTIALS_KEY = 'sv_admin_credentials'; // Key for Google Script URL/Token
+/**
+ * Checks if the user is authenticated and redirects if not.
+ */
+function checkAuth() {
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    const username = localStorage.getItem('username');
+    const userRole = localStorage.getItem('sv_user_role');
 
-/* --------------------------------------------------
-    ROLES AND PERMISSIONS DEFINITION 🔑
--------------------------------------------------- */
-const ACCESS_PERMISSIONS = {
-    'features': {
-        'dashboard': { label: 'Dashboard', page: 'dashboard.html', actions: ['view'] },
-        'job_entry': { label: 'New Job Entry', page: 'job-entry.html', actions: ['view', 'manage'] },
-        'job_queue': { label: 'Job Queue', page: 'job-queue.html', actions: ['view', 'manage'] },
-        'customers': { label: 'Customers', page: 'customers.html', actions: ['view', 'manage'] },
-        'expenses': { label: 'Daily Expenses', page: 'expenses.html', actions: ['view', 'manage'] },
-        'reports': { label: 'Reports', page: 'reports.html', actions: ['view'] },
-        'user_management': { label: 'User Management', page: 'settings.html', actions: ['view', 'manage'] },
-        'admin_credentials': { label: 'Admin Credentials', page: 'admin-credentials.html', actions: ['view', 'manage'] } 
-    },
-    'admin': {
-        'dashboard': ['view'], 'job_entry': ['view', 'manage'], 'job_queue': ['view', 'manage'], 
-        'customers': ['view', 'manage'], 'expenses': ['view', 'manage'], 'reports': ['view'], 
-        'user_management': ['view', 'manage'], 'admin_credentials': ['view', 'manage'] 
-    },
-    'manager': {
-        'dashboard': ['view'], 'job_entry': ['view', 'manage'], 'job_queue': ['view', 'manage'], 
-        'customers': ['view'], 'expenses': ['view'], 'reports': [], 'user_management': [], 'admin_credentials': [] 
-    },
-    'viewer': {
-        'dashboard': ['view'], 'job_entry': ['manage'], 'job_queue': ['view'], 'customers': ['view'], 
-        'expenses': [], 'reports': [], 'user_management': [], 'admin_credentials': [] 
-    }
-};
-window.ACCESS_PERMISSIONS = ACCESS_PERMISSIONS; 
-
-/* --------------------------------------------------
-    INITIAL LOGIN CREDENTIALS 🔒
--------------------------------------------------- */
-const INITIAL_CREDENTIALS = [
-    { username: "admin", password: "admin123", name: "Admin User", role: "admin", permissions: ACCESS_PERMISSIONS.admin }
-];
-
-/* --------------------------------------------------
-    USER CREDENTIAL MANAGEMENT
--------------------------------------------------- */
-function getUserCredentials() {
-    let users = JSON.parse(localStorage.getItem(USER_CREDENTIALS_KEY));
-    if (!users || users.length === 0) {
-        users = INITIAL_CREDENTIALS;
-        localStorage.setItem(USER_CREDENTIALS_KEY, JSON.stringify(users));
-    }
-    
-    return users.map(user => {
-        if (!user.permissions || user.role !== 'custom') {
-            user.permissions = ACCESS_PERMISSIONS[user.role] || ACCESS_PERMISSIONS.viewer; 
+    if (!isLoggedIn) {
+        // Not logged in, redirect to login page
+        if (window.location.pathname.indexOf('index.html') === -1) {
+            window.location.href = '../index.html';
         }
-        return user;
-    });
-}
-
-function saveUserCredentials(users) {
-    localStorage.setItem(USER_CREDENTIALS_KEY, JSON.stringify(users));
-}
-
-function addNewUser(newUserDetails) {
-    const users = getUserCredentials();
-    
-    if (users.some(u => u.username === newUserDetails.username.toLowerCase())) {
-        return false; 
-    }
-    
-    const newUser = {
-        username: newUserDetails.username.toLowerCase(),
-        password: newUserDetails.password,
-        name: newUserDetails.name,
-        role: newUserDetails.role,
-        // Permissions will be set automatically by getUserCredentials on next load
-    };
-
-    users.push(newUser);
-    saveUserCredentials(users);
-    initManagers(); 
-    return true;
-}
-
-window.getUserCredentials = getUserCredentials;
-window.saveUserCredentials = saveUserCredentials;
-window.addNewUser = addNewUser;
-
-
-/* --------------------------------------------------
-    GOOGLE SCRIPT CREDENTIAL MANAGEMENT (THE CRITICAL SECTION)
--------------------------------------------------- */
-function getAdminCredentials() {
-    // Retrieves the URL and Token from Local Storage
-    return JSON.parse(localStorage.getItem(ADMIN_CREDENTIALS_KEY)) || { url: '', token: '' };
-}
-
-function saveAdminCredentials(url, token) {
-    const creds = { url, token };
-    // Saves the URL and Token to Local Storage
-    localStorage.setItem(ADMIN_CREDENTIALS_KEY, JSON.stringify(creds));
-    return creds;
-}
-window.getAdminCredentials = getAdminCredentials; // Used by admin-credentials.html
-window.saveAdminCredentials = saveAdminCredentials; // Used by admin-credentials.html
-
-
-/* --------------------------------------------------
-    LOGIN & LOGOUT FUNCTIONS
--------------------------------------------------- */
-function login() {
-    const userEl = document.getElementById("username");
-    const passEl = document.getElementById("password");
-    const errEl  = document.getElementById("error");
-
-    if (!userEl || !passEl || !errEl) return;
-
-    const user = userEl.value.trim().toLowerCase();
-    const pass = passEl.value;
-    
-    const users = getUserCredentials();
-    const validUser = users.find(u => u.username === user && u.password === pass);
-
-    if (validUser) {
-        localStorage.setItem("loggedIn", "yes");
-        localStorage.setItem("username", validUser.name);
-        localStorage.setItem("sv_user_role", validUser.role);
-        localStorage.setItem("sv_user_permissions", JSON.stringify(validUser.permissions)); 
-        
-        initManagers();
-        
-        window.location.href = `${BASE_PATH}/pages/dashboard.html`;
     } else {
-        errEl.textContent = "Invalid username or password! Access Denied.";
-        errEl.style.display = "block";
+        // Logged in, update UI elements
+        const userNameDisplay = document.getElementById('sv_user_name');
+        if (userNameDisplay) {
+            userNameDisplay.textContent = username + ' (' + userRole.charAt(0).toUpperCase() + userRole.slice(1) + ')';
+        }
+        updateLiveTime();
+        setInterval(updateLiveTime, 1000); // Start the clock
     }
 }
 
-function logout() {
-    localStorage.removeItem("loggedIn");
-    localStorage.removeItem("username");
-    localStorage.removeItem("sv_user_role");
-    localStorage.removeItem("sv_user_permissions"); 
-    window.location.href = `${BASE_PATH}/index.html`;
+/**
+ * Updates the live time display (simple utility).
+ */
+function updateLiveTime() {
+    const timeElement = document.getElementById('liveTime');
+    if (timeElement) {
+        timeElement.textContent = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+    }
 }
+
+/**
+ * Logs the user out and clears session data.
+ */
+function logout() {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('username');
+    localStorage.removeItem('sv_user_role');
+    // Keep credentials and manager list saved for next login/admin
+    window.location.href = '../index.html';
+}
+
+window.checkAuth = checkAuth;
 window.logout = logout;
 
 /* --------------------------------------------------
-    ACCESS CONTROL CHECK
+    2. CREDENTIAL MANAGEMENT (For Admin Page)
 -------------------------------------------------- */
-function checkAccess() {
-    const userPermissions = JSON.parse(localStorage.getItem("sv_user_permissions") || "{}");
-    const currentPage = window.location.pathname.split('/').pop();
-    const userRole = localStorage.getItem("sv_user_role");
-    
-    if (userRole === 'admin') return; 
 
-    const currentFeatureKey = Object.keys(ACCESS_PERMISSIONS.features).find(key => 
-        ACCESS_PERMISSIONS.features[key].page === currentPage
-    );
-    
-    const hasViewPermission = userPermissions[currentFeatureKey] && userPermissions[currentFeatureKey].includes('view');
-
-    if (currentFeatureKey && !hasViewPermission) {
-        console.error(`Access Denied: User (${userRole}) lacks 'view' permission for ${currentFeatureKey}`);
-        
-        if (currentPage !== 'dashboard.html') {
-             alert("Access Denied: You do not have permission to view this page.");
-             window.location.href = `${BASE_PATH}/pages/dashboard.html`;
-        }
-    }
+/**
+ * Retrieves the saved Google Apps Script URL and Token.
+ * @returns {object} {url: string, token: string}
+ */
+function getAdminCredentials() {
+    const creds = localStorage.getItem(ADMIN_CREDENTIALS_KEY);
+    return creds ? JSON.parse(creds) : { url: '', token: '' };
 }
 
-function checkAuth() {
-    if (localStorage.getItem("loggedIn") !== "yes") {
-        window.location.href = `${BASE_PATH}/index.html`; 
-        return; 
-    }
-    
-    checkAccess();
-    initHeader(); 
-    initSidebarVisibility();
-}
-window.checkAuth = checkAuth;
-
-function initSidebarVisibility() {
-    const userPermissions = JSON.parse(localStorage.getItem("sv_user_permissions") || "{}");
-    const features = ACCESS_PERMISSIONS.features;
-
-    document.querySelectorAll('.sidebar .nav-link').forEach(link => {
-        const href = link.getAttribute('href');
-        const pageName = href ? href.split('/').pop() : '';
-
-        const featureKey = Object.keys(features).find(key => 
-            features[key].page === pageName
-        );
-
-        if (featureKey) {
-            const hasViewPermission = userPermissions[featureKey] && userPermissions[featureKey].includes('view');
-
-            const userRole = localStorage.getItem("sv_user_role");
-            if (userRole === 'admin') {
-                link.style.display = '';
-                return;
-            }
-
-            if (!hasViewPermission) {
-                link.style.display = 'none';
-            } else {
-                link.style.display = ''; 
-            }
-        }
-    });
+/**
+ * Saves the Google Apps Script URL and Token to Local Storage.
+ * (Used by admin-credentials.html)
+ * @param {string} url - The deployed Apps Script URL.
+ * @param {string} token - The custom security token.
+ */
+function saveAdminCredentials(url, token) {
+    const creds = { url, token };
+    localStorage.setItem(ADMIN_CREDENTIALS_KEY, JSON.stringify(creds));
+    return creds;
 }
 
+window.getAdminCredentials = getAdminCredentials;
+window.saveAdminCredentials = saveAdminCredentials;
 
 /* --------------------------------------------------
-    HEADER & MANAGER UTILITIES
+    3. USER / MANAGER LIST MANAGEMENT
 -------------------------------------------------- */
-function initManagers() {
-    const users = getUserCredentials(); 
-    let managers = users
-        .filter(user => user.role === 'admin' || user.role === 'manager' || user.role === 'custom')
-        .map(user => user.name);
-            
-    managers = [...new Set(managers)].sort((a, b) => {
-        if (a === 'Admin User') return -1;
-        return a.localeCompare(b);
-    });
 
-    localStorage.setItem(MANAGER_STORAGE_KEY, JSON.stringify(managers));
-}
-window.initManagers = initManagers;
-
+/**
+ * Retrieves the list of managers (users) from Local Storage.
+ * (Used by job-entry.html and expenses.html)
+ * NOTE: This assumes the manager list is saved elsewhere, e.g., in settings.html
+ * For now, it returns a placeholder list or the last saved list.
+ * @returns {Array<string>} List of manager names.
+ */
 function getManagers() {
-    const managers = JSON.parse(localStorage.getItem(MANAGER_STORAGE_KEY));
-    if (!managers) {
-        initManagers();
-        return JSON.parse(localStorage.getItem(MANAGER_STORAGE_KEY));
+    // We assume the user management page saves a list of manager names
+    const rawUsers = localStorage.getItem(MANAGER_LIST_KEY);
+    if (rawUsers) {
+        try {
+            return JSON.parse(rawUsers);
+        } catch (e) {
+            console.error("Error parsing manager list:", e);
+            return ['Admin User', 'Manager 1', 'User 1']; // Fallback
+        }
     }
-    return managers;
+    // Default fallback list
+    return ['Admin User', 'Manager 1', 'User 1'];
 }
+
 window.getManagers = getManagers;
 
-function initHeader() {
-    const nameEl = document.getElementById("sv_user_name");
-    const logged = localStorage.getItem("loggedIn") === "yes";
-    const username = localStorage.getItem("username") || "";
-
-    if (nameEl) {
-        nameEl.textContent = logged ? username : "";
-        nameEl.style.display = logged ? "inline-block" : "none";
-    }
-}
-
-let _clockTimer = null;
-function startLiveClock() {
-    const el = document.getElementById("liveTime");
-    if (!el) return;
-    function tick() {
-        const now = new Date();
-        el.textContent = now.toLocaleDateString('en-IN') + " " + now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    }
-    tick();
-    if (_clockTimer) clearInterval(_clockTimer);
-    _clockTimer = setInterval(tick, 1000);
-}
-
-
 /* --------------------------------------------------
-    DATA READING FUNCTIONS (from GitHub JSON files)
+    4. DATA SUBMISSION LOGIC (CORE FUNCTIONALITY)
 -------------------------------------------------- */
-const DATA_HOST_BASE = "https://raw.githubusercontent.com/nil4567/Siddhivinayak_Digital/main/data";
-const DATA_JOB_FILE = 'jobs.json';
-const DATA_EXPENSE_FILE = 'expenses.json';
 
-async function fetchData(filename) {
-    try {
-        const url = `${DATA_HOST_BASE}/${filename}`;
-        const response = await fetch(url);
+/**
+ * Core function to send data to the Google Apps Script.
+ * @param {object} data - The data payload (job or expense data).
+ * @param {string} dataType - Either APP_DATA_TYPE_JOB or APP_DATA_TYPE_EXPENSE.
+ * @returns {Promise<boolean>} True if successful, False otherwise.
+ */
+async function sendDataToScript(data, dataType) {
+    const { url, token } = getAdminCredentials();
 
-        if (!response.ok) {
-            console.error(`Error fetching ${filename}: ${response.statusText}`);
-            return [];
-        }
-
-        const data = await response.json();
-        return data;
-    } catch (error) {
-        console.error(`Failed to parse JSON for ${filename}:`, error);
-        return [];
-    }
-}
-
-async function getAllJobs() {
-    return fetchData(DATA_JOB_FILE);
-}
-
-async function getAllExpenses() {
-    return fetchData(DATA_EXPENSE_FILE);
-}
-
-window.getAllJobs = getAllJobs;
-window.getAllExpenses = getAllExpenses;
-
-
-/* --------------------------------------------------
-    DATA WRITING FUNCTIONS (Google Script Integration) 💾
--------------------------------------------------- */
-async function sendDataToScript(type, data) {
-    const creds = getAdminCredentials();
-    const scriptUrl = creds.url;
-    const token = creds.token;
-
-    if (!scriptUrl || !token) {
-        alert("CRITICAL ERROR: Google Apps Script URL or Token is not configured. Redirecting to Admin Credentials.");
-        
-        if (window.location.pathname.indexOf('admin-credentials.html') === -1) {
-            window.location.href = `${BASE_PATH}/pages/admin-credentials.html`; 
-        }
+    // CRITICAL CHECK: This is why the Job Entry page was redirecting!
+    if (!url || !token) {
+        alert("CRITICAL ERROR: Google Apps Script URL or Token is not configured. Please contact Admin.");
+        window.location.href = '../pages/admin-credentials.html';
         return false;
     }
 
+    const payload = {
+        appToken: token, // The security token
+        dataType: dataType, // 'JOB_ENTRY' or 'DAILY_EXPENSE'
+        data: data
+    };
+
     try {
-        const response = await fetch(scriptUrl, {
+        const response = await fetch(url, {
             method: 'POST',
-            mode: 'cors',
+            mode: 'cors', // Required for Google Apps Script web apps
             headers: {
-                'Content-Type': 'application/json',
-                'X-App-Security-Token': token 
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ type, data }) 
+            body: JSON.stringify(payload)
         });
 
-        if (!response.ok) {
-            throw new Error(`Script returned status: ${response.status}`);
-        }
-
+        // The Apps Script usually returns a JSON response like {result: 'success'}
         const result = await response.json();
 
-        if (result.status === 'success') {
+        if (result.result === 'success') {
             return true;
         } else {
-            alert(`Error from Script: ${result.message || "Unknown error."}`);
+            alert(`Server Error: Data submission failed.\nReason: ${result.error || 'Check Google Apps Script logs.'}`);
             return false;
         }
-
     } catch (error) {
-        console.error("Error communicating with Google Script:", error);
-        alert(`Failed to save data: Check script URL or network connection. Error: ${error.message}`);
+        console.error("Fetch API error:", error);
+        alert("Network Error: Could not connect to the Google Apps Script URL. Check URL and internet connection.");
         return false;
     }
 }
 
-async function saveJobToScript(newJob) { return sendDataToScript('new_job', newJob); }
-async function saveExpenseToScript(newExpense) { return sendDataToScript('new_expense', newExpense); }
+/**
+ * Specific function to save Job data (Used by job-entry.html).
+ * @param {object} jobData - The job details.
+ * @returns {Promise<boolean>}
+ */
+async function saveJobToScript(jobData) {
+    return sendDataToScript(jobData, APP_DATA_TYPE_JOB);
+}
+
+/**
+ * Specific function to save Expense data (Will be used by expenses.html).
+ * @param {object} expenseData - The expense details.
+ * @returns {Promise<boolean>}
+ */
+async function saveExpenseToScript(expenseData) {
+    return sendDataToScript(expenseData, APP_DATA_TYPE_EXPENSE);
+}
 
 window.saveJobToScript = saveJobToScript;
 window.saveExpenseToScript = saveExpenseToScript;
-
-
-/* --------------------------------------------------
-    AUTO INIT
--------------------------------------------------- */
-document.addEventListener("DOMContentLoaded", function () {
-    getUserCredentials(); 
-    initManagers(); 
-
-    const loginForm = document.getElementById("loginForm");
-    if (loginForm) {
-        loginForm.addEventListener("submit", function (e) {
-            e.preventDefault();
-            login();
-        });
-    }
-    
-    const currentPage = window.location.pathname.split('/').pop();
-    if (currentPage !== 'index.html' && currentPage !== 'login.html') {
-        checkAuth(); 
-    } else {
-        initHeader();
-    }
-    
-    startLiveClock();
-});
