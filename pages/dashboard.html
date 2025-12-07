@@ -1,157 +1,279 @@
 <!doctype html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>Dashboard — Siddhivinayak Digital</title>
-  <link rel="stylesheet" href="../styles/internal.css">
-  <style>
-    /* Dashboard specific styles */
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 20px;
-      margin-top: 20px;
-    }
-    .summary-card {
-      background: white;
-      padding: 25px;
-      border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-      text-align: center;
-    }
-    .summary-card h4 {
-      margin-top: 0;
-      color: var(--muted);
-      font-size: 14px;
-      text-transform: uppercase;
-      font-weight: 600;
-    }
-    .summary-card .value {
-      font-size: 36px;
-      font-weight: 900;
-      color: var(--primary);
-    }
-    .summary-card .link {
-      font-size: 14px;
-      color: var(--text-color);
-      display: block;
-      margin-top: 10px;
-    }
-    .recent-activity {
-      margin-top: 30px;
-    }
-    .recent-activity h3 {
-      border-bottom: 1px solid #eee;
-      padding-bottom: 10px;
-      margin-bottom: 15px;
-    }
-    .no-data {
-      color: var(--muted);
-      text-align: center;
-      padding: 40px;
-      background: #f8f8f8;
-      border-radius: 8px;
-    }
-  </style>
+    <meta charset="utf-8">
+    <title>Dashboard — Siddhivinayak Digital</title>
+    <link rel="stylesheet" href="../styles/internal.css">
+    <style>
+        /* Dashboard specific styles */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .metric-card {
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .metric-card h4 {
+            margin-top: 0;
+            font-size: 1.1em;
+            color: var(--text-muted);
+        }
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        /* Color themes for metrics */
+        .card-income {
+            background-color: #e6ffed; /* Light green */
+            border-bottom: 4px solid var(--success);
+        }
+        .card-expense {
+            background-color: #ffe6e6; /* Light red */
+            border-bottom: 4px solid var(--danger);
+        }
+        .card-pending {
+            background-color: #fff8e1; /* Light yellow */
+            border-bottom: 4px solid #ffc107;
+        }
+        .card-balance {
+            background-color: #e0f7fa; /* Light blue */
+            border-bottom: 4px solid var(--primary);
+        }
+
+        .recent-activity-card {
+            margin-top: 20px;
+            padding: 20px;
+        }
+
+        .recent-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+        .recent-table th, .recent-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .recent-table th {
+            background-color: var(--highlight);
+        }
+        .status-tag {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.85em;
+            display: inline-block;
+        }
+        .status-Completed {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status-Pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+    </style>
 </head>
 <body>
-  <div class="topbar">
-    <div class="brand">Siddhivinayak Digital</div>
-    <div class="controls">
-        <button class="btn secondary" onclick="history.back()">Back</button>
-        <a href="../index.html" class="btn secondary">Home</a> 
-        <div class="user-display">Logged in as: <span id="sv_user_name"></span></div>
-        <span id="liveTime"></span>
-        <button class="btn" onclick="logout()">Logout</button>
+    <div class="topbar">
+        <div class="brand">Siddhivinayak Digital</div>
+        <div class="controls">
+            <button class="btn secondary" onclick="history.back()">Back</button>
+            <a href="../index.html" class="btn secondary">Home</a>
+            <div class="user-display">Logged in as: <span id="sv_user_name"></span></div>
+            <span id="liveTime"></span>
+            <button class="btn" onclick="logout()">Logout</button>
+        </div>
     </div>
-  </div>
 
-  <div class="app">
-    <aside class="sidebar">
-      <div class="brand-small">Control Panel</div>
-      <a href="dashboard.html" class="nav-link active">Dashboard</a>
-      <a href="job-entry.html" class="nav-link">New Job Entry</a>
-      <a href="job-queue.html" class="nav-link">Job Queue</a>
-      <a href="customers.html" class="nav-link">Customers</a>
-      <a href="expenses.html" class="nav-link">Daily Expenses</a>
-      <a href="reports.html" class="nav-link">Reports</a>
-      <a href="settings.html" class="nav-link">Settings</a>
-    </aside>
+    <div class="app">
+        <aside class="sidebar">
+            <div class="brand-small">Control Panel</div>
+            <a href="dashboard.html" class="nav-link active">Dashboard</a>
+            <a href="job-entry.html" class="nav-link">New Job Entry</a>
+            <a href="job-queue.html" class="nav-link">Job Queue</a>
+            <a href="customers.html" class="nav-link">Customers</a>
+            <a href="expenses.html" class="nav-link">Daily Expenses</a>
+            <a href="reports.html" class="nav-link">Reports</a>
+            <a href="settings.html" class="nav-link">User Management</a>
+            <a href="admin-credentials.html" class="nav-link">Admin Credentials</a>
+        </aside>
 
-    <main class="main">
-      <div class="page-header">
-        <div>
-          <div class="page-title">Welcome to the Dashboard!</div>
-          <div class="page-sub">Quick summary of today's activities and system health.</div>
-        </div>
-      </div>
+        <main class="main">
+            <div class="page-header">
+                <div>
+                    <div class="page-title">Welcome Back!</div>
+                    <div class="page-sub">Quick overview of key financial metrics and recent activity.</div>
+                </div>
+            </div>
 
-      <div class="summary-grid">
-        <div class="summary-card">
-          <h4>Jobs in Queue</h4>
-          <div class="value">12</div>
-          <a href="job-queue.html" class="link">View Full Queue →</a>
-        </div>
-        <div class="summary-card">
-          <h4>New Jobs Today</h4>
-          <div class="value">5</div>
-          <a href="job-entry.html" class="link">Add New Job →</a>
-        </div>
-        <div class="summary-card">
-          <h4>Total Expenses (Today)</h4>
-          <div class="value">₹ 2,500</div>
-          <a href="expenses.html" class="link">View Expenses →</a>
-        </div>
-        <div class="summary-card">
-          <h4>Active Users</h4>
-          <div class="value">3</div>
-          <a href="settings.html" class="link">Manage Users →</a>
-        </div>
-      </div>
+            <div id="credentialWarning" class="alert danger" style="display:none; margin-bottom: 20px;">
+                <strong>CRITICAL WARNING:</strong> Data saving credentials are **NOT SET**. Please visit <a href="admin-credentials.html">Admin Credentials</a> immediately to configure the Google Apps Script URL and Token.
+            </div>
 
-      <div class="recent-activity">
-        <h3>Recent Activity</h3>
-        <div class="no-data">
-          Activity log feature pending implementation.
-        </div>
-      </div>
-      
-    </main>
-  </div>
+            <div class="dashboard-grid">
+                
+                <div class="card metric-card card-income">
+                    <h4>Total Income Received</h4>
+                    <div class="metric-value">₹<span id="totalIncome">0.00</span></div>
+                </div>
 
-  <script src="../script.js"></script>
-  <script>
-    const ACCESS_PERMISSIONS = window.ACCESS_PERMISSIONS || {};
+                <div class="card metric-card card-expense">
+                    <h4>Total Expenses Recorded</h4>
+                    <div class="metric-value">₹<span id="totalExpenses">0.00</span></div>
+                </div>
 
-    document.addEventListener("DOMContentLoaded", function() {
-        // 1. Authentication Check (from script.js)
-        checkAuth(); 
-        
-        // 2. Hide sidebar links based on user's current permissions
-        const userPermissions = JSON.parse(localStorage.getItem("sv_user_permissions") || "{}");
-        const features = ACCESS_PERMISSIONS.features;
+                <div class="card metric-card card-pending">
+                    <h4>Pending Receivables</h4>
+                    <div class="metric-value">₹<span id="totalReceivables">0.00</span></div>
+                </div>
+                
+                <div class="card metric-card card-balance">
+                    <h4>Current Net Balance</h4>
+                    <div class="metric-value">₹<span id="netBalance">0.00</span></div>
+                </div>
+            </div>
 
-        document.querySelectorAll('.sidebar .nav-link').forEach(link => {
-            const href = link.getAttribute('href');
-            const pageName = href ? href.split('/').pop() : '';
+            <div class="card recent-activity-card">
+                <h3>Recent Job Activity</h3>
+                <div id="recentJobsStatus">Loading recent jobs...</div>
+                <div class="data-table-container">
+                    <table class="recent-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Customer</th>
+                                <th>Amount (₹)</th>
+                                <th>Status</th>
+                                <th>Manager</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentJobsBody">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+            
+        </main>
+    </div>
 
-            // Map page file name to a feature key (e.g., 'job-entry.html' -> 'job_entry')
-            const featureKey = Object.keys(features).find(key => 
-                features[key].page === pageName
-            );
+    <script src="../script.js"></script>
+    <script>
+        // Access global functions from script.js
+        const getAllJobs = window.getAllJobs;
+        const getAllExpenses = window.getAllExpenses;
+        const getAdminCredentials = window.getAdminCredentials;
 
-            // Check if user has 'view' permission for this feature
-            const hasViewPermission = userPermissions[featureKey] && userPermissions[featureKey].includes('view');
-
-            if (featureKey && !hasViewPermission) {
-                // If a feature is mapped but the user lacks permission, hide the link
-                link.style.display = 'none';
+        /**
+         * Checks credentials and displays a warning if missing.
+         */
+        function checkCredentialsStatus() {
+            const creds = getAdminCredentials();
+            const warningEl = document.getElementById('credentialWarning');
+            
+            if (!creds.url || !creds.token) {
+                warningEl.style.display = 'block';
+            } else {
+                warningEl.style.display = 'none';
             }
-        });
+        }
         
-        // 3. Start live clock (from script.js)
-        startLiveClock();
-    });
-  </script>
+        /**
+         * Loads and calculates all financial metrics.
+         */
+        async function loadDashboardMetrics() {
+            try {
+                // Fetch data concurrently
+                const [jobs, expenses] = await Promise.all([getAllJobs(), getAllExpenses()]);
+
+                if (!jobs || !expenses) {
+                    throw new Error("Failed to load core data.");
+                }
+
+                // --- 1. Calculate Metrics ---
+                
+                // Total received income
+                const totalIncome = jobs.reduce((sum, job) => sum + (parseFloat(job.received) || 0), 0);
+                
+                // Total pending balance
+                const totalReceivables = jobs.reduce((sum, job) => sum + (parseFloat(job.balance) || 0), 0);
+                
+                // Total expenses
+                const totalExpenses = expenses.reduce((sum, expense) => sum + (parseFloat(expense.amount) || 0), 0);
+                
+                // Net Balance
+                const netBalance = totalIncome - totalExpenses;
+
+                // --- 2. Update Metric Cards ---
+                document.getElementById('totalIncome').textContent = totalIncome.toFixed(2);
+                document.getElementById('totalExpenses').textContent = totalExpenses.toFixed(2);
+                document.getElementById('totalReceivables').textContent = totalReceivables.toFixed(2);
+                document.getElementById('netBalance').textContent = netBalance.toFixed(2);
+                
+                // Style net balance based on value
+                const netBalanceEl = document.getElementById('netBalance');
+                if (netBalance >= 0) {
+                    netBalanceEl.style.color = 'var(--success)';
+                } else {
+                    netBalanceEl.style.color = 'var(--danger)';
+                }
+
+
+                // --- 3. Populate Recent Jobs Table (Last 5 Entries) ---
+                
+                // Sort jobs by date descending (newest first)
+                jobs.sort((a, b) => new Date(b.date) - new Date(a.date));
+                const recentJobs = jobs.slice(0, 5); // Take the top 5
+                
+                const tbody = document.getElementById('recentJobsBody');
+                const statusDiv = document.getElementById('recentJobsStatus');
+                tbody.innerHTML = '';
+                
+                if (recentJobs.length === 0) {
+                    statusDiv.textContent = 'No recent job entries found.';
+                    
+                } else {
+                    statusDiv.style.display = 'none';
+                    recentJobs.forEach(job => {
+                        const row = tbody.insertRow();
+                        const statusClass = job.status === 'Completed' ? 'status-Completed' : 'status-Pending';
+                        
+                        row.innerHTML = `
+                            <td>${job.date}</td>
+                            <td>${job.customer}</td>
+                            <td>${job.amount ? job.amount.toFixed(2) : '0.00'}</td>
+                            <td><span class="status-tag ${statusClass}">${job.status}</span></td>
+                            <td>${job.manager || 'N/A'}</td>
+                        `;
+                    });
+                }
+
+            } catch (error) {
+                console.error("Error loading dashboard data:", error);
+                document.getElementById('recentJobsStatus').textContent = `ERROR: Failed to load data. Check console for details.`;
+            }
+        }
+
+
+        // --- Initialization ---
+        document.addEventListener("DOMContentLoaded", function() {
+            // 1. Check Auth & Load Header/Sidebar (from script.js)
+            checkAuth(); 
+            
+            // 2. Check and warn if admin credentials are missing
+            checkCredentialsStatus();
+
+            // 3. Load the dashboard metrics
+            loadDashboardMetrics();
+        });
+    </script>
 </body>
 </html>
