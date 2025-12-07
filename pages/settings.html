@@ -5,7 +5,7 @@
   <title>Settings — Siddhivinayak Digital</title>
   <link rel="stylesheet" href="../styles/internal.css">
   <style>
-    /* Styling from previous steps */
+    /* Add specific styling for the User List table */
     .manager-list {
         list-style: none;
         padding: 0;
@@ -21,16 +21,12 @@
     .manager-list li:last-child {
         border-bottom: none;
     }
-    .manager-list li span {
-        font-weight: 500;
-        min-width: 100px;
-    }
     .manager-list li .user-name {
         font-weight: 700;
         min-width: 150px;
     }
     .manager-list li .password-display {
-        background: #fff3cd; /* Light yellow background for passwords */
+        background: #fff3cd; 
         color: #856404;
         padding: 3px 8px;
         border-radius: 4px;
@@ -61,20 +57,6 @@
         cursor: pointer;
         font-size: 12px;
         margin-left: 10px;
-    }
-    .user-display {
-        background: #e9f2ff; 
-        color: #0b2540;
-        padding: 5px 10px;
-        border-radius: 8px;
-        font-size: 13px;
-        font-weight: 600;
-        margin-right: 15px;
-        border: 1px solid rgba(15,111,255,0.1);
-    }
-    .user-display span {
-        font-weight: 800;
-        color: var(--primary);
     }
   </style>
 </head>
@@ -140,7 +122,7 @@
 
         <div class="card" style="grid-column: span 2;">
             <h3>Current Active Users & Credentials</h3>
-            <div style="display: flex; justify-content: space-between; padding: 0 15px 10px;">
+            <div style="display: flex; justify-content: space-between; padding: 0 15px 10px; border-bottom: 1px solid #ddd;">
                 <span style="font-weight: 700; min-width: 150px;">Name (Username)</span>
                 <span style="font-weight: 700; min-width: 100px;">Password</span>
                 <span style="font-weight: 700; min-width: 50px; text-align: center;">Role</span>
@@ -156,13 +138,11 @@
 
   <script src="../script.js"></script>
   <script>
-    // Get the utility functions from script.js
-    const ACCESS_PERMISSIONS = window.ACCESS_PERMISSIONS || {}; 
-    const USER_CREDENTIALS_KEY = 'sv_user_credentials';
+    // Functions are assumed to be available from script.js
     const getUserCredentials = window.getUserCredentials;
     const saveUserCredentials = window.saveUserCredentials;
-    const initManagers = window.initManagers; // To refresh the manager list after changes
-
+    const initManagers = window.initManagers;
+    const ACCESS_PERMISSIONS = window.ACCESS_PERMISSIONS || {};
     const USER_ROLE = localStorage.getItem("sv_user_role");
     
     // --- Rendering Logic ---
