@@ -187,3 +187,42 @@ window.fetchSheetData = fetchSheetData;
 window.checkAuth = checkAuth;           
 window.logout = logout;
 window.handleLogin = handleLogin;
+
+/**
+ * Checks if a user is logged in and authorized to view the page.
+ * Updated to recognize the Super Admin bypass flag.
+ */
+function checkAuth() {
+    const userToken = localStorage.getItem('sv_user_token');
+    const userName = localStorage.getItem('sv_user_name');
+    const isSuperAdmin = localStorage.getItem('sv_is_superadmin') === 'true'; // Check the new flag
+    
+    // Check 1: If no token or name, redirect to login (Standard failure)
+    if (!userToken || !userName) {
+        window.location.href = '../index.html'; 
+        return; // Stop execution
+    } 
+    
+    // Check 2: Update the display name (Always runs if logged in)
+    const userNameElement = document.getElementById('sv_user_name');
+    if (userNameElement) {
+        userNameElement.textContent = userName;
+    }
+
+    // Check 3 (Concept): Implement page restrictions here using isSuperAdmin or isManager flags.
+    // Example: If this were a "Reports" page restricted to Managers and Super Admins:
+    /*
+    const isManager = localStorage.getItem('sv_is_manager') === 'true';
+    if (!isSuperAdmin && !isManager) {
+        alert("Access Denied: You must be a Manager or Super Admin.");
+        window.location.href = './dashboard.html';
+        return;
+    }
+    */
+    
+    // If the user reaches this point, they are logged in and authorized for a standard page.
+    console.log(`User logged in: ${userName}. Super Admin: ${isSuperAdmin}`);
+}
+
+// Ensure the rest of your script.js remains intact, especially the global exports!
+// window.checkAuth = checkAuth;
