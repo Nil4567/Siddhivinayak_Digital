@@ -21,9 +21,7 @@
       <a href="dashboard.html" class="nav-link active">Dashboard</a>
       <a href="job-entry.html" class="nav-link">New Job Entry</a>
       <a href="job-queue.html" class="nav-link">Job Queue</a>
-      <a href="departments.html" class="nav-link">Departments</a>
-      <a href="materials.html" class="nav-link">Materials</a>
-      <a href="reports.html" class="nav-link">Reports</a>
+      <a href="customers.html" class="nav-link">Customers</a> <a href="reports.html" class="nav-link">Reports</a>
       <a href="settings.html" class="nav-link">Settings</a>
     </aside>
 
@@ -31,14 +29,14 @@
       <div class="page-header">
         <div>
           <div class="page-title">Dashboard</div>
-          <div class="page-sub">Overview of jobs, TAT and department load</div>
+          <div class="page-sub">Overview of jobs and job manager load</div>
         </div>
       </div>
 
       <div class="grid-3">
         <div class="card">
           <h3>Today's Jobs</h3>
-          <div class="big" id="todayJobs">0</div>
+          <div class="big" id="todayJobs">0</div> 
         </div>
         <div class="card">
           <h3>Pending</h3>
@@ -54,9 +52,9 @@
         <h3>Recent Jobs</h3>
         <table class="table" id="recentTable">
           <thead>
-            <tr><th>Job ID</th><th>Customer</th><th>Dept</th><th>Status</th><th>Time</th></tr>
+            <tr><th>Order ID</th><th>Customer</th><th>Manager</th><th>Amount (Rs)</th><th>Status</th><th>Time</th></tr>
           </thead>
-          <tbody><tr><td colspan="5" class="muted">Loading jobs...</td></tr></tbody>
+          <tbody><tr><td colspan="6" class="muted">Loading jobs...</td></tr></tbody>
         </table>
       </div>
 
@@ -73,10 +71,10 @@
     // 1. Authentication Check (from script.js)
     checkAuth();
     
-    // --- Dashboard Helper Functions ---
+    // --- Dashboard Helper Functions (CRITICAL) ---
     
+    // Loads all jobs stored in the browser's local storage
     function loadLocalJobs() {
-      // Key must match the job-entry and job-queue pages
       const jobs = JSON.parse(localStorage.getItem('sv_jobs') || '[]');
       return jobs;
     }
@@ -121,8 +119,7 @@
         
         const latestJobs = sortedJobs.slice(0, 7);
 
-        // --- Display Counts (WITH CRASH PREVENTION CHECKS) ---
-        // These checks prevent the "Cannot set properties of null" error.
+        // --- Display Counts ---
         let el = document.getElementById('todayJobs');
         if (el) el.textContent = todayJobCount;
 
@@ -132,24 +129,28 @@
         el = document.getElementById('completedJobs');
         if (el) el.textContent = completedJobCount;
 
-        // --- Display Recent Jobs Table ---
+        // --- Display Recent Jobs Table (Updated columns) ---
         const tbody = document.querySelector('#recentTable tbody');
         
-        // Only try to update the table if the table body exists
         if (tbody) { 
             tbody.innerHTML = ''; 
 
             if (latestJobs.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="muted">No jobs yet</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="muted">No jobs yet</td></tr>';
             } else {
                 latestJobs.forEach(job => {
                     const row = document.createElement('tr');
                     const jobTime = job.createdAt ? new Date(job.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+                    
+                    const isExpress = (job.urgency === 'Urgent' || job.urgency === 'Very Urgent') ? 'status-express' : '';
+
+                    row.className = isExpress;
 
                     row.innerHTML = `
                         <td>${job.id}</td>
                         <td>${job.customer || 'N/A'}</td>
-                        <td>${job.department || 'N/A'}</td>
+                        <td>${job.assignedPerson || 'N/A'}</td>
+                        <td>₹ ${job.amount || '0'}</td>
                         <td class="${getStatusClass(job.status)}">${job.status}</td>
                         <td>${jobTime}</td>
                     `;
