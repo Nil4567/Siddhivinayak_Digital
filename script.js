@@ -1,4 +1,4 @@
-/* script.js - Auth + Header + Clock + Safe GitHub Job Dispatch */
+/* script.js - Auth + Header + Clock + Safe GitHub Job/Expense Dispatch + Manager Management */
 
 /* --------------------------------------------------
     BASE URL FOR REDIRECTION
@@ -14,6 +14,40 @@ const validUser = {
     name: "Admin User",
     role: "admin" // Added role for queue management logic
 };
+
+/* --------------------------------------------------
+    MANAGER/USER MANAGEMENT FUNCTIONS
+    Stores an array of manager names (e.g., ['Admin', 'Ganesh', 'Pooja'])
+-------------------------------------------------- */
+const MANAGER_STORAGE_KEY = 'sv_managers';
+
+// Function to initialize the manager list if it doesn't exist
+function initManagers() {
+    let managers = JSON.parse(localStorage.getItem(MANAGER_STORAGE_KEY));
+    if (!managers || managers.length === 0) {
+        // Default list: 'Admin' and the currently logged-in user's name
+        const loggedInUser = localStorage.getItem('username') || validUser.name;
+        
+        // Use a Set to ensure uniqueness and a robust starting list
+        managers = new Set(['Admin', loggedInUser]);
+        
+        // Convert back to array, ensuring 'Admin' is typically first
+        managers = Array.from(managers).sort((a, b) => {
+            if (a === 'Admin') return -1;
+            if (b === 'Admin') return 1;
+            return a.localeCompare(b);
+        });
+
+        localStorage.setItem(MANAGER_STORAGE_KEY, JSON.stringify(managers));
+    }
+}
+
+// Function to retrieve the manager list
+function getManagers() {
+    initManagers(); // Ensure the list is initialized every time we fetch it
+    return JSON.parse(localStorage.getItem(MANAGER_STORAGE_KEY));
+}
+
 
 /* --------------------------------------------------
     LOGIN FUNCTION
@@ -34,6 +68,9 @@ function login() {
         localStorage.setItem("username", validUser.name);
         localStorage.setItem("sv_user_role", validUser.role); // Store the role
         
+        // Ensure managers list is initialized immediately after successful login
+        initManagers();
+        
         // Use BASE URL for robust redirection
         window.location.href = `${BASE}/pages/dashboard.html`;
     } else {
@@ -43,7 +80,7 @@ function login() {
 }
 
 /* --------------------------------------------------
-    CHECK LOGIN (for login.html to redirect if already logged in)
+    CHECK LOGIN (for index/login.html to redirect if already logged in)
 -------------------------------------------------- */
 function checkLogin() {
     if (localStorage.getItem("loggedIn") === "yes") {
@@ -53,19 +90,19 @@ function checkLogin() {
 }
 
 /* --------------------------------------------------
-    CHECK AUTH (NEW - for protecting internal pages like dashboard/queue)
+    CHECK AUTH (for protecting internal pages like dashboard/queue)
 -------------------------------------------------- */
 function checkAuth() {
     if (localStorage.getItem("loggedIn") !== "yes") {
         // Use BASE URL for robust redirection
-        window.location.href = `${BASE}/pages/login.html`;
+        window.location.href = `${BASE}/index.html`; // Redirect to index/login.html
     }
     // Also initialize the header if the page is authenticated
     initHeader();
 }
 
 /* --------------------------------------------------
-    LOGOUT (FIXED: Uses BASE URL)
+    LOGOUT
 -------------------------------------------------- */
 function logout() {
     // Clear all authentication-related items
@@ -74,7 +111,7 @@ function logout() {
     localStorage.removeItem("sv_user_role");
     
     // Use BASE URL for robust redirection
-    window.location.href = `${BASE}/pages/login.html`;
+    window.location.href = `${BASE}/index.html`; // Redirect to index/login.html
 }
 
 /* --------------------------------------------------
@@ -82,7 +119,6 @@ function logout() {
 -------------------------------------------------- */
 function initHeader() {
     const nameEl = document.getElementById("sv_user_name");
-    const logoutBtn = document.querySelector(".topbar .controls .btn[onclick='logout()']");
     
     // We rely on 'loggedIn' status which is checked in checkAuth()
     const logged = localStorage.getItem("loggedIn") === "yes";
@@ -93,10 +129,6 @@ function initHeader() {
         // Keep display logic simple by checking the logged status
         nameEl.style.display = logged ? "inline-block" : "none";
     }
-
-    // Since the button is part of the HTML structure, we only need to ensure
-    // the name is present if logged in. The visibility of the button is controlled
-    // by the logic in the HTML structure.
 }
 
 /* --------------------------------------------------
@@ -110,7 +142,7 @@ function startLiveClock() {
 
     function tick() {
         const now = new Date();
-        el.textContent = now.toLocaleDateString() + " " + now.toLocaleTimeString();
+        el.textContent = now.toLocaleDateString('en-IN') + " " + now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
 
     tick();
@@ -149,28 +181,7 @@ async function saveJobToGitHub(newJob) {
 }
 
 /* --------------------------------------------------
-    AUTO INIT
--------------------------------------------------- */
-document.addEventListener("DOMContentLoaded", function () {
-
-    const form = document.getElementById("loginForm");
-    if (form) {
-        form.addEventListener("submit", function (e) {
-            e.preventDefault();
-            login();
-        });
-    }
-
-    // NOTE: initHeader() is now primarily called by checkAuth() on authenticated pages
-    // and indirectly by checkLogin() on the login page (via DOMContentLoaded).
-    // We only need to call it directly here if the page is NOT using checkAuth()/checkLogin()
-    // but relies on the header being populated.
-    
-    startLiveClock();
-});
- /* --------------------------------------------------
-    NEW: SAFE GITHUB EXPENSE DISPATCH
-    This sends the expense to GitHub to be permanently saved.
+    SAVE EXPENSE (SAFE - REPO DISPATCH)
 -------------------------------------------------- */
 async function saveExpenseToGitHub(newExpense) {
     // Requires your GITHUB_SITE_KEY to be defined globally (from data/config.js)
@@ -190,7 +201,7 @@ async function saveExpenseToGitHub(newExpense) {
             "Content-Type": "application/json",
         },
         body: JSON.stringify({
-            // IMPORTANT: Use a unique event_type so your GitHub Action workflow can distinguish between a new JOB and a new EXPENSE.
+            // IMPORTANT: Use a unique event_type
             event_type: "add-expense", 
             client_payload: { expense: newExpense }
         })
@@ -198,3 +209,22 @@ async function saveExpenseToGitHub(newExpense) {
 
     return res.ok;
 }
+
+/* --------------------------------------------------
+    AUTO INIT
+-------------------------------------------------- */
+document.addEventListener("DOMContentLoaded", function () {
+    
+    // Ensure managers are initialized on every page load where script.js runs
+    initManagers(); 
+
+    const form = document.getElementById("loginForm");
+    if (form) {
+        form.addEventListener("submit", function (e) {
+            e.preventDefault();
+            login();
+        });
+    }
+    
+    startLiveClock();
+});
