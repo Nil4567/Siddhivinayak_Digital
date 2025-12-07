@@ -21,7 +21,8 @@
       <a href="dashboard.html" class="nav-link">Dashboard</a>
       <a href="job-entry.html" class="nav-link active">New Job Entry</a>
       <a href="job-queue.html" class="nav-link">Job Queue</a>
-      <a href="customers.html" class="nav-link">Customers</a> <a href="reports.html" class="nav-link">Reports</a>
+      <a href="customers.html" class="nav-link">Customers</a>
+      <a href="reports.html" class="nav-link">Reports</a>
       <a href="settings.html" class="nav-link">Settings</a>
     </aside>
 
@@ -89,6 +90,13 @@
               </select>
             </div>
             <div class="field">
+              <label for="orderDate">Order Date</label>
+              <input type="date" id="orderDate" name="orderDate" required>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="field full-width">
               <label for="advance">Advance Received (Rs.)</label>
               <input type="number" id="advance" name="advance" min="0">
             </div>
@@ -108,27 +116,46 @@
 
     // --- Helper Functions ---
 
+    // Function to get today's date in YYYY-MM-DD format
+    function getTodayDate() {
+        const now = new Date();
+        const year = now.getFullYear();
+        // Month is 0-indexed, so add 1. Pad with '0' if single digit.
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        // Day is 1-indexed. Pad with '0' if single digit.
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
     // 1. Function to create dummy jobs if local storage is empty
     function createDummyJobs() {
+        const today = getTodayDate();
+        const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+        
         const dummyJobs = [
-            // All jobs are initially assigned to the manager who created them.
-            { id: "1001", customer: "Priya Sharma", customerEmail: "priya@example.com", contact: "9876543210", description: "50 copies of brochure.", assignedPerson: loggedInUser, urgency: "Very Urgent", amount: "550", advance: "200", status: 'Working', createdAt: new Date(Date.now() - 3600000).toISOString(), createdBy: loggedInUser },
-            { id: "1002", customer: "Alok Industries", customerEmail: "alok@ind.com", contact: "9912345678", description: "Design new business card layout.", assignedPerson: "Sneha (Design)", urgency: "Normal", amount: "1200", advance: "500", status: 'Pending', createdAt: new Date(Date.now() - 7200000).toISOString(), createdBy: loggedInUser },
-            { id: "1003", customer: "Local Cafe", customerEmail: "cafe@local.in", contact: "8888877777", description: "Bind 20 menus (Spiral)", assignedPerson: loggedInUser, urgency: "Low", amount: "300", advance: "0", status: 'Hold', createdAt: new Date(Date.now() - 10800000).toISOString(), createdBy: "Admin User" },
-            { id: "1004", customer: "Ravi K.", customerEmail: "ravi@home.net", contact: "7777711111", description: "Laminate 10 certificates.", assignedPerson: "Karan (Finishing)", urgency: "Urgent", amount: "150", advance: "150", status: 'Completed', createdAt: new Date(Date.now() - 14400000).toISOString(), createdBy: loggedInUser },
-            { id: "1005", customer: "College Project", customerEmail: "project@stud.org", contact: "9000055555", description: "500 pages project report print.", assignedPerson: loggedInUser, urgency: "Normal", amount: "800", advance: "300", status: 'Pending', createdAt: new Date(Date.now() - 18000000).toISOString(), createdBy: "Staff" },
+            { id: "1001", customer: "Priya Sharma", customerEmail: "priya@example.com", contact: "9876543210", description: "50 copies of brochure.", assignedPerson: loggedInUser, urgency: "Very Urgent", orderDate: yesterday, amount: "550", advance: "200", status: 'Working', createdAt: new Date(Date.now() - 3600000).toISOString(), createdBy: loggedInUser },
+            { id: "1002", customer: "Alok Industries", customerEmail: "alok@ind.com", contact: "9912345678", description: "Design new business card layout.", assignedPerson: "Sneha (Design)", urgency: "Normal", orderDate: today, amount: "1200", advance: "500", status: 'Pending', createdAt: new Date(Date.now() - 7200000).toISOString(), createdBy: loggedInUser },
+            { id: "1003", customer: "Local Cafe", customerEmail: "cafe@local.in", contact: "8888877777", description: "Bind 20 menus (Spiral)", assignedPerson: loggedInUser, urgency: "Low", orderDate: yesterday, amount: "300", advance: "0", status: 'Hold', createdAt: new Date(Date.now() - 10800000).toISOString(), createdBy: "Admin User" },
+            { id: "1004", customer: "Ravi K.", customerEmail: "ravi@home.net", contact: "7777711111", description: "Laminate 10 certificates.", assignedPerson: "Karan (Finishing)", urgency: "Urgent", orderDate: today, amount: "150", advance: "150", status: 'Completed', createdAt: new Date(Date.now() - 14400000).toISOString(), createdBy: loggedInUser },
+            { id: "1005", customer: "College Project", customerEmail: "project@stud.org", contact: "9000055555", description: "500 pages project report print.", assignedPerson: loggedInUser, urgency: "Normal", orderDate: today, amount: "800", advance: "300", status: 'Pending', createdAt: new Date(Date.now() - 18000000).toISOString(), createdBy: "Staff" },
         ];
         localStorage.setItem('sv_jobs', JSON.stringify(dummyJobs));
         console.log("5 dummy jobs created for testing.");
         return dummyJobs;
     }
     
-    // 2. Load Jobs, Generate Next ID, and Set Manager Name
+    // 2. Load Jobs, Generate Next ID, and Set Manager Name/Date
     function initJobEntryPage() {
         // Set the Job Manager field to the logged-in user
         const managerEl = document.getElementById('jobManager');
         if (managerEl) {
             managerEl.value = loggedInUser;
+        }
+        
+        // Set the Order Date field to today's date
+        const dateEl = document.getElementById('orderDate');
+        if (dateEl) {
+            dateEl.value = getTodayDate();
         }
 
         // Load existing jobs, or create dummies if none exist
@@ -139,7 +166,7 @@
 
         // Generate the next Job ID based on the highest existing ID
         const lastJob = existingJobs.length > 0 ? existingJobs[existingJobs.length - 1] : null;
-        const nextId = lastJob && lastJob.id ? parseInt(lastJob.id) + 1 : 1006; // Start next ID after dummies
+        const nextId = lastJob && lastJob.id ? parseInt(lastJob.id) + 1 : 1006;
         const jobId = String(nextId);
 
         // Display the next ID in the read-only field
@@ -180,6 +207,7 @@
         description: form.jobDescription.value,
         assignedPerson: loggedInUser,
         urgency: form.urgency.value,
+        orderDate: form.orderDate.value, // NEW: Include the Order Date
         amount: form.amount.value,
         advance: form.advance.value || '0',
         status: 'Pending',
@@ -194,6 +222,7 @@
       // 6. Dispatch to GitHub (using the function from script.js)
       let success = false;
       try {
+          // saveJobToGitHub must be defined in script.js
           success = await saveJobToGitHub(newJob); 
       } catch (e) {
           console.error("Error during GitHub dispatch:", e);
@@ -212,16 +241,16 @@
 
       alertEl.style.display = 'block';
       
-      // Reset only the customer-entered fields, not the manager/ID fields
+      // Reset the input fields
       form.customerName.value = '';
       form.customerContact.value = '';
       form.customerEmail.value = '';
       form.jobDescription.value = '';
       form.amount.value = '';
       form.advance.value = '';
-      form.urgency.value = 'Normal'; // Reset urgency to default
+      form.urgency.value = 'Normal'; 
       
-      // Re-initialize the page to update the Order ID field for the NEXT entry
+      // Re-initialize the page to update the Order ID and Order Date for the NEXT entry
       initJobEntryPage();
       
       setTimeout(() => {
