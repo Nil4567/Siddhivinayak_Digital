@@ -135,16 +135,7 @@
 
 <script>
     // Define the base path for robust redirection
-    const BASE = "https://nil4567.github.io/Siddhivinayak_Digital";
-    
-    // --- Initial Check (Only redirect logged-in users to dashboard) ---
-    document.addEventListener("DOMContentLoaded", function() {
-        if (localStorage.getItem("loggedIn") === "yes") {
-            // If the user IS logged in, send them directly to the dashboard.
-            window.location.href = `${BASE}/pages/dashboard.html`; 
-        }
-    });
-
+    const BASE = "https://nil4567.github.io/Siddhivinayak_Digital"; 
 
     // --- Logout Function ---
     function logout() {
@@ -156,8 +147,22 @@
       window.location.href = "index.html"; 
     }
     
+    // --- Initial Check and Session Reset (The fix) ---
+    document.addEventListener("DOMContentLoaded", function() {
+        if (localStorage.getItem("loggedIn") === "yes") {
+            // If the user IS logged in, send them directly to the dashboard.
+            window.location.href = `${BASE}/pages/dashboard.html`; 
+        } else {
+            // FIX: If the user is on index.html and NOT logged in, ensure any old session data is cleared 
+            // to prevent accidental dashboard access on other pages.
+            localStorage.removeItem("username");
+            localStorage.removeItem("sv_user_role");
+            localStorage.removeItem("sv_user_permissions");
+        }
+    });
+
     // Make logout globally accessible
-    window.logout = logout;
+    window.logout = logout; 
 </script>
 </body>
 </html>
