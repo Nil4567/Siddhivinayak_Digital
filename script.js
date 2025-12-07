@@ -12,21 +12,59 @@ const MANAGER_STORAGE_KEY = 'sv_managers'; // For job assignment dropdown
 const USER_CREDENTIALS_KEY = 'sv_user_credentials'; // For secure user list
 
 /* --------------------------------------------------
-    ROLES AND PERMISSIONS DEFINITION 🔑
+    ROLES AND PERMISSIONS DEFINITION 🔑 (NEW STRUCTURE)
+    Defines allowed actions (view, manage, delete) for different features/pages.
 -------------------------------------------------- */
 const ACCESS_PERMISSIONS = {
-    'admin': ['dashboard.html', 'job-entry.html', 'job-queue.html', 'customers.html', 'expenses.html', 'reports.html', 'settings.html'],
-    'manager': ['dashboard.html', 'job-entry.html', 'job-queue.html', 'customers.html', 'expenses.html'],
-    'viewer': ['dashboard.html', 'job-queue.html', 'customers.html']
+    // Defines the full set of features and the pages/links they map to
+    'features': {
+        'dashboard': { label: 'Dashboard', page: 'dashboard.html', actions: ['view'] },
+        'job_entry': { label: 'New Job Entry', page: 'job-entry.html', actions: ['view', 'manage'] },
+        'job_queue': { label: 'Job Queue', page: 'job-queue.html', actions: ['view', 'manage'] },
+        'customers': { label: 'Customers', page: 'customers.html', actions: ['view', 'manage'] },
+        'expenses': { label: 'Daily Expenses', page: 'expenses.html', actions: ['view', 'manage'] },
+        'reports': { label: 'Reports', page: 'reports.html', actions: ['view'] },
+        'settings': { label: 'Settings', page: 'settings.html', actions: ['view', 'manage'] }
+    },
+
+    // Defines which actions each standard role is allowed to perform
+    'admin': {
+        'dashboard': ['view'],
+        'job_entry': ['view', 'manage'],
+        'job_queue': ['view', 'manage'],
+        'customers': ['view', 'manage'],
+        'expenses': ['view', 'manage'],
+        'reports': ['view'],
+        'settings': ['view', 'manage']
+    },
+    'manager': {
+        'dashboard': ['view'],
+        'job_entry': ['view', 'manage'],
+        'job_queue': ['view', 'manage'],
+        'customers': ['view', 'manage'],
+        'expenses': ['view', 'manage'],
+        'reports': [], // No access
+        'settings': [] // No access
+    },
+    'viewer': {
+        'dashboard': ['view'],
+        'job_entry': [], // No access
+        'job_queue': ['view'],
+        'customers': ['view'],
+        'expenses': [], // No access
+        'reports': [], // No access
+        'settings': [] // No access
+    }
 };
 
 /* --------------------------------------------------
-    INITIAL LOGIN CREDENTIALS 🔒 (Used only for first-time setup)
+    INITIAL LOGIN CREDENTIALS 🔒
+    NOTE: Added a 'permissions' object to initial users to handle the new structure
 -------------------------------------------------- */
 const INITIAL_CREDENTIALS = [
-    { username: "admin", password: "admin123", name: "Admin User", role: "admin" },
-    { username: "ganesh", password: "ganesh123", name: "Ganesh Sharma", role: "manager" },
-    { username: "pooja", password: "pooja456", name: "Pooja Singh", role: "viewer" }
+    { username: "admin", password: "admin123", name: "Admin User", role: "admin", permissions: ACCESS_PERMISSIONS.admin },
+    { username: "ganesh", password: "ganesh123", name: "Ganesh Sharma", role: "manager", permissions: ACCESS_PERMISSIONS.manager },
+    { username: "pooja", password: "pooja456", name: "Pooja Singh", role: "viewer", permissions: ACCESS_PERMISSIONS.viewer }
 ];
 
 /* --------------------------------------------------
@@ -35,11 +73,16 @@ const INITIAL_CREDENTIALS = [
 function getUserCredentials() {
     let users = JSON.parse(localStorage.getItem(USER_CREDENTIALS_KEY));
     if (!users || users.length === 0) {
-        // Initialize if empty, and save it back
         users = INITIAL_CREDENTIALS;
         localStorage.setItem(USER_CREDENTIALS_KEY, JSON.stringify(users));
     }
-    return users;
+    // Ensure older user objects have the 'permissions' field, using role defaults if missing
+    return users.map(user => {
+        if (!user.permissions) {
+            user.permissions = ACCESS_PERMISSIONS[user.role] || ACCESS_PERMISSIONS.viewer;
+        }
+        return user;
+    });
 }
 
 function saveUserCredentials(users) {
@@ -51,13 +94,10 @@ function saveUserCredentials(users) {
 -------------------------------------------------- */
 function initManagers() {
     const users = getUserCredentials();
-    
-    // Managers for the job assignment dropdown should be all users who are NOT just 'viewer'
     let managers = users
-        .filter(user => user.role !== 'viewer')
+        .filter(user => user.role === 'admin' || user.role === 'manager')
         .map(user => user.name);
             
-    // Ensure uniqueness and sort, with 'Admin User' first
     managers = [...new Set(managers)].sort((a, b) => {
         if (a === 'Admin User') return -1;
         return a.localeCompare(b);
@@ -67,7 +107,7 @@ function initManagers() {
 }
 
 function getManagers() {
-    initManagers(); // Always ensure manager list is derived from user list
+    initManagers();
     return JSON.parse(localStorage.getItem(MANAGER_STORAGE_KEY));
 }
 
@@ -89,10 +129,11 @@ function login() {
     const validUser = users.find(u => u.username === user && u.password === pass);
 
     if (validUser) {
-        // Store user details
+        // Store user details, including their specific permissions object
         localStorage.setItem("loggedIn", "yes");
         localStorage.setItem("username", validUser.name);
         localStorage.setItem("sv_user_role", validUser.role);
+        localStorage.setItem("sv_user_permissions", JSON.stringify(validUser.permissions)); // NEW: Store permissions object
         
         initManagers();
         
@@ -105,38 +146,36 @@ function login() {
 }
 
 /* --------------------------------------------------
-    ACCESS CONTROL CHECK 🛑
+    ACCESS CONTROL CHECK 🛑 (Updated to use NEW permissions)
 -------------------------------------------------- */
 function checkAccess() {
-    const userRole = localStorage.getItem("sv_user_role");
+    const userPermissions = JSON.parse(localStorage.getItem("sv_user_permissions") || "{}");
     const currentPage = window.location.pathname.split('/').pop();
     
-    if (!userRole) return; 
+    if (!userPermissions) return; 
 
-    const allowedPages = ACCESS_PERMISSIONS[userRole] || [];
+    // Find the feature associated with the current page
+    const currentFeatureKey = Object.keys(ACCESS_PERMISSIONS.features).find(key => 
+        ACCESS_PERMISSIONS.features[key].page === currentPage
+    );
+    
+    // Check if the user has *any* permission (e.g., 'view') for this feature
+    const hasAnyPermission = userPermissions[currentFeatureKey] && userPermissions[currentFeatureKey].length > 0;
 
-    if (!allowedPages.includes(currentPage)) {
-        console.error(`Access Denied: Role "${userRole}" cannot access ${currentPage}`);
-        // Redirect to their default landing page (dashboard)
+    if (!hasAnyPermission) {
+        console.error(`Access Denied: Cannot access page ${currentPage}`);
         window.location.href = `${BASE}/pages/dashboard.html`;
     }
 }
 
 
 /* --------------------------------------------------
-    AUTH FUNCTIONS
+    AUTH FUNCTIONS (Minor Update)
 -------------------------------------------------- */
-function checkLogin() {
-    if (localStorage.getItem("loggedIn") === "yes") {
-        window.location.href = `${BASE}/pages/dashboard.html`;
-    }
-}
-
 function checkAuth() {
     if (localStorage.getItem("loggedIn") !== "yes") {
         window.location.href = `${BASE}/index.html`;
     }
-    // Set global visibility for ACCESS_PERMISSIONS to be used by all page scripts
     window.ACCESS_PERMISSIONS = ACCESS_PERMISSIONS; 
     
     checkAccess();
@@ -147,13 +186,20 @@ function logout() {
     localStorage.removeItem("loggedIn");
     localStorage.removeItem("username");
     localStorage.removeItem("sv_user_role");
+    localStorage.removeItem("sv_user_permissions"); // NEW: Clear permissions on logout
     window.location.href = `${BASE}/index.html`;
 }
 
 
 /* --------------------------------------------------
-    HEADER & CLOCK
+    HEADER & CLOCK, SAVE JOB/EXPENSE (Unchanged)
 -------------------------------------------------- */
+function checkLogin() {
+    if (localStorage.getItem("loggedIn") === "yes") {
+        window.location.href = `${BASE}/pages/dashboard.html`;
+    }
+}
+
 function initHeader() {
     const nameEl = document.getElementById("sv_user_name");
     const logged = localStorage.getItem("loggedIn") === "yes";
@@ -178,19 +224,14 @@ function startLiveClock() {
     _clockTimer = setInterval(tick, 1000);
 }
 
-
-/* --------------------------------------------------
-    SAVE JOB/EXPENSE (REPO DISPATCH)
--------------------------------------------------- */
-// Placeholders for GitHub dispatch functions (requires GITHUB_SITE_KEY defined elsewhere)
 async function saveJobToGitHub(newJob) {
     console.warn("GitHub dispatch placeholder called for Job.");
-    return true; // Assume success for local testing
+    return true; 
 }
 
 async function saveExpenseToGitHub(newExpense) {
     console.warn("GitHub dispatch placeholder called for Expense.");
-    return true; // Assume success for local testing
+    return true; 
 }
 
 window.saveJobToGitHub = saveJobToGitHub;
@@ -201,8 +242,6 @@ window.saveExpenseToGitHub = saveExpenseToGitHub;
     AUTO INIT
 -------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", function () {
-    
-    // Ensure initial users are loaded into storage if not present
     getUserCredentials();
 
     const form = document.getElementById("loginForm");
