@@ -1,86 +1,110 @@
-<div class="topbar">
-  <span id="sv_user_name"></span>
-  <span id="liveTime"></span>
-</div>
-
-
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Dashboard — Siddhivinayak Digital</title>
-  <link rel="stylesheet" href="../styles/internal.css">
-</head>
-<body>
-  <div class="topbar">
-    <div class="brand">Siddhivinayak Digital</div>
-    <div class="controls">
-      <div id="sv_user_name"></div>
-      <button class="btn" onclick="logout()">Logout</button>
-    </div>
-  </div>
-
-  <div class="app">
-    <aside class="sidebar">
-      <div class="brand-small">Control Panel</div>
-      <a href="dashboard.html" class="nav-link active">Dashboard</a>
-      <a href="job-entry.html" class="nav-link">New Job Entry</a>
-      <a href="job-queue.html" class="nav-link">Job Queue</a>
-      <a href="departments.html" class="nav-link">Departments</a>
-      <a href="materials.html" class="nav-link">Materials</a>
-      <a href="reports.html" class="nav-link">Reports</a>
-      <a href="settings.html" class="nav-link">Settings</a>
-    </aside>
-
-    <main class="main">
-      <div class="page-header">
-        <div>
-          <div class="page-title">Dashboard</div>
-          <div class="page-sub">Overview of jobs, TAT and department load</div>
-        </div>
-      </div>
-
-      <div class="grid-3">
-        <div class="card">
-          <h3>Today's Jobs</h3>
-          <div class="big" id="todayJobs">0</div>
-        </div>
-        <div class="card">
-          <h3>Pending</h3>
-          <div class="big" id="pendingJobs">0</div>
-        </div>
-        <div class="card">
-          <h3>Completed</h3>
-          <div class="big" id="completedJobs">0</div>
-        </div>
-      </div>
-
-      <div class="card" style="margin-bottom:16px">
-        <h3>Recent Jobs</h3>
-        <table class="table" id="recentTable">
-          <thead><tr><th>Job ID</th><th>Customer</th><th>Dept</th><th>Status</th><th>Time</th></tr></thead>
-          <tbody><tr><td colspan="5" class="muted">No jobs yet</td></tr></tbody>
-        </table>
-      </div>
-
-      <div class="actions">
-        <a class="btn" href="job-entry.html">New Job</a>
-        <a class="btn secondary" href="job-queue.html">Open Queue</a>
-      </div>
-
-    </main>
-  </div>
-
-  <script src="../script.js"></script>
+<script src="../script.js"></script>
   <script>
     // require login
     checkAuth();
 
-    // placeholder: load transactions/jobs from /data/jobs.json if exists
-    async function loadJobs(){
-      try{
-        const r = await fetch('/data/jobs.json', {cache:'no-store'});
-        if(!r.ok) throw new Error('no jobs file');
-        const jobs =
-<script src="../script.js"></script>
-<script> checkAuth(); </script>
+    // Utility function to load jobs from GitHub/local storage (similar to your other pages)
+    function loadLocalJobs() {
+      // Assuming 'sv_jobs' is the key used in localStorage, as seen in job-queue.html
+      const jobs = JSON.parse(localStorage.getItem('sv_jobs') || '[]');
+      return jobs;
+    }
+
+    function renderDashboard() {
+      const allJobs = loadLocalJobs();
+      const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+      
+      let todayJobCount = 0;
+      let pendingJobCount = 0;
+      let completedJobCount = 0;
+      
+      const recentJobs = [];
+
+      allJobs.forEach(job => {
+        // 1. Calculate Today's Jobs
+        if (job.date && job.date.slice(0, 10) === today) {
+          todayJobCount++;
+        }
+        
+        // 2. Calculate Status Counts
+        if (job.status === 'Pending' || job.status === 'Working' || job.status === 'Hold') {
+          pendingJobCount++;
+        } else if (job.status === 'Completed') {
+          completedJobCount++;
+        }
+        
+        // 3. Collect Recent Jobs (limit to 5-10 for a dashboard view)
+        // Since jobs are appended to the array when created, the end of the array holds the newest.
+        // We'll reverse the array later to show most recent first.
+      });
+      
+      // Sort jobs by creation time (newest first)
+      // Use a safe sort based on createdAt timestamp if available, otherwise just use reverse
+      const sortedJobs = [...allJobs].sort((a, b) => {
+          return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+      
+      const latestJobs = sortedJobs.slice(0, 7); // Show the top 7 most recent jobs
+
+      // --- Display Counts ---
+      document.getElementById('todayJobs').textContent = todayJobCount;
+      document.getElementById('pendingJobs').textContent = pendingJobCount;
+      document.getElementById('completedJobs').textContent = completedJobCount;
+
+      // --- Display Recent Jobs Table ---
+      const tbody = document.querySelector('#recentTable tbody');
+      tbody.innerHTML = ''; 
+
+      if (latestJobs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="muted">No jobs yet</td></tr>';
+      } else {
+        latestJobs.forEach(job => {
+          const row = document.createElement('tr');
+          
+          // Format job time (e.g., createdAt) to be more readable
+          const jobTime = job.createdAt ? new Date(job.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+
+          row.innerHTML = `
+            <td>${job.id}</td>
+            <td>${job.customer || 'N/A'}</td>
+            <td>${job.department || 'N/A'}</td>
+            <td class="${getStatusClass(job.status)}">${job.status}</td>
+            <td>${jobTime}</td>
+          `;
+          tbody.appendChild(row);
+        });
+      }
+    }
+    
+    // NOTE: This helper function must also exist in your job-queue.html script for consistency.
+    // It is used to apply CSS classes for status color-coding.
+    function getStatusClass(status) {
+      switch (status) {
+        case 'Completed': return 'status-completed';
+        case 'Working': return 'status-working';
+        case 'Hold': return 'status-hold';
+        default: return 'status-pending';
+      }
+    }
+
+    // Initialize the dashboard
+    renderDashboard();
+
+    // 🔴 Bonus: Live Clock for the Topbar
+    function updateLiveTime() {
+        const timeElement = document.getElementById('liveTime');
+        if (timeElement) {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-IN', {
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            });
+            timeElement.textContent = timeString;
+        }
+    }
+    
+    updateLiveTime(); 
+    setInterval(updateLiveTime, 1000); // Update every second
+
+  </script>
