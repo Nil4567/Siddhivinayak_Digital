@@ -4,6 +4,22 @@
   <meta charset="utf-8">
   <title>New Job Entry — Siddhivinayak Digital</title>
   <link rel="stylesheet" href="../styles/internal.css">
+  
+  <style>
+    /* Style for the visually prominent Pending Amount field */
+    #pendingAmountDisplay {
+      font-weight: 800 !important;
+      font-size: 18px !important;
+      color: #d84315 !important; /* Dark Red-Orange for alert */
+      background: #fff3e0 !important; /* Light Yellow-Orange background */
+      border: 2px solid #ff9800 !important; /* Prominent border */
+      text-align: right;
+    }
+    /* Grouping the financial fields into a clean 3-column row */
+    .form-row.financials .field {
+        flex: 1 1 33%;
+    }
+  </style>
 </head>
 <body>
   <div class="topbar">
@@ -67,11 +83,26 @@
               <input type="email" id="customerEmail" name="customerEmail">
             </div>
             <div class="field">
-              <label for="amount">Job Amount (Rs.)</label>
-              <input type="number" id="amount" name="amount" min="0" required>
+              <label for="orderDate">Order Date</label>
+              <input type="date" id="orderDate" name="orderDate" required>
             </div>
           </div>
           
+          <div class="form-row financials" style="display:grid;">
+            <div class="field">
+              <label for="amount">Job Amount (Rs.)</label>
+              <input type="number" id="amount" name="amount" min="0" required>
+            </div>
+            <div class="field">
+              <label for="advance">Advance Received (Rs.)</label>
+              <input type="number" id="advance" name="advance" min="0">
+            </div>
+            <div class="field">
+              <label for="pendingAmountDisplay" style="color:#d84315; font-weight:700;">Pending Amount (Rs.)</label>
+              <input type="text" id="pendingAmountDisplay" name="pendingAmountDisplay" readonly value="0">
+              <input type="hidden" id="pendingAmount" name="pendingAmount"> </div>
+          </div>
+
           <div class="form-row">
             <div class="field full-width">
               <label for="jobDescription">Job Description / Instructions</label>
@@ -80,7 +111,7 @@
           </div>
           
           <div class="form-row">
-            <div class="field">
+            <div class="field full-width">
               <label for="urgency">Urgency</label>
               <select id="urgency" name="urgency">
                 <option value="Normal">Normal</option>
@@ -88,17 +119,6 @@
                 <option value="Urgent">Urgent</option>
                 <option value="Very Urgent">Very Urgent</option>
               </select>
-            </div>
-            <div class="field">
-              <label for="orderDate">Order Date</label>
-              <input type="date" id="orderDate" name="orderDate" required>
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="field full-width">
-              <label for="advance">Advance Received (Rs.)</label>
-              <input type="number" id="advance" name="advance" min="0">
             </div>
           </div>
           
@@ -112,17 +132,14 @@
   <script>
     // Global variable to hold the list of jobs
     let existingJobs = [];
-    const loggedInUser = localStorage.getItem('username') || 'Staff User'; // Get logged-in user
+    const loggedInUser = localStorage.getItem('username') || 'Staff User'; 
 
     // --- Helper Functions ---
 
-    // Function to get today's date in YYYY-MM-DD format
     function getTodayDate() {
         const now = new Date();
         const year = now.getFullYear();
-        // Month is 0-indexed, so add 1. Pad with '0' if single digit.
         const month = String(now.getMonth() + 1).padStart(2, '0');
-        // Day is 1-indexed. Pad with '0' if single digit.
         const day = String(now.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
     }
@@ -133,48 +150,83 @@
         const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
         
         const dummyJobs = [
-            { id: "1001", customer: "Priya Sharma", customerEmail: "priya@example.com", contact: "9876543210", description: "50 copies of brochure.", assignedPerson: loggedInUser, urgency: "Very Urgent", orderDate: yesterday, amount: "550", advance: "200", status: 'Working', createdAt: new Date(Date.now() - 3600000).toISOString(), createdBy: loggedInUser },
-            { id: "1002", customer: "Alok Industries", customerEmail: "alok@ind.com", contact: "9912345678", description: "Design new business card layout.", assignedPerson: "Sneha (Design)", urgency: "Normal", orderDate: today, amount: "1200", advance: "500", status: 'Pending', createdAt: new Date(Date.now() - 7200000).toISOString(), createdBy: loggedInUser },
-            { id: "1003", customer: "Local Cafe", customerEmail: "cafe@local.in", contact: "8888877777", description: "Bind 20 menus (Spiral)", assignedPerson: loggedInUser, urgency: "Low", orderDate: yesterday, amount: "300", advance: "0", status: 'Hold', createdAt: new Date(Date.now() - 10800000).toISOString(), createdBy: "Admin User" },
-            { id: "1004", customer: "Ravi K.", customerEmail: "ravi@home.net", contact: "7777711111", description: "Laminate 10 certificates.", assignedPerson: "Karan (Finishing)", urgency: "Urgent", orderDate: today, amount: "150", advance: "150", status: 'Completed', createdAt: new Date(Date.now() - 14400000).toISOString(), createdBy: loggedInUser },
-            { id: "1005", customer: "College Project", customerEmail: "project@stud.org", contact: "9000055555", description: "500 pages project report print.", assignedPerson: loggedInUser, urgency: "Normal", orderDate: today, amount: "800", advance: "300", status: 'Pending', createdAt: new Date(Date.now() - 18000000).toISOString(), createdBy: "Staff" },
+            // Dummy entries updated to include orderDate and pendingAmount
+            { id: "1001", customer: "Priya Sharma", customerEmail: "priya@example.com", contact: "9876543210", description: "50 copies of brochure.", assignedPerson: loggedInUser, urgency: "Very Urgent", orderDate: yesterday, amount: "550", advance: "200", pendingAmount: "350", status: 'Working', createdAt: new Date(Date.now() - 3600000).toISOString(), createdBy: loggedInUser },
+            { id: "1002", customer: "Alok Industries", customerEmail: "alok@ind.com", contact: "9912345678", description: "Design new business card layout.", assignedPerson: "Sneha (Design)", urgency: "Normal", orderDate: today, amount: "1200", advance: "500", pendingAmount: "700", status: 'Pending', createdAt: new Date(Date.now() - 7200000).toISOString(), createdBy: loggedInUser },
+            { id: "1003", customer: "Local Cafe", customerEmail: "cafe@local.in", contact: "8888877777", description: "Bind 20 menus (Spiral)", assignedPerson: loggedInUser, urgency: "Low", orderDate: yesterday, amount: "300", advance: "0", pendingAmount: "300", status: 'Hold', createdAt: new Date(Date.now() - 10800000).toISOString(), createdBy: "Admin User" },
+            { id: "1004", customer: "Ravi K.", customerEmail: "ravi@home.net", contact: "7777711111", description: "Laminate 10 certificates.", assignedPerson: "Karan (Finishing)", urgency: "Urgent", orderDate: today, amount: "150", advance: "150", pendingAmount: "0", status: 'Completed', createdAt: new Date(Date.now() - 14400000).toISOString(), createdBy: loggedInUser },
+            { id: "1005", customer: "College Project", customerEmail: "project@stud.org", contact: "9000055555", description: "500 pages project report print.", assignedPerson: loggedInUser, urgency: "Normal", orderDate: today, amount: "800", advance: "300", pendingAmount: "500", status: 'Pending', createdAt: new Date(Date.now() - 18000000).toISOString(), createdBy: "Staff" },
         ];
         localStorage.setItem('sv_jobs', JSON.stringify(dummyJobs));
         console.log("5 dummy jobs created for testing.");
         return dummyJobs;
     }
     
-    // 2. Load Jobs, Generate Next ID, and Set Manager Name/Date
+    // 2. Real-time Pending Amount Calculator
+    function calculatePendingAmount() {
+      const form = document.getElementById('jobEntryForm');
+      const amount = parseFloat(form.amount.value) || 0;
+      const advance = parseFloat(form.advance.value) || 0;
+      
+      const pending = amount - advance;
+      
+      // Display the calculated value
+      const displayEl = document.getElementById('pendingAmountDisplay');
+      // Set the hidden field value for submission
+      const hiddenEl = document.getElementById('pendingAmount');
+      
+      if (displayEl) {
+        // Use toFixed(2) for financial display, or keep it integer if you only deal with whole Rupees
+        // Keeping it simple as an integer/decimal based on user input
+        displayEl.value = pending.toFixed(0); 
+      }
+      if (hiddenEl) {
+        hiddenEl.value = pending.toFixed(0);
+      }
+      
+      // Change color based on pending amount
+      if (pending > 0) {
+        displayEl.style.color = '#d84315'; /* Dark Red-Orange */
+        displayEl.style.background = '#fff3e0'; 
+      } else {
+        // Full payment received (or overpaid)
+        displayEl.style.color = '#1b5e20'; /* Dark Green */
+        displayEl.style.background = '#e8f5e9'; 
+      }
+    }
+
+
+    // 3. Load Jobs, Generate Next ID, and Set Manager Name/Date
     function initJobEntryPage() {
         // Set the Job Manager field to the logged-in user
-        const managerEl = document.getElementById('jobManager');
-        if (managerEl) {
-            managerEl.value = loggedInUser;
-        }
+        document.getElementById('jobManager').value = loggedInUser;
         
         // Set the Order Date field to today's date
-        const dateEl = document.getElementById('orderDate');
-        if (dateEl) {
-            dateEl.value = getTodayDate();
-        }
-
+        document.getElementById('orderDate').value = getTodayDate();
+        
         // Load existing jobs, or create dummies if none exist
         existingJobs = JSON.parse(localStorage.getItem('sv_jobs') || '[]');
         if (existingJobs.length === 0) {
             existingJobs = createDummyJobs();
         }
 
-        // Generate the next Job ID based on the highest existing ID
+        // Generate the next Job ID 
         const lastJob = existingJobs.length > 0 ? existingJobs[existingJobs.length - 1] : null;
         const nextId = lastJob && lastJob.id ? parseInt(lastJob.id) + 1 : 1006;
-        const jobId = String(nextId);
-
-        // Display the next ID in the read-only field
-        const jobIdEl = document.getElementById('jobId');
-        if (jobIdEl) {
-            jobIdEl.value = jobId;
-        }
+        document.getElementById('jobId').value = String(nextId);
         
+        // Initial pending amount calculation (should be 0)
+        document.getElementById('pendingAmountDisplay').value = '0';
+        document.getElementById('pendingAmount').value = '0';
+
+
+        // Attach event listeners for real-time calculation
+        const amountEl = document.getElementById('amount');
+        const advanceEl = document.getElementById('advance');
+        
+        amountEl.addEventListener('input', calculatePendingAmount);
+        advanceEl.addEventListener('input', calculatePendingAmount);
+
         // Ensure the form submission logic is attached
         const form = document.getElementById("jobEntryForm");
         if (form) {
@@ -184,7 +236,7 @@
     }
 
 
-    // 3. Job Submission Logic
+    // 4. Job Submission Logic
     async function submitJob(event) {
       event.preventDefault();
 
@@ -196,9 +248,12 @@
           return;
       }
       
+      // Recalculate one final time before submission (important safety step)
+      calculatePendingAmount(); 
+
       const jobId = form.jobId.value;
 
-      // 4. Construct the job data object
+      // 5. Construct the job data object
       const newJob = {
         id: jobId,
         customer: form.customerName.value,
@@ -207,19 +262,20 @@
         description: form.jobDescription.value,
         assignedPerson: loggedInUser,
         urgency: form.urgency.value,
-        orderDate: form.orderDate.value, // NEW: Include the Order Date
+        orderDate: form.orderDate.value, 
         amount: form.amount.value,
         advance: form.advance.value || '0',
+        pendingAmount: form.pendingAmount.value, // SAVING THE CALCULATED VALUE
         status: 'Pending',
         createdAt: new Date().toISOString(),
         createdBy: loggedInUser
       };
 
-      // 5. Store the new job locally
+      // 6. Store the new job locally
       existingJobs.push(newJob);
       localStorage.setItem('sv_jobs', JSON.stringify(existingJobs));
 
-      // 6. Dispatch to GitHub (using the function from script.js)
+      // 7. Dispatch to GitHub (using the function from script.js)
       let success = false;
       try {
           // saveJobToGitHub must be defined in script.js
@@ -228,7 +284,7 @@
           console.error("Error during GitHub dispatch:", e);
       }
 
-      // 7. Display Result and Clean Up
+      // 8. Display Result and Clean Up
       if (success) {
         alertEl.textContent = `✅ Success! Job #${jobId} saved and dispatched to GitHub workflow.`;
         alertEl.style.backgroundColor = '#d4edda';
@@ -258,7 +314,7 @@
       }, 5000);
     }
     
-    // 8. Initialize the page on load
+    // 9. Initialize the page on load
     document.addEventListener("DOMContentLoaded", function () {
       checkAuth();
       initJobEntryPage();
