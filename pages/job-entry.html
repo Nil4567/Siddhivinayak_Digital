@@ -6,14 +6,40 @@
   <link rel="stylesheet" href="../styles/internal.css">
   
   <style>
-    /* Style for the visually prominent Pending Amount field */
+    /* --- 1. COMPACT FORM STYLES (New) --- */
+    .card {
+        padding: 14px; /* Slightly reduce card padding */
+    }
+    .form-row {
+        margin-bottom: 8px !important; /* Reduce vertical spacing between rows */
+    }
+    label {
+        font-size: 12px; /* Smaller label font size */
+        margin-bottom: 2px !important; /* Reduce space between label and input */
+    }
+    /* Reduce padding on inputs/selects/textareas for height reduction */
+    input[type="text"], input[type="number"], input[type="email"], input[type="date"], select, textarea {
+        padding: 6px 10px !important; /* Smaller vertical padding */
+        font-size: 14px; /* Slightly smaller font size */
+    }
+
+    /* --- 2. PENDING AMOUNT STYLES (Adjusted) --- */
     #pendingAmountDisplay {
       font-weight: 800 !important;
-      font-size: 18px !important;
+      font-size: 16px !important; /* Slightly smaller font for compact view */
+      border-radius: 6px;
+      padding: 8px 10px !important; /* Adjusted padding to match new height */
+      /* Colors remain for "Wow" factor */
       color: #d84315 !important; /* Dark Red-Orange for alert */
       background: #fff3e0 !important; /* Light Yellow-Orange background */
       border: 2px solid #ff9800 !important; /* Prominent border */
       text-align: right;
+    }
+    /* Ensure colors change on full payment */
+    #pendingAmountDisplay[value="0"], #pendingAmountDisplay[value="-1"], #pendingAmountDisplay[value^="-"] {
+        color: #1b5e20 !important; /* Dark Green */
+        background: #e8f5e9 !important; /* Light Green */
+        border-color: #4caf50 !important;
     }
     /* Grouping the financial fields into a clean 3-column row */
     .form-row.financials .field {
@@ -100,13 +126,14 @@
             <div class="field">
               <label for="pendingAmountDisplay" style="color:#d84315; font-weight:700;">Pending Amount (Rs.)</label>
               <input type="text" id="pendingAmountDisplay" name="pendingAmountDisplay" readonly value="0">
-              <input type="hidden" id="pendingAmount" name="pendingAmount"> </div>
+              <input type="hidden" id="pendingAmount" name="pendingAmount">
+            </div>
           </div>
 
           <div class="form-row">
             <div class="field full-width">
               <label for="jobDescription">Job Description / Instructions</label>
-              <textarea id="jobDescription" name="jobDescription" rows="3" required></textarea>
+              <textarea id="jobDescription" name="jobDescription" rows="2" required></textarea> 
             </div>
           </div>
           
@@ -122,7 +149,7 @@
             </div>
           </div>
           
-          <button type="submit" class="btn" style="width:100%; margin-top:15px; padding:12px;">Submit New Job</button>
+          <button type="submit" class="btn" style="width:100%; margin-top:10px; padding:10px;">Submit New Job</button>
         </form>
       </div>
     </main>
@@ -150,7 +177,6 @@
         const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
         
         const dummyJobs = [
-            // Dummy entries updated to include orderDate and pendingAmount
             { id: "1001", customer: "Priya Sharma", customerEmail: "priya@example.com", contact: "9876543210", description: "50 copies of brochure.", assignedPerson: loggedInUser, urgency: "Very Urgent", orderDate: yesterday, amount: "550", advance: "200", pendingAmount: "350", status: 'Working', createdAt: new Date(Date.now() - 3600000).toISOString(), createdBy: loggedInUser },
             { id: "1002", customer: "Alok Industries", customerEmail: "alok@ind.com", contact: "9912345678", description: "Design new business card layout.", assignedPerson: "Sneha (Design)", urgency: "Normal", orderDate: today, amount: "1200", advance: "500", pendingAmount: "700", status: 'Pending', createdAt: new Date(Date.now() - 7200000).toISOString(), createdBy: loggedInUser },
             { id: "1003", customer: "Local Cafe", customerEmail: "cafe@local.in", contact: "8888877777", description: "Bind 20 menus (Spiral)", assignedPerson: loggedInUser, urgency: "Low", orderDate: yesterday, amount: "300", advance: "0", pendingAmount: "300", status: 'Hold', createdAt: new Date(Date.now() - 10800000).toISOString(), createdBy: "Admin User" },
@@ -165,46 +191,31 @@
     // 2. Real-time Pending Amount Calculator
     function calculatePendingAmount() {
       const form = document.getElementById('jobEntryForm');
+      // Ensure values are treated as numbers, defaulting to 0
       const amount = parseFloat(form.amount.value) || 0;
       const advance = parseFloat(form.advance.value) || 0;
       
       const pending = amount - advance;
       
-      // Display the calculated value
       const displayEl = document.getElementById('pendingAmountDisplay');
-      // Set the hidden field value for submission
       const hiddenEl = document.getElementById('pendingAmount');
       
-      if (displayEl) {
-        // Use toFixed(2) for financial display, or keep it integer if you only deal with whole Rupees
-        // Keeping it simple as an integer/decimal based on user input
-        displayEl.value = pending.toFixed(0); 
-      }
-      if (hiddenEl) {
-        hiddenEl.value = pending.toFixed(0);
-      }
-      
-      // Change color based on pending amount
-      if (pending > 0) {
-        displayEl.style.color = '#d84315'; /* Dark Red-Orange */
-        displayEl.style.background = '#fff3e0'; 
-      } else {
-        // Full payment received (or overpaid)
-        displayEl.style.color = '#1b5e20'; /* Dark Green */
-        displayEl.style.background = '#e8f5e9'; 
-      }
+      // Update the display field with integer value
+      displayEl.value = pending.toFixed(0); 
+      // Update the hidden field for submission
+      hiddenEl.value = pending.toFixed(0);
     }
 
 
     // 3. Load Jobs, Generate Next ID, and Set Manager Name/Date
     function initJobEntryPage() {
-        // Set the Job Manager field to the logged-in user
+        // Set the Job Manager field
         document.getElementById('jobManager').value = loggedInUser;
         
-        // Set the Order Date field to today's date
+        // Set the Order Date field
         document.getElementById('orderDate').value = getTodayDate();
         
-        // Load existing jobs, or create dummies if none exist
+        // Load existing jobs, or create dummies
         existingJobs = JSON.parse(localStorage.getItem('sv_jobs') || '[]');
         if (existingJobs.length === 0) {
             existingJobs = createDummyJobs();
@@ -215,7 +226,7 @@
         const nextId = lastJob && lastJob.id ? parseInt(lastJob.id) + 1 : 1006;
         document.getElementById('jobId').value = String(nextId);
         
-        // Initial pending amount calculation (should be 0)
+        // Initial pending amount setup (should be 0, which triggers green style)
         document.getElementById('pendingAmountDisplay').value = '0';
         document.getElementById('pendingAmount').value = '0';
 
@@ -223,6 +234,9 @@
         // Attach event listeners for real-time calculation
         const amountEl = document.getElementById('amount');
         const advanceEl = document.getElementById('advance');
+        
+        amountEl.removeEventListener('input', calculatePendingAmount); // Prevent duplicate listeners
+        advanceEl.removeEventListener('input', calculatePendingAmount);
         
         amountEl.addEventListener('input', calculatePendingAmount);
         advanceEl.addEventListener('input', calculatePendingAmount);
@@ -248,7 +262,7 @@
           return;
       }
       
-      // Recalculate one final time before submission (important safety step)
+      // Final calculation before submission
       calculatePendingAmount(); 
 
       const jobId = form.jobId.value;
@@ -265,7 +279,7 @@
         orderDate: form.orderDate.value, 
         amount: form.amount.value,
         advance: form.advance.value || '0',
-        pendingAmount: form.pendingAmount.value, // SAVING THE CALCULATED VALUE
+        pendingAmount: form.pendingAmount.value, 
         status: 'Pending',
         createdAt: new Date().toISOString(),
         createdBy: loggedInUser
@@ -275,10 +289,9 @@
       existingJobs.push(newJob);
       localStorage.setItem('sv_jobs', JSON.stringify(existingJobs));
 
-      // 7. Dispatch to GitHub (using the function from script.js)
+      // 7. Dispatch to GitHub (saveJobToGitHub must be defined in script.js)
       let success = false;
       try {
-          // saveJobToGitHub must be defined in script.js
           success = await saveJobToGitHub(newJob); 
       } catch (e) {
           console.error("Error during GitHub dispatch:", e);
