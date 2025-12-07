@@ -66,9 +66,9 @@
 
   <script src="../script.js"></script>
   <script>
-    // Functions are assumed to be available from script.js
     const ACCESS_PERMISSIONS = window.ACCESS_PERMISSIONS || {}; 
     const USER_ROLE = localStorage.getItem("sv_user_role");
+    const USER_PERMISSIONS = JSON.parse(localStorage.getItem("sv_user_permissions") || "{}");
     
     // --- Job Queue Specific Functions ---
     function getStatusClass(status) {
@@ -79,8 +79,11 @@
     }
     
     function changeStatus(jobId, newStatus) {
-        if (USER_ROLE !== 'admin' && USER_ROLE !== 'manager') {
-            alert("Permission denied. Only Admins and Managers can change job status.");
+        // Check if user has the 'manage' permission for job queue
+        const canManage = USER_PERMISSIONS['job_queue'] && USER_PERMISSIONS['job_queue'].includes('manage');
+        
+        if (!canManage) {
+            alert("Permission denied. You do not have 'manage' rights for the Job Queue.");
             return;
         }
 
@@ -93,17 +96,17 @@
             allJobs[jobIndex].status = newStatus;
             
             if (newStatus === 'Completed') {
-                // Ensure pending amount is cleared upon completion
                 allJobs[jobIndex].pendingAmount = '0';
             }
             
             localStorage.setItem('sv_jobs', JSON.stringify(allJobs));
-            renderJobQueue(); // Re-render the table
+            renderJobQueue(); 
             alert(`Job ${jobId} status updated to ${newStatus}.`);
         }
     }
 
     function renderJobQueue() {
+        // FIX: Ensure you are initializing sv_jobs if it's empty to prevent parse errors
         const allJobs = JSON.parse(localStorage.getItem('sv_jobs') || '[]');
         const tableBody = document.getElementById('jobQueueTableBody');
         tableBody.innerHTML = '';
@@ -115,13 +118,13 @@
             return;
         }
 
-        const canEdit = USER_ROLE === 'admin' || USER_ROLE === 'manager';
+        const canManage = USER_PERMISSIONS['job_queue'] && USER_PERMISSIONS['job_queue'].includes('manage');
 
         allJobs.forEach(job => {
             const row = tableBody.insertRow();
             
             let actionButtons = '';
-            if (canEdit && job.status === 'Pending') {
+            if (canManage && job.status === 'Pending') {
                 actionButtons = `<button class="btn accent btn-small" onclick="changeStatus('${job.id}', 'Completed')">Complete</button>`;
             } else if (job.status === 'Completed') {
                 actionButtons = `<span style="color: var(--accent); font-size: 12px; font-weight: 600;">Finalized</span>`;
@@ -143,22 +146,30 @@
         });
     }
     
-    // Make function globally accessible for inline HTML calls
     window.changeStatus = changeStatus; 
 
     // --- Initialization and Role-Based Access Filter ---
     document.addEventListener("DOMContentLoaded", function() {
-        checkAuth(); // 1. Run Auth & Access Check
+        checkAuth(); 
         
-        // 2. Run page rendering function
+        // Check if there's any job data to render
         renderJobQueue();
         
-        // 3. Hide sidebar links based on role access
-        const allowedPages = ACCESS_PERMISSIONS[USER_ROLE] || [];
+        // Hide sidebar links based on user's current permissions
+        const userPermissions = JSON.parse(localStorage.getItem("sv_user_permissions") || "{}");
+        const features = ACCESS_PERMISSIONS.features;
+
         document.querySelectorAll('.sidebar .nav-link').forEach(link => {
             const href = link.getAttribute('href');
             const pageName = href ? href.split('/').pop() : '';
-            if (pageName && !allowedPages.includes(pageName)) {
+
+            const featureKey = Object.keys(features).find(key => 
+                features[key].page === pageName
+            );
+
+            const hasViewPermission = userPermissions[featureKey] && userPermissions[featureKey].includes('view');
+
+            if (!hasViewPermission) {
                 link.style.display = 'none';
             }
         });
