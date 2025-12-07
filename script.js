@@ -14,7 +14,36 @@ function getUserCredentials() {
         users = INITIAL_CREDENTIALS; // <-- Used here if local storage is empty
         localStorage.setItem(USER_CREDENTIALS_KEY, JSON.stringify(users));
     }
-    
+    /* --------------------------------------------------
+    ROLES AND PERMISSIONS DEFINITION 🔑
+-------------------------------------------------- */
+const ACCESS_PERMISSIONS = {
+    'features': {
+        'dashboard': { label: 'Dashboard', page: 'dashboard.html', actions: ['view'] },
+        'job_entry': { label: 'New Job Entry', page: 'job-entry.html', actions: ['view', 'manage'] },
+        'job_queue': { label: 'Job Queue', page: 'job-queue.html', actions: ['view', 'manage'] },
+        'customers': { label: 'Customers', page: 'customers.html', actions: ['view', 'manage'] },
+        'expenses': { label: 'Daily Expenses', page: 'expenses.html', actions: ['view', 'manage'] },
+        'reports': { label: 'Reports', page: 'reports.html', actions: ['view'] },
+        // RENAMED and SIMPLIFIED: User Management is now the primary settings page
+        'user_management': { label: 'User Management', page: 'settings.html', actions: ['view', 'manage'] }, 
+        'admin_credentials': { label: 'Admin Credentials', page: 'admin-credentials.html', actions: ['view', 'manage'] } 
+    },
+    'admin': {
+        'dashboard': ['view'], 'job_entry': ['view', 'manage'], 'job_queue': ['view', 'manage'], 
+        'customers': ['view', 'manage'], 'expenses': ['view', 'manage'], 'reports': ['view'], 
+        'user_management': ['view', 'manage'], 'admin_credentials': ['view', 'manage'] // Changed 'settings' to 'user_management'
+    },
+    'manager': {
+        'dashboard': ['view'], 'job_entry': ['view', 'manage'], 'job_queue': ['view', 'manage'], 
+        'customers': ['view'], 'expenses': ['view'], 'reports': [], 'user_management': [], 'admin_credentials': [] // Changed 'settings' to 'user_management'
+    },
+    'viewer': {
+        'dashboard': ['view'], 'job_entry': ['manage'], 'job_queue': ['view'], 'customers': ['view'], 
+        'expenses': [], 'reports': [], 'user_management': [], 'admin_credentials': [] // Changed 'settings' to 'user_management'
+    }
+};
+window.ACCESS_PERMISSIONS = ACCESS_PERMISSIONS;
     // ... (rest of the function)
 }
  /**
