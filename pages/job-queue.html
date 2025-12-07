@@ -5,22 +5,7 @@
   <title>Job Queue — Siddhivinayak Digital</title>
   <link rel="stylesheet" href="../styles/internal.css">
   <style>
-    /* Styling for Topbar User Display */
-    .user-display {
-        background: #e9f2ff; 
-        color: #0b2540;
-        padding: 5px 10px;
-        border-radius: 8px;
-        font-size: 13px;
-        font-weight: 600;
-        margin-right: 15px;
-        border: 1px solid rgba(15,111,255,0.1);
-    }
-    .user-display span {
-        font-weight: 800;
-        color: var(--primary);
-    }
-    /* Add specific Job Queue CSS styles here if needed */
+    /* Job Queue specific styling here */
   </style>
 </head>
 <body>
@@ -81,7 +66,7 @@
 
   <script src="../script.js"></script>
   <script>
-    // Constants and functions expected from script.js
+    // Functions are assumed to be available from script.js
     const ACCESS_PERMISSIONS = window.ACCESS_PERMISSIONS || {}; 
     const USER_ROLE = localStorage.getItem("sv_user_role");
     
@@ -93,16 +78,13 @@
         return 'status-default';
     }
     
-    // Function to handle status change (only accessible to admin/manager)
     function changeStatus(jobId, newStatus) {
         if (USER_ROLE !== 'admin' && USER_ROLE !== 'manager') {
             alert("Permission denied. Only Admins and Managers can change job status.");
             return;
         }
 
-        if (!confirm(`Are you sure you want to change Job ${jobId} status to "${newStatus}"?`)) {
-            return;
-        }
+        if (!confirm(`Are you sure you want to change Job ${jobId} status to "${newStatus}"?`)) { return; }
 
         let allJobs = JSON.parse(localStorage.getItem('sv_jobs') || '[]');
         const jobIndex = allJobs.findIndex(job => job.id === jobId);
@@ -110,16 +92,14 @@
         if (jobIndex > -1) {
             allJobs[jobIndex].status = newStatus;
             
-            // If completed, set pending amount to 0
             if (newStatus === 'Completed') {
+                // Ensure pending amount is cleared upon completion
                 allJobs[jobIndex].pendingAmount = '0';
             }
             
             localStorage.setItem('sv_jobs', JSON.stringify(allJobs));
             renderJobQueue(); // Re-render the table
             alert(`Job ${jobId} status updated to ${newStatus}.`);
-            
-            // NOTE: You would typically dispatch this update to GitHub/Sheet here
         }
     }
 
@@ -128,7 +108,6 @@
         const tableBody = document.getElementById('jobQueueTableBody');
         tableBody.innerHTML = '';
         
-        // Sort newest jobs first
         allJobs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
         if (allJobs.length === 0) {
@@ -142,22 +121,19 @@
             const row = tableBody.insertRow();
             
             let actionButtons = '';
-            if (canEdit) {
-                if (job.status === 'Pending') {
-                    actionButtons = `<button class="btn accent btn-small" onclick="changeStatus('${job.id}', 'Completed')">Complete</button>`;
-                } else if (job.status === 'Completed') {
-                    actionButtons = `<span style="color: var(--muted); font-size: 12px;">Finalized</span>`;
-                }
+            if (canEdit && job.status === 'Pending') {
+                actionButtons = `<button class="btn accent btn-small" onclick="changeStatus('${job.id}', 'Completed')">Complete</button>`;
+            } else if (job.status === 'Completed') {
+                actionButtons = `<span style="color: var(--accent); font-size: 12px; font-weight: 600;">Finalized</span>`;
             } else {
                  actionButtons = `<span style="color: var(--muted); font-size: 12px;">View Only</span>`;
             }
-
 
             row.innerHTML = `
                 <td>${job.id}</td>
                 <td>${job.orderDate}</td>
                 <td>${job.customer}</td>
-                <td>${job.description.substring(0, 30)}...</td>
+                <td>${job.description.substring(0, 40)}...</td>
                 <td>₹ ${job.amount}</td>
                 <td>₹ ${job.pendingAmount}</td>
                 <td>${job.assignedPerson || 'N/A'}</td>
@@ -170,33 +146,23 @@
     // Make function globally accessible for inline HTML calls
     window.changeStatus = changeStatus; 
 
-    // --- Initialization and Role-Based Access Filter (START) ---
+    // --- Initialization and Role-Based Access Filter ---
     document.addEventListener("DOMContentLoaded", function() {
-        // 1. Run the primary authentication check (includes initHeader and checkAccess)
-        if (typeof checkAuth === 'function') {
-            checkAuth(); 
-        } else {
-            console.error("checkAuth() function not found. Ensure script.js is loaded.");
-            return;
-        }
+        checkAuth(); // 1. Run Auth & Access Check
         
         // 2. Run page rendering function
         renderJobQueue();
         
-        // 3. Access Control Navigation Filter
+        // 3. Hide sidebar links based on role access
         const allowedPages = ACCESS_PERMISSIONS[USER_ROLE] || [];
-        
         document.querySelectorAll('.sidebar .nav-link').forEach(link => {
             const href = link.getAttribute('href');
             const pageName = href ? href.split('/').pop() : '';
-            
-            // Hide the link if the current role doesn't have permission
             if (pageName && !allowedPages.includes(pageName)) {
                 link.style.display = 'none';
             }
         });
     });
-    // --- Initialization and Role-Based Access Filter (END) ---
   </script>
 </body>
 </html>
