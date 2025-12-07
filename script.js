@@ -1,3 +1,18 @@
+/* --------------------------------------------------
+    GOOGLE SCRIPT CREDENTIAL MANAGEMENT
+-------------------------------------------------- */
+function getAdminCredentials() {
+    return JSON.parse(localStorage.getItem(ADMIN_CREDENTIALS_KEY)) || { url: '', token: '' };
+}
+
+function saveAdminCredentials(url, token) {
+    const creds = { url, token };
+    localStorage.setItem(ADMIN_CREDENTIALS_KEY, JSON.stringify(creds));
+    return creds;
+}
+window.getAdminCredentials = getAdminCredentials; 
+window.saveAdminCredentials = saveAdminCredentials;
+
 /* script.js - AUTHENTICATION, ROLES, ACCESS CONTROL, & USER MANAGEMENT */
 
 /* --------------------------------------------------
