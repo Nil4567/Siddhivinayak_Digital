@@ -1,25 +1,4 @@
-<script>
-    // Run this function after checkAuth() has ensured the user is logged in
-    document.addEventListener("DOMContentLoaded", function() {
-        // --- Access Control Navigation Filter ---
-        const userRole = localStorage.getItem("sv_user_role");
-        const allowedPages = ACCESS_PERMISSIONS[userRole] || [];
-        
-        const navLinks = document.querySelectorAll('.sidebar .nav-link');
-        
-        navLinks.forEach(link => {
-            const href = link.getAttribute('href');
-            if (href) {
-                const pageName = href.split('/').pop();
-                
-                // Hide the link if the current role doesn't have permission
-                if (!allowedPages.includes(pageName)) {
-                    link.style.display = 'none';
-                }
-            }
-        });
-    });
-</script><!doctype html>
+<!doctype html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -30,9 +9,11 @@
   <div class="topbar">
     <div class="brand">Siddhivinayak Digital</div>
     <div class="controls">
-      <span id="sv_user_name"></span>
-      <span id="liveTime"></span>
-      <button class="btn" onclick="logout()">Logout</button>
+        <button class="btn secondary" onclick="history.back()">Back</button>
+        <a href="../index.html" class="btn secondary">Home</a>
+        <div class="user-display">Logged in as: <span id="sv_user_name"></span></div>
+        <span id="liveTime"></span>
+        <button class="btn" onclick="logout()">Logout</button>
     </div>
   </div>
 
@@ -42,7 +23,9 @@
       <a href="dashboard.html" class="nav-link">Dashboard</a>
       <a href="job-entry.html" class="nav-link">New Job Entry</a>
       <a href="job-queue.html" class="nav-link">Job Queue</a>
-      <a href="customers.html" class="nav-link active">Customers</a> <a href="reports.html" class="nav-link">Reports</a>
+      <a href="customers.html" class="nav-link active">Customers</a>
+      <a href="expenses.html" class="nav-link">Daily Expenses</a>
+      <a href="reports.html" class="nav-link">Reports</a>
       <a href="settings.html" class="nav-link">Settings</a>
     </aside>
 
@@ -54,14 +37,20 @@
         </div>
       </div>
 
-      <div class="card" style="margin-bottom:16px">
+      <div class="card">
         <h3>Customer Details</h3>
-        <table class="table" id="customerTable">
+        <table class="data-table" id="customerTable">
           <thead>
-            <tr><th>Customer Name</th><th>Contact Number</th><th>Email ID</th><th>Total Jobs</th><th>Last Job ID</th></tr>
+            <tr>
+                <th>Customer Name</th>
+                <th>Contact Number</th>
+                <th>Email ID</th>
+                <th>Total Jobs</th>
+                <th>Last Job ID</th>
+            </tr>
           </thead>
           <tbody>
-            <tr><td colspan="5" class="muted">Loading customers...</td></tr>
+            <tr><td colspan="5" style="text-align: center;">Loading customers...</td></tr>
           </tbody>
         </table>
       </div>
@@ -70,15 +59,23 @@
 
   <script src="../script.js"></script>
   <script>
-    // 1. Authentication Check
-    checkAuth();
-
+    // Global variables populated by script.js after checkAuth()
+    const ACCESS_PERMISSIONS = window.ACCESS_PERMISSIONS || {};
+    const USER_PERMISSIONS = JSON.parse(localStorage.getItem("sv_user_permissions") || "{}");
+    
     function loadLocalJobs() {
       // Loads job data from the browser's local storage
       return JSON.parse(localStorage.getItem('sv_jobs') || '[]');
     }
 
     function renderCustomers() {
+      // Only proceed if the user has at least 'view' permission for this feature
+      const canView = USER_PERMISSIONS['customers'] && USER_PERMISSIONS['customers'].includes('view');
+      if (!canView) {
+           document.querySelector('#customerTable tbody').innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--danger);">Access Denied.</td></tr>';
+           return;
+      }
+        
       const allJobs = loadLocalJobs();
       const tbody = document.querySelector('#customerTable tbody');
       
@@ -86,7 +83,7 @@
       tbody.innerHTML = '';
 
       if (allJobs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="muted">No customers found.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--muted);">No customers found.</td></tr>';
         return;
       }
       
@@ -109,7 +106,8 @@
           customersMap.set(key, {
             name: job.customer,
             contact: job.contact,
-            email: job.customerEmail || 'N/A',
+            // Assuming email field might be added later, currently defaults to N/A
+            email: job.customerEmail || 'N/A', 
             totalJobs: 1,
             lastJobId: job.id,
             lastJobCreatedAt: job.createdAt
@@ -124,7 +122,7 @@
         const row = document.createElement('tr');
         row.innerHTML = `
           <td>${customer.name}</td>
-          <td>${customer.contact}</td>
+          <td>${customer.contact || 'N/A'}</td>
           <td>${customer.email}</td>
           <td>${customer.totalJobs}</td>
           <td><span style="font-weight:700;">#${customer.lastJobId}</span></td>
@@ -133,9 +131,32 @@
       });
     }
 
-    // Initialize the page
-    document.addEventListener("DOMContentLoaded", renderCustomers);
+    // --- Initialization and Role-Based Access Filter (CORRECTED LOGIC) ---
+    document.addEventListener("DOMContentLoaded", function() {
+        checkAuth(); // 1. Run Auth & Access Check
+        
+        // 2. Run page rendering function
+        renderCustomers(); 
+        
+        // 3. Hide sidebar links based on user's current permissions
+        const features = ACCESS_PERMISSIONS.features;
+        document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+            const href = link.getAttribute('href');
+            const pageName = href ? href.split('/').pop() : '';
 
+            // Find the feature key (e.g., 'dashboard', 'customers') corresponding to the pageName
+            const featureKey = Object.keys(features).find(key => 
+                features[key].page === pageName
+            );
+
+            // Check if the user has 'view' access for this feature
+            const hasViewPermission = USER_PERMISSIONS[featureKey] && USER_PERMISSIONS[featureKey].includes('view');
+
+            if (featureKey && !hasViewPermission) {
+                link.style.display = 'none';
+            }
+        });
+    });
   </script>
 </body>
 </html>
