@@ -1,224 +1,569 @@
 <!doctype html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <title>Invoice - Siddhivinayak Digital</title>
-    <link rel="stylesheet" href="../styles/internal.css"> 
-    <style>
-        body { background: #f4f7f9; }
-        .invoice-container {
-            max-width: 800px;
-            margin: 30px auto;
-            background: #fff;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        .invoice-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 20px;
-            margin-bottom: 20px;
-        }
-        .invoice-header h1 {
-            color: var(--primary);
-            font-size: 32px;
-            margin: 0;
-        }
-        .shop-details p {
-            margin: 2px 0;
-            font-size: 14px;
-        }
-        .customer-details {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
-        }
-        .customer-details div {
-            flex-basis: 48%;
-        }
-        .customer-details h4 {
-            margin: 0 0 5px 0;
-            font-size: 16px;
-            color: var(--muted);
-        }
-        .invoice-details table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        .invoice-details th, .invoice-details td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: left;
-        }
-        .invoice-details th {
-            background-color: #f7f7f7;
-            font-size: 14px;
-        }
-        .summary-row td {
-            font-weight: 700;
-        }
-        .total-amount {
-            font-size: 18px;
-            color: #d84315;
-            font-weight: 800;
-        }
-        .signature-area {
-            text-align: right;
-            margin-top: 50px;
-            padding-top: 15px;
-            border-top: 1px dashed #ccc;
-        }
-        
-        /* Utility bar for print/share actions (Hidden in the final JPEG) */
-        .utility-bar {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        /* Special styles for the draft watermark */
-        #invoiceDraftWatermark {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-45deg);
-            font-size: 70px;
-            font-weight: 900;
-            color: rgba(255, 0, 0, 0.1); /* Very light red */
-            pointer-events: none; /* Allows clicks to pass through */
-            z-index: 10;
-        }
-    </style>
+  <meta charset="utf-8">
+  <title>Job Queue — Siddhivinayak Digital</title>
+  <link rel="stylesheet" href="../styles/internal.css">
+  <style>
+    /* Custom styles for TAT indicators */
+    .tat-ontime {
+        font-weight: 700;
+        color: #1b5e20; /* Dark Green */
+    }
+    .tat-overdue {
+        font-weight: 700;
+        color: #d84315; /* Dark Red-Orange */
+        background: #ffebee; /* Lightest Red */
+        padding: 2px 4px;
+        border-radius: 4px;
+    }
+    .muted {
+        color: var(--muted);
+    }
+    
+    /* Table Styling for better display */
+    #jobQueueTable th {
+        font-size: 11px;
+        padding: 8px 6px;
+    }
+    #jobQueueTable td {
+        font-size: 13px;
+        padding: 6px;
+        text-align: center; 
+    }
+    #jobQueueTable td:nth-child(2) { text-align: left; } /* Customer name left align */
+    /* Adjusting column number for amount fields due to new 'Description' and 'Invoice' columns */
+    #jobQueueTable td:nth-child(9), #jobQueueTable td:nth-child(10) { text-align: right; } /* Amount fields right align */
+    
+    /* Make the Status cell look clickable */
+    #jobQueueTable td.status-pending,
+    #jobQueueTable td.status-working,
+    #jobQueueTable td.status-hold {
+        cursor: pointer;
+        font-weight: 700;
+        position: relative;
+        transition: background 0.15s;
+    }
+    #jobQueueTable td.status-pending:hover,
+    #jobQueueTable td.status-working:hover,
+    #jobQueueTable td.status-hold:hover {
+        opacity: 0.9;
+    }
+    
+    /* Style for the Description link */
+    .description-cell {
+        font-size: 11px !important;
+    }
+    .description-cell a {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 700;
+    }
+    .description-cell a:hover {
+        text-decoration: underline;
+    }
+    
+    /* --- Modal Styles (omitted for brevity, assume they are still here) --- */
+    .modal {
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4); 
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        padding: 20px;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 450px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        position: relative;
+    }
+
+    .close-button {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .close-button:hover,
+    .close-button:focus {
+        color: #000;
+        text-decoration: none;
+    }
+    /* Modal form field adjustments */
+    #statusUpdateForm .form-row {
+        gap: 0; 
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    /* Textarea style for description */
+    #modalDescription {
+        width: 100%; 
+        border: 1px solid #ccc; 
+        padding: 8px; 
+        border-radius: 4px; 
+        background: #fff; 
+        font-size: 13px;
+        resize: vertical; /* Allow vertical resizing */
+        font-family: inherit;
+    }
+    
+    /* Invoice button style */
+    .invoice-btn {
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: 700;
+        border-radius: 6px;
+        background: var(--accent); /* Using accent color for visual contrast */
+        color: #fff;
+        text-decoration: none;
+    }
+  </style>
 </head>
 <body>
-    <div class="utility-bar">
-        <button class="btn" onclick="shareAsJpeg()">Download Invoice (JPEG)</button>
-        <a href="job-queue.html" class="btn secondary">Back to Job Queue</a>
+  <div class="topbar">
+    <div class="brand">Siddhivinayak Digital</div>
+    <div class="controls">
+      <span id="sv_user_name"></span>
+      <span id="liveTime"></span>
+      <button class="btn" onclick="logout()">Logout</button>
     </div>
+  </div>
 
-    <div class="invoice-container" id="invoiceContent">
-        <div id="invoiceDraftWatermark">DRAFT</div> <div class="invoice-header">
-            <div class="shop-details">
-                <h1>INVOICE</h1>
-                <p><strong>Siddhivinayak Digital</strong></p>
-                <p>Printing, Xerox, & Design Services</p>
-                <p>Contact: [Your Shop Number]</p>
-            </div>
-            <div class="job-info">
-                <h4>Invoice Date: <span id="invoiceDate"></span></h4>
-                <h4>Job ID: <span id="jobId"></span></h4>
-            </div>
-        </div>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand-small">Control Panel</div>
+      <a href="dashboard.html" class="nav-link">Dashboard</a>
+      <a href="job-entry.html" class="nav-link">New Job Entry</a>
+      <a href="job-queue.html" class="nav-link active">Job Queue</a>
+      <a href="customers.html" class="nav-link">Customers</a>
+      <a href="reports.html" class="nav-link">Reports</a>
+      <a href="settings.html" class="nav-link">Settings</a>
+    </aside>
 
-        <div class="customer-details">
-            <div>
-                <h4>Billed To:</h4>
-                <p id="customerName"></p>
-                <p id="customerContact"></p>
-                <p id="customerEmail"></p>
-            </div>
-            <div>
-                <h4>Managed By:</h4>
-                <p id="assignedPerson"></p>
-            </div>
+    <main class="main">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Job Queue</div>
+          <div class="page-sub">Pending jobs with Turnaround Time (TAT) Tracking. **Click Status to Update.**</div>
         </div>
+      </div>
 
-        <div class="invoice-details">
-            <table>
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Description / Service Details</th>
-                        <th style="text-align: right;">Amount (₹)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td>
-                            <span id="jobDescription"></span>
-                            <br><small style="color:var(--muted)">Order Date: <span id="orderDate"></span> | Urgency: <span id="urgency"></span></small>
-                        </td>
-                        <td style="text-align: right;"><span id="jobAmount"></span></td>
-                    </tr>
-                    <tr class="summary-row" style="background: #f7f7f7;">
-                        <td colspan="2" style="text-align: right; font-weight: bold;">Subtotal</td>
-                        <td style="text-align: right;">₹ <span id="subtotal"></span></td>
-                    </tr>
-                    <tr class="summary-row">
-                        <td colspan="2" style="text-align: right; font-weight: bold; color: var(--primary);">Advance Paid</td>
-                        <td style="text-align: right; color: var(--primary);">₹ <span id="advancePaid"></span></td>
-                    </tr>
-                    <tr class="summary-row" style="background: #fff3e0;">
-                        <td colspan="2" style="text-align: right; font-weight: bold; color: #d84315;">BALANCE DUE</td>
-                        <td style="text-align: right;" class="total-amount">₹ <span id="balanceDue"></span></td>
-                    </tr>
-                </tbody>
-            </table>
+      <div class="grid-3">
+        <div class="card" style="background:#eef3ff;">
+          <h3>Total Active Jobs</h3>
+          <div class="big" id="totalActiveJobs">0</div>
         </div>
+        <div class="card" style="background:#fff3e0;">
+          <h3>Total Pending TAT (Days)</h3>
+          <div class="big" id="totalPendingTAT">0</div>
+        </div>
+        <div class="card" style="background:#ffebee;">
+          <h3>Overdue Jobs</h3>
+          <div class="big" id="overdueJobs">0</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Active Jobs Queue</h3>
+        <table class="table" id="jobQueueTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Customer</th>
+              <th>Manager</th>
+              <th>Description</th> 
+              <th>Status</th>
+              <th>Total TAT (Days)</th>
+              <th>Pending TAT (Days)</th>
+              <th>Amount (Rs.)</th>
+              <th>Pending Amount (Rs.)</th>
+              <th>Invoice</th> </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="10" class="muted">Loading job queue...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="card" style="margin-top: 15px;">
+        <h3>Manager Pending TAT Summary</h3>
+        <table class="table" id="managerSummaryTable">
+            <thead>
+                <tr>
+                    <th>Manager Name</th>
+                    <th>Pending Jobs</th>
+                    <th>Total Pending TAT (Days)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="3" class="muted">Calculating summary...</td></tr>
+            </tbody>
+        </table>
+      </div>
+      
+      <div id="statusModal" class="modal">
+          <div class="modal-content">
+              <span class="close-button" onclick="closeModal('statusModal')">&times;</span>
+              <h3>Update Job Details</h3>
+              <p>Order ID: **#<span id="modalJobId" style="font-weight:700;"></span>** for <span id="modalCustomerName"></span></p>
+              
+              <form id="statusUpdateForm">
+                  <input type="hidden" id="modalJobIndex">
+                  <input type="hidden" id="modalOriginalJobId">
+                  
+                  <div class="form-row">
+                      <div class="field">
+                          <label for="modalDescription" style="font-weight:700;">Job Description / Instructions</label>
+                          <textarea id="modalDescription" name="modalDescription" rows="4"></textarea>
+                      </div>
+                  </div>
+                  
+                  <div class="form-row">
+                      <div class="field">
+                          <label for="newStatus">New Status *</label>
+                          <select id="newStatus" name="newStatus" required onchange="togglePaymentFields(this.value)">
+                              <option value="Pending">Pending</option>
+                              <option value="Working">Working</option>
+                              <option value="Hold">Hold</option>
+                              <option value="Completed">Completed</option>
+                          </select>
+                      </div>
+                  </div>
+
+                  <div id="paymentCheckContainer" style="display:none; border: 1px solid #ff9800; padding: 10px; border-radius: 6px; margin-top: 10px; background: #fff3e0;">
+                      <p style="margin: 0 0 8px; font-size: 14px; font-weight: 700; color: #d84315;">Pending Amount: ₹ <span id="modalPendingAmount">0</span></p>
+                      <label for="paymentReceived">Pending Amount Received? *</label>
+                      <select id="paymentReceived" name="paymentReceived" required>
+                          <option value="">--- Select ---</option>
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                      </select>
+                  </div>
+
+                  <button type="submit" class="btn" style="width: 100%; margin-top: 15px;">Save Job Updates</button>
+                  <p id="modalError" style="color: red; margin-top: 10px; display:none;"></p>
+              </form>
+          </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../script.js"></script>
+  <script>
+    // 1. Authentication Check
+    checkAuth();
+    
+    // --- CONSTANTS ---
+    const MS_PER_DAY = 1000 * 60 * 60 * 24;
+    const DEFAULT_TAT_DAYS = 0; 
+    let activeJobsCache = []; 
+
+    
+    // --- Helper Functions ---
+    
+    function dateDiffInDays(dateA, dateB) {
+        if (!dateA || !dateB) return 0;
         
-        <div class="signature-area">
-            <p style="font-style: italic; font-size: 12px; margin-bottom: 5px;">Thank you for your business!</p>
-            <p>_________________________</p>
-            <p>Signature (Manager)</p>
-        </div>
-    </div>
+        const date1 = new Date(dateA);
+        const date2 = new Date(dateB);
+        
+        date1.setUTCHours(0, 0, 0, 0);
+        date2.setUTCHours(0, 0, 0, 0);
+        
+        const diffTime = date1.getTime() - date2.getTime();
+        return Math.ceil(diffTime / MS_PER_DAY); 
+    }
+    
+    function loadLocalJobs() {
+      // Load all jobs from local storage
+      return JSON.parse(localStorage.getItem('sv_jobs') || '[]');
+    }
 
-    <script src="../script.js"></script>
-    <script>
-        // Placeholder function for client-side image generation
-        function shareAsJpeg() {
-            // Check if html2canvas is available (requires external script)
-            if (typeof html2canvas === 'undefined') {
-                alert("Image conversion is currently disabled. Please add the html2canvas script to the <head> to enable JPEG download.");
-                return;
+    function saveLocalJobs(jobs) {
+        localStorage.setItem('sv_jobs', JSON.stringify(jobs));
+    }
+    
+    function getStatusClass(status) {
+      switch (status) {
+        case 'Completed': return 'status-completed';
+        case 'Working': return 'status-working';
+        case 'Hold': return 'status-hold';
+        default: return 'status-pending';
+      }
+    }
+
+    // Function to show job description via alert (fulfills 'hyperlink' request)
+    function viewDescription(description, event) {
+        if (event) event.preventDefault();
+        alert(`Job Instructions:\n\n=====================\n${description}`);
+    }
+
+    // NEW: Function to navigate to the invoice template
+    function generateInvoice(jobId) {
+        window.open(`invoice-template.html?jobId=${jobId}`, '_blank');
+    }
+
+
+    // --- Modal Functions ---
+    function openModal(id) {
+        document.getElementById(id).style.display = 'flex';
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).style.display = 'none';
+        document.getElementById('modalError').style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+        const modal = document.getElementById('statusModal');
+        if (event.target === modal) {
+            closeModal('statusModal');
+        }
+    }
+
+    function togglePaymentFields(status) {
+        const paymentContainer = document.getElementById('paymentCheckContainer');
+        const paymentReceivedSelect = document.getElementById('paymentReceived');
+        
+        if (status === 'Completed') {
+            paymentContainer.style.display = 'block';
+            paymentReceivedSelect.setAttribute('required', 'required');
+        } else {
+            paymentContainer.style.display = 'none';
+            paymentReceivedSelect.removeAttribute('required');
+            paymentReceivedSelect.value = ''; // Reset value
+        }
+    }
+
+    function updateJobStatus(activeJobIndex) {
+        const job = activeJobsCache[activeJobIndex];
+        if (!job) return;
+
+        // Populate Modal Fields
+        document.getElementById('modalJobId').textContent = job.id;
+        document.getElementById('modalCustomerName').textContent = job.customer;
+        
+        // Populate the editable TEXTAREA with the current description
+        document.getElementById('modalDescription').value = job.description; 
+        
+        // Use the index of the job in the ACTIVE JOBS array for lookup in saveStatusUpdate
+        document.getElementById('modalJobIndex').value = activeJobIndex; 
+        document.getElementById('modalOriginalJobId').value = job.id; 
+
+        // Set current status as default selected option
+        document.getElementById('newStatus').value = job.status;
+        
+        // Display pending amount and check conditional fields
+        document.getElementById('modalPendingAmount').textContent = job.pendingAmount;
+        togglePaymentFields(job.status); 
+
+        openModal('statusModal');
+    }
+
+    // --- Main Rendering Logic ---
+    function renderJobQueue() {
+      const allJobs = loadLocalJobs();
+      const tbody = document.querySelector('#jobQueueTable tbody');
+      const summaryTbody = document.querySelector('#managerSummaryTable tbody');
+      
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      
+      const today = new Date().toISOString().slice(0, 10);
+      const activeJobs = allJobs.filter(job => job.status !== 'Completed'); 
+      activeJobsCache = activeJobs; // Store the active job list for modal lookup
+
+      let totalPendingTATDays = 0; 
+      let overdueCount = 0;
+      const managerTATSummary = {}; 
+      
+      if (activeJobs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" class="muted">The Job Queue is empty! 🎉</td></tr>';
+      } else {
+        
+        // Sort by Order Date (Oldest/Overdue first)
+        activeJobs.sort((a, b) => {
+            return new Date(a.orderDate) - new Date(b.orderDate);
+        });
+
+        activeJobs.forEach((job, index) => {
+            job.targetCompletionDate = job.orderDate; 
+            
+            let pendingTATDays = 0; 
+            let tatClass = 'tat-ontime';
+            let displayValue = 0; 
+
+            if (job.status !== 'Hold') { 
+                 const diff = dateDiffInDays(job.targetCompletionDate, today); 
+
+                 if (diff < 0) {
+                     pendingTATDays = Math.abs(diff); 
+                     tatClass = 'tat-overdue';
+                     overdueCount++;
+                     displayValue = pendingTATDays;
+                 } else {
+                     pendingTATDays = 0;
+                     displayValue = pendingTATDays;
+                 }
+            } else {
+                tatClass = 'muted';
+                displayValue = 'N/A';
+            }
+            
+            // Update global TAT counter: only count OVERDUE days
+            if (job.status !== 'Hold' && tatClass === 'tat-overdue') {
+                totalPendingTATDays += pendingTATDays;
             }
 
-            const element = document.getElementById('invoiceContent');
-            const utilityBar = document.querySelector('.utility-bar');
-            const watermark = document.getElementById('invoiceDraftWatermark');
+            // Update Manager TAT Summary
+            const manager = job.assignedPerson;
+            if (!managerTATSummary[manager]) {
+                managerTATSummary[manager] = { pendingJobs: 0, totalPendingTAT: 0 };
+            }
+            managerTATSummary[manager].pendingJobs++;
+            
+            if (job.status !== 'Hold' && tatClass === 'tat-overdue') {
+                 managerTATSummary[manager].totalPendingTAT += pendingTATDays;
+            }
+            
+            // Prepare description string for safe inline function call
+            const safeDescription = job.description.replace(/'/g, "\\'");
+            
+            const row = document.createElement('tr');
+            
+            row.innerHTML = `
+              <td>#${job.id}</td>
+              <td style="text-align: left;">${job.customer}</td>
+              <td>${job.assignedPerson}</td>
+              <td class="description-cell"><a href="#" onclick="viewDescription('${safeDescription}', event)">[View]</a></td> 
+              <td class="${getStatusClass(job.status)}" onclick="updateJobStatus(${index})">${job.status}</td>
+              <td>${DEFAULT_TAT_DAYS}</td> 
+              <td><span class="${tatClass}">${displayValue}</span></td> 
+              <td>₹ ${job.amount}</td>
+              <td>₹ ${job.pendingAmount}</td>
+              <td><a href="#" onclick="generateInvoice('${job.id}')" class="invoice-btn">Invoice</a></td> `;
+            tbody.appendChild(row);
+        });
+      }
+      
+      // Update Summary Cards
+      document.getElementById('totalActiveJobs').textContent = activeJobs.length;
+      document.getElementById('totalPendingTAT').textContent = totalPendingTATDays;
+      document.getElementById('overdueJobs').textContent = overdueCount;
+      
+      // Update Manager Summary Table
+      summaryTbody.innerHTML = '';
+      const managerNames = Object.keys(managerTATSummary).sort();
+      
+      if (managerNames.length === 0) {
+          summaryTbody.innerHTML = '<tr><td colspan="3" class="muted">No active managers found.</td></tr>';
+      } else {
+          managerNames.forEach(manager => {
+              const summary = managerTATSummary[manager];
+              const summaryRow = document.createElement('tr');
+              summaryRow.innerHTML = `
+                  <td>${manager}</td>
+                  <td>${summary.pendingJobs}</td>
+                  <td>${summary.totalPendingTAT}</td> 
+              `;
+              summaryTbody.appendChild(summaryRow);
+          });
+      }
+    }
+    
+    // --- Submission Logic for Status Update (Unchanged, but ensures new description is saved) ---
+    document.getElementById('statusUpdateForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const form = e.target;
+        const newStatus = form.newStatus.value;
+        const paymentReceived = form.paymentReceived.value;
+        const newDescription = form.modalDescription.value; 
+        const activeJobIndex = parseInt(form.modalJobIndex.value);
+        const originalJobId = form.modalOriginalJobId.value;
+        const modalError = document.getElementById('modalError');
+        modalError.style.display = 'none';
 
-            // Temporarily hide the utility bar and display the watermark clearly for the screenshot
-            utilityBar.style.display = 'none';
-            watermark.style.color = 'rgba(255, 0, 0, 0.15)'; // Make watermark a bit clearer for the image
+        const jobToUpdate = activeJobsCache[activeJobIndex];
+        const pendingAmount = parseFloat(jobToUpdate.pendingAmount) || 0;
 
-            // Use html2canvas to capture the content
-            html2canvas(element, { 
-                scale: 2, // Use a higher scale for better quality
-                allowTaint: true 
-            }).then(canvas => {
-                // Restore the hidden elements immediately
-                utilityBar.style.display = 'block';
-                watermark.style.color = 'rgba(255, 0, 0, 0.1)'; // Restore original transparency
+        // 1. COMPULSORY CHECK: If status is 'Completed' and there's a pending amount
+        if (newStatus === 'Completed' && pendingAmount > 0) {
+            if (!paymentReceived) {
+                modalError.textContent = '❌ You must select "Pending Amount Received (Yes/No)" to complete this job.';
+                modalError.style.display = 'block';
+                return;
+            }
+            if (paymentReceived === 'No') {
+                modalError.textContent = '❌ Cannot mark as Completed. Pending amount must be collected (Yes) or the job status must remain non-completed.';
+                modalError.style.display = 'block';
+                return;
+            }
+        }
 
-                // Convert canvas to base64 JPEG
-                const image = canvas.toDataURL('image/jpeg', 0.9);
-                
-                // Create a download link
-                const link = document.createElement('a');
-                link.href = image;
-                link.download = `Invoice_Job_${document.getElementById('jobId').textContent}.jpg`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            });
+        // 2. Find the job in the ALL jobs list 
+        const allJobs = loadLocalJobs();
+        const globalJobIndex = allJobs.findIndex(job => job.id === originalJobId);
+
+        if (globalJobIndex === -1) {
+            modalError.textContent = '❌ Error: Job not found in global storage.';
+            modalError.style.display = 'block';
+            return;
+        }
+
+        // 3. Apply updates
+        const updatedJob = allJobs[globalJobIndex];
+        updatedJob.status = newStatus;
+        updatedJob.description = newDescription; 
+
+        // If completed and payment was received (which is forced by validation)
+        if (newStatus === 'Completed' && pendingAmount > 0 && paymentReceived === 'Yes') {
+            updatedJob.advance = (parseFloat(updatedJob.advance) + pendingAmount).toFixed(0);
+            updatedJob.pendingAmount = '0';
         }
         
-        function loadInvoiceData() {
-            // 1. Get Job ID from URL parameters
-            const params = new URLSearchParams(window.location.search);
-            const jobId = params.get('jobId');
+        // 4. Save to Local Storage
+        allJobs[globalJobIndex] = updatedJob;
+        saveLocalJobs(allJobs);
 
-            if (!jobId) {
-                document.getElementById('invoiceContent').innerHTML = '<p style="text-align:center;">Error: No Job ID specified.</p>';
-                return;
+        // 5. Dispatch to GitHub (For permanent persistence)
+        let success = true;
+        try {
+            if (typeof saveJobToGitHub === 'function') {
+                 // Send the updated job object
+                success = await saveJobToGitHub(updatedJob); 
+            } else {
+                console.warn("saveJobToGitHub function not found. Job saved locally only.");
             }
+        } catch (e) {
+            console.error("Error during GitHub dispatch:", e);
+            success = false;
+        }
 
-            // 2. Load Job Data from Local Storage
-            const allJobs = JSON.parse(localStorage.getItem('sv_jobs') || '[]');
-            const job = allJobs.find(j =>
+        // 6. Re-render queue and close modal
+        renderJobQueue();
+        closeModal('statusModal');
+        
+        // Optional: Provide feedback (console or temporary page alert)
+        console.log(`Job #${updatedJob.id} updated to status: ${newStatus}. GitHub success: ${success}`);
+    });
+
+
+    // Initialize the page
+    document.addEventListener("DOMContentLoaded", renderJobQueue);
+
+  </script>
+</body>
+</html>
