@@ -13,7 +13,6 @@
     }
 
     // Helper function to return the correct CSS class for status coloring
-    // (This function is required by renderDashboard to apply colors from internal.css)
     function getStatusClass(status) {
       switch (status) {
         case 'Completed': return 'status-completed';
@@ -34,13 +33,11 @@
         
         // Count jobs and determine status
         allJobs.forEach(job => {
-            // Check for today's jobs based on the creation timestamp
             const jobDate = job.createdAt ? job.createdAt.slice(0, 10) : '';
             if (jobDate === today) {
                 todayJobCount++;
             }
             
-            // Calculate Status Counts
             if (job.status === 'Pending' || job.status === 'Working' || job.status === 'Hold') {
                 pendingJobCount++;
             } else if (job.status === 'Completed') {
@@ -50,38 +47,45 @@
         
         // Sort jobs by creation time (newest first)
         const sortedJobs = [...allJobs].sort((a, b) => {
-            // Safely compare timestamps, assuming a fallback of 0 if missing
             return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
         });
         
-        const latestJobs = sortedJobs.slice(0, 7); // Display the top 7 most recent jobs
+        const latestJobs = sortedJobs.slice(0, 7);
 
-        // --- Display Counts ---
-        document.getElementById('todayJobs').textContent = todayJobCount;
-        document.getElementById('pendingJobs').textContent = pendingJobCount;
-        document.getElementById('completedJobs').textContent = completedJobCount;
+        // --- Display Counts (FIXED: Now includes null checks to prevent crashes) ---
+        let el = document.getElementById('todayJobs');
+        if (el) el.textContent = todayJobCount;
+
+        el = document.getElementById('pendingJobs');
+        if (el) el.textContent = pendingJobCount;
+
+        el = document.getElementById('completedJobs');
+        if (el) el.textContent = completedJobCount;
 
         // --- Display Recent Jobs Table ---
         const tbody = document.querySelector('#recentTable tbody');
-        tbody.innerHTML = ''; 
+        
+        // Only try to update the table if the table body exists
+        if (tbody) { 
+            tbody.innerHTML = ''; 
 
-        if (latestJobs.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="muted">No jobs yet</td></tr>';
-        } else {
-            latestJobs.forEach(job => {
-                const row = document.createElement('tr');
-                // Format time for readability
-                const jobTime = job.createdAt ? new Date(job.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+            if (latestJobs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="muted">No jobs yet</td></tr>';
+            } else {
+                latestJobs.forEach(job => {
+                    const row = document.createElement('tr');
+                    const jobTime = job.createdAt ? new Date(job.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'N/A';
 
-                row.innerHTML = `
-                    <td>${job.id}</td>
-                    <td>${job.customer || 'N/A'}</td>
-                    <td>${job.department || 'N/A'}</td>
-                    <td class="${getStatusClass(job.status)}">${job.status}</td>
-                    <td>${jobTime}</td>
-                `;
-                tbody.appendChild(row);
-            });
+                    row.innerHTML = `
+                        <td>${job.id}</td>
+                        <td>${job.customer || 'N/A'}</td>
+                        <td>${job.department || 'N/A'}</td>
+                        <td class="${getStatusClass(job.status)}">${job.status}</td>
+                        <td>${jobTime}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
         }
     }
 
