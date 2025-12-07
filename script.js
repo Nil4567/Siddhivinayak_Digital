@@ -1,80 +1,3 @@
-/* --------------------------------------------------
-    INITIAL LOGIN CREDENTIALS 🔒
--------------------------------------------------- */
-const INITIAL_CREDENTIALS = [
-    { username: "admin", password: "admin123", name: "Admin User", role: "admin", permissions: ACCESS_PERMISSIONS.admin }
-];
-
-/* --------------------------------------------------
-    USER CREDENTIAL MANAGEMENT
--------------------------------------------------- */
-function getUserCredentials() {
-    let users = JSON.parse(localStorage.getItem(USER_CREDENTIALS_KEY));
-    if (!users || users.length === 0) {
-        users = INITIAL_CREDENTIALS; // <-- Used here if local storage is empty
-        localStorage.setItem(USER_CREDENTIALS_KEY, JSON.stringify(users));
-    }
-    /* --------------------------------------------------
-    ROLES AND PERMISSIONS DEFINITION 🔑
--------------------------------------------------- */
-const ACCESS_PERMISSIONS = {
-    'features': {
-        'dashboard': { label: 'Dashboard', page: 'dashboard.html', actions: ['view'] },
-        'job_entry': { label: 'New Job Entry', page: 'job-entry.html', actions: ['view', 'manage'] },
-        'job_queue': { label: 'Job Queue', page: 'job-queue.html', actions: ['view', 'manage'] },
-        'customers': { label: 'Customers', page: 'customers.html', actions: ['view', 'manage'] },
-        'expenses': { label: 'Daily Expenses', page: 'expenses.html', actions: ['view', 'manage'] },
-        'reports': { label: 'Reports', page: 'reports.html', actions: ['view'] },
-        // RENAMED and SIMPLIFIED: User Management is now the primary settings page
-        'user_management': { label: 'User Management', page: 'settings.html', actions: ['view', 'manage'] }, 
-        'admin_credentials': { label: 'Admin Credentials', page: 'admin-credentials.html', actions: ['view', 'manage'] } 
-    },
-    'admin': {
-        'dashboard': ['view'], 'job_entry': ['view', 'manage'], 'job_queue': ['view', 'manage'], 
-        'customers': ['view', 'manage'], 'expenses': ['view', 'manage'], 'reports': ['view'], 
-        'user_management': ['view', 'manage'], 'admin_credentials': ['view', 'manage'] // Changed 'settings' to 'user_management'
-    },
-    'manager': {
-        'dashboard': ['view'], 'job_entry': ['view', 'manage'], 'job_queue': ['view', 'manage'], 
-        'customers': ['view'], 'expenses': ['view'], 'reports': [], 'user_management': [], 'admin_credentials': [] // Changed 'settings' to 'user_management'
-    },
-    'viewer': {
-        'dashboard': ['view'], 'job_entry': ['manage'], 'job_queue': ['view'], 'customers': ['view'], 
-        'expenses': [], 'reports': [], 'user_management': [], 'admin_credentials': [] // Changed 'settings' to 'user_management'
-    }
-};
-window.ACCESS_PERMISSIONS = ACCESS_PERMISSIONS;
-    // ... (rest of the function)
-}
- /**
- * Adds a new user to local storage and updates the manager list.
- * @param {object} newUserDetails - Contains username, password, name, and role.
- * @returns {boolean} True if successful, false if username already exists.
- */
-function addNewUser(newUserDetails) {
-    const users = getUserCredentials();
-    
-    // Check for duplicate username
-    if (users.some(u => u.username === newUserDetails.username.toLowerCase())) {
-        return false; // User already exists
-    }
-    
-    const newUser = {
-        username: newUserDetails.username.toLowerCase(),
-        password: newUserDetails.password,
-        name: newUserDetails.name,
-        role: newUserDetails.role,
-        // The role automatically maps to permissions based on ACCESS_PERMISSIONS in getUserCredentials
-    };
-
-    users.push(newUser);
-    saveUserCredentials(users);
-    initManagers(); // Recalculate and update the manager list
-    return true;
-}
-window.addNewUser = addNewUser; // Expose to the settings page
-// ...
-
 /* script.js - AUTHENTICATION, ROLES, ACCESS CONTROL, & USER MANAGEMENT */
 
 /* --------------------------------------------------
@@ -91,8 +14,9 @@ const USER_CREDENTIALS_KEY = 'sv_user_credentials';
 const ADMIN_CREDENTIALS_KEY = 'sv_admin_credentials'; 
 
 /* --------------------------------------------------
-    ROLES AND PERMISSIONS DEFINITION 🔑
+    ROLES AND PERMISSIONS DEFINITION 🔑 (UPDATED)
 -------------------------------------------------- */
+// The 'settings' link is removed, replaced by 'user_management' as per your request.
 const ACCESS_PERMISSIONS = {
     'features': {
         'dashboard': { label: 'Dashboard', page: 'dashboard.html', actions: ['view'] },
@@ -101,27 +25,27 @@ const ACCESS_PERMISSIONS = {
         'customers': { label: 'Customers', page: 'customers.html', actions: ['view', 'manage'] },
         'expenses': { label: 'Daily Expenses', page: 'expenses.html', actions: ['view', 'manage'] },
         'reports': { label: 'Reports', page: 'reports.html', actions: ['view'] },
-        'settings': { label: 'User Settings', page: 'settings.html', actions: ['view', 'manage'] },
+        'user_management': { label: 'User Management', page: 'settings.html', actions: ['view', 'manage'] }, // Link to settings.html
         'admin_credentials': { label: 'Admin Credentials', page: 'admin-credentials.html', actions: ['view', 'manage'] } 
     },
     'admin': {
         'dashboard': ['view'], 'job_entry': ['view', 'manage'], 'job_queue': ['view', 'manage'], 
         'customers': ['view', 'manage'], 'expenses': ['view', 'manage'], 'reports': ['view'], 
-        'settings': ['view', 'manage'], 'admin_credentials': ['view', 'manage'] 
+        'user_management': ['view', 'manage'], 'admin_credentials': ['view', 'manage'] 
     },
     'manager': {
         'dashboard': ['view'], 'job_entry': ['view', 'manage'], 'job_queue': ['view', 'manage'], 
-        'customers': ['view'], 'expenses': ['view'], 'reports': [], 'settings': [], 'admin_credentials': [] 
+        'customers': ['view'], 'expenses': ['view'], 'reports': [], 'user_management': [], 'admin_credentials': [] 
     },
     'viewer': {
         'dashboard': ['view'], 'job_entry': ['manage'], 'job_queue': ['view'], 'customers': ['view'], 
-        'expenses': [], 'reports': [], 'settings': [], 'admin_credentials': [] 
+        'expenses': [], 'reports': [], 'user_management': [], 'admin_credentials': [] 
     }
 };
 window.ACCESS_PERMISSIONS = ACCESS_PERMISSIONS; 
 
 /* --------------------------------------------------
-    INITIAL LOGIN CREDENTIALS 🔒
+    INITIAL LOGIN CREDENTIALS 🔒 (This section is only defined ONCE)
 -------------------------------------------------- */
 const INITIAL_CREDENTIALS = [
     { username: "admin", password: "admin123", name: "Admin User", role: "admin", permissions: ACCESS_PERMISSIONS.admin }
@@ -149,8 +73,32 @@ function getUserCredentials() {
 function saveUserCredentials(users) {
     localStorage.setItem(USER_CREDENTIALS_KEY, JSON.stringify(users));
 }
-window.getUserCredentials = getUserCredentials; // Expose for settings page
-window.saveUserCredentials = saveUserCredentials; // Expose for settings page
+
+function addNewUser(newUserDetails) {
+    const users = getUserCredentials();
+    
+    // Check for duplicate username
+    if (users.some(u => u.username === newUserDetails.username.toLowerCase())) {
+        return false; // User already exists
+    }
+    
+    const newUser = {
+        username: newUserDetails.username.toLowerCase(),
+        password: newUserDetails.password,
+        name: newUserDetails.name,
+        role: newUserDetails.role,
+        // Permissions will be set automatically by getUserCredentials on next load
+    };
+
+    users.push(newUser);
+    saveUserCredentials(users);
+    initManagers(); // Recalculate and update the manager list
+    return true;
+}
+
+window.getUserCredentials = getUserCredentials; // Expose
+window.saveUserCredentials = saveUserCredentials; // Expose
+window.addNewUser = addNewUser; // Expose
 
 /* --------------------------------------------------
     GOOGLE SCRIPT CREDENTIAL MANAGEMENT
@@ -271,7 +219,18 @@ function initSidebarVisibility() {
         );
 
         if (featureKey) {
+            // Check for 'view' permission using the stored permissions
             const hasViewPermission = userPermissions[featureKey] && userPermissions[featureKey].includes('view');
+
+            // Admin Credentials is a special case: only visible if view/manage is explicitly set (only for admin by default)
+            const isCredentialsPage = featureKey === 'admin_credentials';
+            
+            // If the user is admin, they see everything (this is a redundant check but adds safety)
+            const userRole = localStorage.getItem("sv_user_role");
+            if (userRole === 'admin') {
+                link.style.display = '';
+                return;
+            }
 
             if (!hasViewPermission) {
                 link.style.display = 'none';
