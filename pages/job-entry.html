@@ -167,27 +167,42 @@
         return `${year}-${month}-${day}`;
     }
 
-    // 1. Function to create dummy jobs (10 entries)
+    // 1. Function to create 20 dummy jobs for testing
     function createDummyJobs() {
         const today = getTodayDate();
-        const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+        const oneDayAgo = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
         const twoDaysAgo = new Date(Date.now() - 172800000).toISOString().slice(0, 10);
+        const threeDaysAgo = new Date(Date.now() - (86400000 * 3)).toISOString().slice(0, 10);
+        const fourDaysAgo = new Date(Date.now() - (86400000 * 4)).toISOString().slice(0, 10);
         
-        // 10 Dummy Jobs (Target Date is derived from Order Date in job-queue.html)
+        // 20 Dummy Jobs (IDs 1001-1020)
         const dummyJobs = [
+            // --- Original 10 Jobs ---
             { id: "1001", customer: "Priya Sharma", customerEmail: "priya@example.com", contact: "9876543210", description: "50 copies of brochure.", assignedPerson: defaultManager, urgency: "Very Urgent", orderDate: twoDaysAgo, amount: "550", advance: "200", pendingAmount: "350", status: 'Working', createdAt: new Date(Date.now() - 36000000).toISOString(), createdBy: defaultManager },
-            { id: "1002", customer: "Alok Industries", customerEmail: "alok@ind.com", contact: "9912345678", description: "Design new business card layout.", assignedPerson: "Sneha (Design)", urgency: "Normal", orderDate: yesterday, amount: "1200", advance: "500", pendingAmount: "700", status: 'Pending', createdAt: new Date(Date.now() - 72000000).toISOString(), createdBy: loggedInUser },
+            { id: "1002", customer: "Alok Industries", customerEmail: "alok@ind.com", contact: "9912345678", description: "Design new business card layout.", assignedPerson: "Sneha (Design)", urgency: "Normal", orderDate: oneDayAgo, amount: "1200", advance: "500", pendingAmount: "700", status: 'Pending', createdAt: new Date(Date.now() - 72000000).toISOString(), createdBy: loggedInUser },
             { id: "1003", customer: "Local Cafe", customerEmail: "cafe@local.in", contact: "8888877777", description: "Bind 20 menus (Spiral)", assignedPerson: defaultManager, urgency: "Low", orderDate: today, amount: "300", advance: "0", pendingAmount: "300", status: 'Hold', createdAt: new Date(Date.now() - 10800000).toISOString(), createdBy: defaultManager },
             { id: "1004", customer: "Ravi K.", customerEmail: "ravi@home.net", contact: "7777711111", description: "Laminate 10 certificates.", assignedPerson: "Karan (Finishing)", urgency: "Urgent", orderDate: twoDaysAgo, amount: "150", advance: "150", pendingAmount: "0", status: 'Completed', createdAt: new Date(Date.now() - 14400000).toISOString(), createdBy: loggedInUser },
             { id: "1005", customer: "College Project", customerEmail: "project@stud.org", contact: "9000055555", description: "500 pages project report print.", assignedPerson: loggedInUser, urgency: "Normal", orderDate: today, amount: "800", advance: "300", pendingAmount: "500", status: 'Pending', createdAt: new Date().toISOString(), createdBy: loggedInUser },
-            { id: "1006", customer: "Tech Solutions", customerEmail: "tech@sol.com", contact: "9876512345", description: "100 A4 flyers.", assignedPerson: "Sneha (Design)", urgency: "Urgent", orderDate: yesterday, amount: "900", advance: "900", pendingAmount: "0", status: 'Working', createdAt: new Date(Date.now() - 86400000).toISOString(), createdBy: "Staff" },
+            { id: "1006", customer: "Tech Solutions", customerEmail: "tech@sol.com", contact: "9876512345", description: "100 A4 flyers.", assignedPerson: "Sneha (Design)", urgency: "Urgent", orderDate: oneDayAgo, amount: "900", advance: "900", pendingAmount: "0", status: 'Working', createdAt: new Date(Date.now() - 86400000).toISOString(), createdBy: "Staff" },
             { id: "1007", customer: "Bake House", customerEmail: "bake@h.in", contact: "8881234567", description: "2 large vinyl banner prints.", assignedPerson: defaultManager, urgency: "Very Urgent", orderDate: twoDaysAgo, amount: "3500", advance: "1500", pendingAmount: "2000", status: 'Working', createdAt: new Date(Date.now() - 12000000).toISOString(), createdBy: defaultManager },
-            { id: "1008", customer: "Yoga Studio", customerEmail: "yoga@st.com", contact: "9990001112", description: "Membership cards design and print.", assignedPerson: "Karan (Finishing)", urgency: "Low", orderDate: yesterday, amount: "2000", advance: "500", pendingAmount: "1500", status: 'Pending', createdAt: new Date(Date.now() - 24000000).toISOString(), createdBy: "Admin User" },
+            { id: "1008", customer: "Yoga Studio", customerEmail: "yoga@st.com", contact: "9990001112", description: "Membership cards design and print.", assignedPerson: "Karan (Finishing)", urgency: "Low", orderDate: oneDayAgo, amount: "2000", advance: "500", pendingAmount: "1500", status: 'Pending', createdAt: new Date(Date.now() - 24000000).toISOString(), createdBy: "Admin User" },
             { id: "1009", customer: "Govt Tender", customerEmail: "govt@tender.in", contact: "7776665554", description: "500-page official document print/bind.", assignedPerson: loggedInUser, urgency: "Normal", orderDate: today, amount: "7500", advance: "2500", pendingAmount: "5000", status: 'Hold', createdAt: new Date(Date.now() - 36000000).toISOString(), createdBy: "Staff" },
             { id: "1010", customer: "Family Photo", customerEmail: "photo@family.net", contact: "9090909090", description: "2 photo enlargements and lamination.", assignedPerson: "Karan (Finishing)", urgency: "Urgent", orderDate: twoDaysAgo, amount: "600", advance: "600", pendingAmount: "0", status: 'Completed', createdAt: new Date(Date.now() - 48000000).toISOString(), createdBy: "Admin User" },
+
+            // --- New 10 Jobs for a total of 20 ---
+            { id: "1011", customer: "Metro Bank", customerEmail: "bank@metro.com", contact: "9101010101", description: "200 visiting cards, double-sided.", assignedPerson: "Sneha (Design)", urgency: "Normal", orderDate: today, amount: "4500", advance: "1000", pendingAmount: "3500", status: 'Pending', createdAt: new Date().toISOString(), createdBy: defaultManager },
+            { id: "1012", customer: "Gym Trainer", customerEmail: "trainer@gym.in", contact: "9202020202", description: "5 large workout posters.", assignedPerson: "Karan (Finishing)", urgency: "Urgent", orderDate: oneDayAgo, amount: "700", advance: "700", pendingAmount: "0", status: 'Working', createdAt: new Date(Date.now() - 6000000).toISOString(), createdBy: loggedInUser },
+            { id: "1013", customer: "Student Thesis", customerEmail: "student@uni.edu", contact: "9303030303", description: "Hard bind thesis (Gold embossing).", assignedPerson: defaultManager, urgency: "Very Urgent", orderDate: threeDaysAgo, amount: "2500", advance: "0", pendingAmount: "2500", status: 'Pending', createdAt: new Date(Date.now() - 108000000).toISOString(), createdBy: defaultManager },
+            { id: "1014", customer: "NGO Project", customerEmail: "ngo@project.org", contact: "9404040404", description: "100 A5 brochures for donation drive.", assignedPerson: loggedInUser, urgency: "Low", orderDate: today, amount: "1500", advance: "500", pendingAmount: "1000", status: 'Hold', createdAt: new Date().toISOString(), createdBy: "Staff" },
+            { id: "1015", customer: "Dr. Patel", customerEmail: "patel@clinic.net", contact: "9505050505", description: "Laminate 5 medical charts.", assignedPerson: "Karan (Finishing)", urgency: "Normal", orderDate: fourDaysAgo, amount: "400", advance: "400", pendingAmount: "0", status: 'Completed', createdAt: new Date(Date.now() - 170000000).toISOString(), createdBy: "Admin User" },
+            { id: "1016", customer: "Food Stall", customerEmail: "food@stall.com", contact: "9606060606", description: "Outdoor banner replacement.", assignedPerson: "Sneha (Design)", urgency: "Urgent", orderDate: oneDayAgo, amount: "3000", advance: "1500", pendingAmount: "1500", status: 'Working', createdAt: new Date(Date.now() - 12000000).toISOString(), createdBy: loggedInUser },
+            { id: "1017", customer: "IT Company", customerEmail: "it@comp.in", contact: "9707070707", description: "Annual report printing and binding.", assignedPerson: defaultManager, urgency: "Normal", orderDate: twoDaysAgo, amount: "9000", advance: "3000", pendingAmount: "6000", status: 'Pending', createdAt: new Date(Date.now() - 75000000).toISOString(), createdBy: defaultManager },
+            { id: "1018", customer: "Local School", customerEmail: "school@local.edu", contact: "9808080808", description: "Admissions prospectus design/print.", assignedPerson: loggedInUser, urgency: "Very Urgent", orderDate: today, amount: "1200", advance: "200", pendingAmount: "1000", status: 'Pending', createdAt: new Date().toISOString(), createdBy: "Staff" },
+            { id: "1019", customer: "Bike Club", customerEmail: "club@bike.org", contact: "9909090909", description: "Sticker cutouts and lamination.", assignedPerson: "Karan (Finishing)", urgency: "Low", orderDate: threeDaysAgo, amount: "800", advance: "800", pendingAmount: "0", status: 'Completed', createdAt: new Date(Date.now() - 150000000).toISOString(), createdBy: "Admin User" },
+            { id: "1020", customer: "Architect", customerEmail: "arch@design.net", contact: "9998887776", description: "A1 Blueprints printing (5 sets).", assignedPerson: "Sneha (Design)", urgency: "Urgent", orderDate: oneDayAgo, amount: "5000", advance: "2500", pendingAmount: "2500", status: 'Working', createdAt: new Date(Date.now() - 18000000).toISOString(), createdBy: loggedInUser },
         ];
         localStorage.setItem('sv_jobs', JSON.stringify(dummyJobs));
-        console.log("10 dummy jobs created for testing.");
+        console.log("20 dummy jobs created for testing.");
         return dummyJobs;
     }
     
@@ -210,7 +225,8 @@
     // 3. Load Jobs, Generate Next ID, and Set Defaults
     function initJobEntryPage() {
         document.getElementById('jobManager').value = loggedInUser;
-        document.getElementById('orderDate').value = getTodayDate();
+        // Set the VISIBLE Order Date value
+        document.getElementById('orderDate').value = getTodayDate(); 
         
         // Load existing jobs, or create dummies
         existingJobs = JSON.parse(localStorage.getItem('sv_jobs') || '[]');
@@ -218,9 +234,9 @@
             existingJobs = createDummyJobs();
         }
 
-        // Generate the next Job ID 
+        // Generate the next Job ID (Starts at 1021 if 20 dummies are loaded)
         const lastJob = existingJobs.length > 0 ? existingJobs[existingJobs.length - 1] : null;
-        const nextId = lastJob && lastJob.id ? parseInt(lastJob.id) + 1 : 1011;
+        const nextId = lastJob && lastJob.id ? parseInt(lastJob.id) + 1 : 1021; // Updated initial ID
         document.getElementById('jobId').value = String(nextId);
         
         // Initial pending amount setup
@@ -289,14 +305,20 @@
       // 7. Dispatch to GitHub (saveJobToGitHub must be defined in script.js)
       let success = false;
       try {
-          success = await saveJobToGitHub(newJob); 
+          // This function must be defined in script.js to actually work with GitHub
+          if (typeof saveJobToGitHub === 'function') {
+              success = await saveJobToGitHub(newJob); 
+          } else {
+              console.warn("saveJobToGitHub function not found. Job saved locally only.");
+              success = true; // Assume local save is sufficient if dispatch fails/is missing
+          }
       } catch (e) {
           console.error("Error during GitHub dispatch:", e);
       }
 
       // 8. Display Result and Clean Up
       if (success) {
-        alertEl.textContent = `✅ Success! Job #${jobId} saved and dispatched to GitHub workflow.`;
+        alertEl.textContent = `✅ Success! Job #${jobId} saved and dispatched (or saved locally).`;
         alertEl.style.backgroundColor = '#d4edda';
         alertEl.style.color = '#155724';
       } else {
