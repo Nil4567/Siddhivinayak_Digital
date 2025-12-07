@@ -6,39 +6,37 @@
   <link rel="stylesheet" href="../styles/internal.css">
   
   <style>
-    /* --- 1. COMPACT FORM STYLES (New) --- */
+    /* --- 1. COMPACT FORM STYLES (Existing) --- */
     .card {
-        padding: 14px; /* Slightly reduce card padding */
+        padding: 14px;
     }
     .form-row {
-        margin-bottom: 8px !important; /* Reduce vertical spacing between rows */
+        margin-bottom: 8px !important; 
     }
     label {
-        font-size: 12px; /* Smaller label font size */
-        margin-bottom: 2px !important; /* Reduce space between label and input */
+        font-size: 12px; 
+        margin-bottom: 2px !important; 
     }
-    /* Reduce padding on inputs/selects/textareas for height reduction */
     input[type="text"], input[type="number"], input[type="email"], input[type="date"], select, textarea {
-        padding: 6px 10px !important; /* Smaller vertical padding */
-        font-size: 14px; /* Slightly smaller font size */
+        padding: 6px 10px !important;
+        font-size: 14px;
     }
 
-    /* --- 2. PENDING AMOUNT STYLES (Adjusted) --- */
+    /* --- 2. PENDING AMOUNT STYLES (Existing) --- */
     #pendingAmountDisplay {
       font-weight: 800 !important;
-      font-size: 16px !important; /* Slightly smaller font for compact view */
+      font-size: 16px !important; 
       border-radius: 6px;
-      padding: 8px 10px !important; /* Adjusted padding to match new height */
-      /* Colors remain for "Wow" factor */
-      color: #d84315 !important; /* Dark Red-Orange for alert */
-      background: #fff3e0 !important; /* Light Yellow-Orange background */
-      border: 2px solid #ff9800 !important; /* Prominent border */
+      padding: 8px 10px !important;
+      color: #d84315 !important;
+      background: #fff3e0 !important; 
+      border: 2px solid #ff9800 !important; 
       text-align: right;
     }
     /* Ensure colors change on full payment */
     #pendingAmountDisplay[value="0"], #pendingAmountDisplay[value="-1"], #pendingAmountDisplay[value^="-"] {
-        color: #1b5e20 !important; /* Dark Green */
-        background: #e8f5e9 !important; /* Light Green */
+        color: #1b5e20 !important;
+        background: #e8f5e9 !important;
         border-color: #4caf50 !important;
     }
     /* Grouping the financial fields into a clean 3-column row */
@@ -131,14 +129,7 @@
           </div>
 
           <div class="form-row">
-            <div class="field full-width">
-              <label for="jobDescription">Job Description / Instructions</label>
-              <textarea id="jobDescription" name="jobDescription" rows="2" required></textarea> 
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="field full-width">
+            <div class="field">
               <label for="urgency">Urgency</label>
               <select id="urgency" name="urgency">
                 <option value="Normal">Normal</option>
@@ -146,6 +137,10 @@
                 <option value="Urgent">Urgent</option>
                 <option value="Very Urgent">Very Urgent</option>
               </select>
+            </div>
+            <div class="field">
+              <label for="jobDescription">Job Description / Instructions</label>
+              <textarea id="jobDescription" name="jobDescription" rows="2" required></textarea> 
             </div>
           </div>
           
@@ -160,7 +155,8 @@
     // Global variable to hold the list of jobs
     let existingJobs = [];
     const loggedInUser = localStorage.getItem('username') || 'Staff User'; 
-
+    const defaultManager = "Admin User";
+    
     // --- Helper Functions ---
 
     function getTodayDate() {
@@ -171,27 +167,33 @@
         return `${year}-${month}-${day}`;
     }
 
-    // 1. Function to create dummy jobs if local storage is empty
+    // 1. Function to create dummy jobs (10 entries)
     function createDummyJobs() {
         const today = getTodayDate();
         const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+        const twoDaysAgo = new Date(Date.now() - 172800000).toISOString().slice(0, 10);
         
+        // 10 Dummy Jobs (Target Date is derived from Order Date in job-queue.html)
         const dummyJobs = [
-            { id: "1001", customer: "Priya Sharma", customerEmail: "priya@example.com", contact: "9876543210", description: "50 copies of brochure.", assignedPerson: loggedInUser, urgency: "Very Urgent", orderDate: yesterday, amount: "550", advance: "200", pendingAmount: "350", status: 'Working', createdAt: new Date(Date.now() - 3600000).toISOString(), createdBy: loggedInUser },
-            { id: "1002", customer: "Alok Industries", customerEmail: "alok@ind.com", contact: "9912345678", description: "Design new business card layout.", assignedPerson: "Sneha (Design)", urgency: "Normal", orderDate: today, amount: "1200", advance: "500", pendingAmount: "700", status: 'Pending', createdAt: new Date(Date.now() - 7200000).toISOString(), createdBy: loggedInUser },
-            { id: "1003", customer: "Local Cafe", customerEmail: "cafe@local.in", contact: "8888877777", description: "Bind 20 menus (Spiral)", assignedPerson: loggedInUser, urgency: "Low", orderDate: yesterday, amount: "300", advance: "0", pendingAmount: "300", status: 'Hold', createdAt: new Date(Date.now() - 10800000).toISOString(), createdBy: "Admin User" },
-            { id: "1004", customer: "Ravi K.", customerEmail: "ravi@home.net", contact: "7777711111", description: "Laminate 10 certificates.", assignedPerson: "Karan (Finishing)", urgency: "Urgent", orderDate: today, amount: "150", advance: "150", pendingAmount: "0", status: 'Completed', createdAt: new Date(Date.now() - 14400000).toISOString(), createdBy: loggedInUser },
-            { id: "1005", customer: "College Project", customerEmail: "project@stud.org", contact: "9000055555", description: "500 pages project report print.", assignedPerson: loggedInUser, urgency: "Normal", orderDate: today, amount: "800", advance: "300", pendingAmount: "500", status: 'Pending', createdAt: new Date(Date.now() - 18000000).toISOString(), createdBy: "Staff" },
+            { id: "1001", customer: "Priya Sharma", customerEmail: "priya@example.com", contact: "9876543210", description: "50 copies of brochure.", assignedPerson: defaultManager, urgency: "Very Urgent", orderDate: twoDaysAgo, amount: "550", advance: "200", pendingAmount: "350", status: 'Working', createdAt: new Date(Date.now() - 36000000).toISOString(), createdBy: defaultManager },
+            { id: "1002", customer: "Alok Industries", customerEmail: "alok@ind.com", contact: "9912345678", description: "Design new business card layout.", assignedPerson: "Sneha (Design)", urgency: "Normal", orderDate: yesterday, amount: "1200", advance: "500", pendingAmount: "700", status: 'Pending', createdAt: new Date(Date.now() - 72000000).toISOString(), createdBy: loggedInUser },
+            { id: "1003", customer: "Local Cafe", customerEmail: "cafe@local.in", contact: "8888877777", description: "Bind 20 menus (Spiral)", assignedPerson: defaultManager, urgency: "Low", orderDate: today, amount: "300", advance: "0", pendingAmount: "300", status: 'Hold', createdAt: new Date(Date.now() - 10800000).toISOString(), createdBy: defaultManager },
+            { id: "1004", customer: "Ravi K.", customerEmail: "ravi@home.net", contact: "7777711111", description: "Laminate 10 certificates.", assignedPerson: "Karan (Finishing)", urgency: "Urgent", orderDate: twoDaysAgo, amount: "150", advance: "150", pendingAmount: "0", status: 'Completed', createdAt: new Date(Date.now() - 14400000).toISOString(), createdBy: loggedInUser },
+            { id: "1005", customer: "College Project", customerEmail: "project@stud.org", contact: "9000055555", description: "500 pages project report print.", assignedPerson: loggedInUser, urgency: "Normal", orderDate: today, amount: "800", advance: "300", pendingAmount: "500", status: 'Pending', createdAt: new Date().toISOString(), createdBy: loggedInUser },
+            { id: "1006", customer: "Tech Solutions", customerEmail: "tech@sol.com", contact: "9876512345", description: "100 A4 flyers.", assignedPerson: "Sneha (Design)", urgency: "Urgent", orderDate: yesterday, amount: "900", advance: "900", pendingAmount: "0", status: 'Working', createdAt: new Date(Date.now() - 86400000).toISOString(), createdBy: "Staff" },
+            { id: "1007", customer: "Bake House", customerEmail: "bake@h.in", contact: "8881234567", description: "2 large vinyl banner prints.", assignedPerson: defaultManager, urgency: "Very Urgent", orderDate: twoDaysAgo, amount: "3500", advance: "1500", pendingAmount: "2000", status: 'Working', createdAt: new Date(Date.now() - 12000000).toISOString(), createdBy: defaultManager },
+            { id: "1008", customer: "Yoga Studio", customerEmail: "yoga@st.com", contact: "9990001112", description: "Membership cards design and print.", assignedPerson: "Karan (Finishing)", urgency: "Low", orderDate: yesterday, amount: "2000", advance: "500", pendingAmount: "1500", status: 'Pending', createdAt: new Date(Date.now() - 24000000).toISOString(), createdBy: "Admin User" },
+            { id: "1009", customer: "Govt Tender", customerEmail: "govt@tender.in", contact: "7776665554", description: "500-page official document print/bind.", assignedPerson: loggedInUser, urgency: "Normal", orderDate: today, amount: "7500", advance: "2500", pendingAmount: "5000", status: 'Hold', createdAt: new Date(Date.now() - 36000000).toISOString(), createdBy: "Staff" },
+            { id: "1010", customer: "Family Photo", customerEmail: "photo@family.net", contact: "9090909090", description: "2 photo enlargements and lamination.", assignedPerson: "Karan (Finishing)", urgency: "Urgent", orderDate: twoDaysAgo, amount: "600", advance: "600", pendingAmount: "0", status: 'Completed', createdAt: new Date(Date.now() - 48000000).toISOString(), createdBy: "Admin User" },
         ];
         localStorage.setItem('sv_jobs', JSON.stringify(dummyJobs));
-        console.log("5 dummy jobs created for testing.");
+        console.log("10 dummy jobs created for testing.");
         return dummyJobs;
     }
     
-    // 2. Real-time Pending Amount Calculator
+    // 2. Real-time Pending Amount Calculator (Unchanged)
     function calculatePendingAmount() {
       const form = document.getElementById('jobEntryForm');
-      // Ensure values are treated as numbers, defaulting to 0
       const amount = parseFloat(form.amount.value) || 0;
       const advance = parseFloat(form.advance.value) || 0;
       
@@ -200,19 +202,14 @@
       const displayEl = document.getElementById('pendingAmountDisplay');
       const hiddenEl = document.getElementById('pendingAmount');
       
-      // Update the display field with integer value
       displayEl.value = pending.toFixed(0); 
-      // Update the hidden field for submission
       hiddenEl.value = pending.toFixed(0);
     }
 
 
-    // 3. Load Jobs, Generate Next ID, and Set Manager Name/Date
+    // 3. Load Jobs, Generate Next ID, and Set Defaults
     function initJobEntryPage() {
-        // Set the Job Manager field
         document.getElementById('jobManager').value = loggedInUser;
-        
-        // Set the Order Date field
         document.getElementById('orderDate').value = getTodayDate();
         
         // Load existing jobs, or create dummies
@@ -223,10 +220,10 @@
 
         // Generate the next Job ID 
         const lastJob = existingJobs.length > 0 ? existingJobs[existingJobs.length - 1] : null;
-        const nextId = lastJob && lastJob.id ? parseInt(lastJob.id) + 1 : 1006;
+        const nextId = lastJob && lastJob.id ? parseInt(lastJob.id) + 1 : 1011;
         document.getElementById('jobId').value = String(nextId);
         
-        // Initial pending amount setup (should be 0, which triggers green style)
+        // Initial pending amount setup
         document.getElementById('pendingAmountDisplay').value = '0';
         document.getElementById('pendingAmount').value = '0';
 
@@ -235,7 +232,7 @@
         const amountEl = document.getElementById('amount');
         const advanceEl = document.getElementById('advance');
         
-        amountEl.removeEventListener('input', calculatePendingAmount); // Prevent duplicate listeners
+        amountEl.removeEventListener('input', calculatePendingAmount);
         advanceEl.removeEventListener('input', calculatePendingAmount);
         
         amountEl.addEventListener('input', calculatePendingAmount);
@@ -262,7 +259,6 @@
           return;
       }
       
-      // Final calculation before submission
       calculatePendingAmount(); 
 
       const jobId = form.jobId.value;
@@ -277,6 +273,7 @@
         assignedPerson: loggedInUser,
         urgency: form.urgency.value,
         orderDate: form.orderDate.value, 
+        // targetCompletionDate is calculated as orderDate in job-queue.html
         amount: form.amount.value,
         advance: form.advance.value || '0',
         pendingAmount: form.pendingAmount.value, 
@@ -319,7 +316,7 @@
       form.advance.value = '';
       form.urgency.value = 'Normal'; 
       
-      // Re-initialize the page to update the Order ID and Order Date for the NEXT entry
+      // Re-initialize the page 
       initJobEntryPage();
       
       setTimeout(() => {
