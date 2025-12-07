@@ -61,7 +61,8 @@ function getUserCredentials() {
     }
     
     return users.map(user => {
-        if (!user.permissions) {
+        // Ensure permissions object exists and is based on the role template
+        if (!user.permissions || user.role !== 'custom') {
             user.permissions = ACCESS_PERMISSIONS[user.role] || ACCESS_PERMISSIONS.viewer; 
         }
         return user;
@@ -71,6 +72,8 @@ function getUserCredentials() {
 function saveUserCredentials(users) {
     localStorage.setItem(USER_CREDENTIALS_KEY, JSON.stringify(users));
 }
+window.getUserCredentials = getUserCredentials; // Expose for settings page
+window.saveUserCredentials = saveUserCredentials; // Expose for settings page
 
 /* --------------------------------------------------
     GOOGLE SCRIPT CREDENTIAL MANAGEMENT
@@ -108,7 +111,8 @@ function login() {
         localStorage.setItem("loggedIn", "yes");
         localStorage.setItem("username", validUser.name);
         localStorage.setItem("sv_user_role", validUser.role);
-        localStorage.setItem("sv_user_permissions", JSON.stringify(validUser.permissions));
+        // Store the specific, potentially customized, permissions
+        localStorage.setItem("sv_user_permissions", JSON.stringify(validUser.permissions)); 
         
         initManagers();
         
@@ -128,7 +132,7 @@ function logout() {
     // Use relative path for navigation back to index/login
     window.location.href = `${BASE_PATH}/index.html`;
 }
-
+window.logout = logout; // Expose to HTML buttons
 
 /* --------------------------------------------------
     ACCESS CONTROL CHECK
@@ -138,8 +142,10 @@ function checkAccess() {
     const currentPage = window.location.pathname.split('/').pop();
     const userRole = localStorage.getItem("sv_user_role");
     
+    // Admin always has access to all pages
     if (userRole === 'admin') return; 
 
+    // Find the feature key corresponding to the current page
     const currentFeatureKey = Object.keys(ACCESS_PERMISSIONS.features).find(key => 
         ACCESS_PERMISSIONS.features[key].page === currentPage
     );
@@ -170,6 +176,7 @@ function checkAuth() {
     initHeader(); 
     initSidebarVisibility();
 }
+window.checkAuth = checkAuth; // Expose to internal pages
 
 /**
  * Hides sidebar links the user does not have permission to view.
@@ -190,14 +197,9 @@ function initSidebarVisibility() {
             const hasViewPermission = userPermissions[featureKey] && userPermissions[featureKey].includes('view');
 
             if (!hasViewPermission) {
-                // Ensure the link to the Admin Credentials page is hidden for non-admins
-                if (pageName === 'admin-credentials.html' && localStorage.getItem('sv_user_role') !== 'admin') {
-                     link.style.display = 'none';
-                }
-                // For all other pages, use the general permission check
-                else if (pageName !== 'admin-credentials.html') {
-                    link.style.display = 'none';
-                }
+                link.style.display = 'none';
+            } else {
+                link.style.display = ''; // Ensure it's visible if permissions exist
             }
         }
     });
@@ -220,11 +222,18 @@ function initManagers() {
 
     localStorage.setItem(MANAGER_STORAGE_KEY, JSON.stringify(managers));
 }
+window.initManagers = initManagers; // Expose for settings page
 
 function getManagers() {
-    initManagers();
-    return JSON.parse(localStorage.getItem(MANAGER_STORAGE_KEY));
+    // Ensure managers are initialized before retrieving
+    const managers = JSON.parse(localStorage.getItem(MANAGER_STORAGE_KEY));
+    if (!managers) {
+        initManagers();
+        return JSON.parse(localStorage.getItem(MANAGER_STORAGE_KEY));
+    }
+    return managers;
 }
+window.getManagers = getManagers; // Expose for job entry page
 
 function initHeader() {
     const nameEl = document.getElementById("sv_user_name");
@@ -252,7 +261,7 @@ function startLiveClock() {
 
 
 /* --------------------------------------------------
-    DATA READING FUNCTIONS
+    DATA READING FUNCTIONS (from GitHub JSON files)
 -------------------------------------------------- */
 // DATA_HOST_BASE remains the full URL since it fetches external data (JSON from GitHub)
 const DATA_HOST_BASE = "https://raw.githubusercontent.com/nil4567/Siddhivinayak_Digital/main/data";
@@ -290,17 +299,20 @@ window.getAllExpenses = getAllExpenses;
 
 
 /* --------------------------------------------------
-    DATA WRITING FUNCTIONS (Google Script)
+    DATA WRITING FUNCTIONS (Google Script Integration) 💾
 -------------------------------------------------- */
 async function sendDataToScript(type, data) {
     const creds = getAdminCredentials();
     const scriptUrl = creds.url;
     const token = creds.token;
 
+    // Check 1: Ensure credentials are set
     if (!scriptUrl || !token) {
         alert("CRITICAL ERROR: Google Apps Script URL or Token is not configured. Please contact the Admin.");
+        
+        // Redirect if the error occurs on any page other than the credentials page
         if (window.location.pathname.indexOf('admin-credentials.html') === -1) {
-            window.location.href = `${BASE_PATH}/pages/admin-credentials.html`; // Use BASE_PATH
+            window.location.href = `${BASE_PATH}/pages/admin-credentials.html`; 
         }
         return false;
     }
@@ -308,12 +320,13 @@ async function sendDataToScript(type, data) {
     try {
         const response = await fetch(scriptUrl, {
             method: 'POST',
-            mode: 'cors',
+            mode: 'cors', // Essential for Google Apps Script interaction
             headers: {
                 'Content-Type': 'application/json',
+                // Check 2: Include the security token in the header
                 'X-App-Security-Token': token 
             },
-            body: JSON.stringify({ type, data })
+            body: JSON.stringify({ type, data }) // 'type' determines which function runs in the Google Script
         });
 
         if (!response.ok) {
@@ -339,17 +352,19 @@ async function sendDataToScript(type, data) {
 async function saveJobToScript(newJob) { return sendDataToScript('new_job', newJob); }
 async function saveExpenseToScript(newExpense) { return sendDataToScript('new_expense', newExpense); }
 
-window.saveJobToScript = saveJobToScript;
-window.saveExpenseToScript = saveExpenseToScript;
+window.saveJobToScript = saveJobToScript; // Expose for job entry page
+window.saveExpenseToScript = saveExpenseToScript; // Expose for expense entry page
 
 
 /* --------------------------------------------------
     AUTO INIT
 -------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", function () {
+    // Ensure initial credentials and manager list are set up
     getUserCredentials(); 
     initManagers(); 
 
+    // Handle login form submission on index.html
     const loginForm = document.getElementById("loginForm");
     if (loginForm) {
         loginForm.addEventListener("submit", function (e) {
@@ -358,11 +373,12 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
     
+    // Run authentication and initialization for all internal pages
     const currentPage = window.location.pathname.split('/').pop();
     if (currentPage !== 'index.html' && currentPage !== 'login.html') {
         checkAuth(); 
     } else {
-        initHeader();
+        initHeader(); // Only set header if on index/login page
     }
     
     startLiveClock();
