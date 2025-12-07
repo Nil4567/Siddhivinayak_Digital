@@ -6,10 +6,10 @@
 const HARDCODED_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVcME3Xb95pDU8faZ1HhGGB1k5hYiBhSlx6GPFUcE2CbCtzO5_9Y3KLv12aoFF70M8sQ/exec"; 
 const HARDCODED_SECURITY_TOKEN = "Siddhivi!n@yakD1gital-T0ken-987"; 
 
-// --- Fallback Admin Credentials (New Addition for initial access) ---
-// Used only if the application cannot fetch the user list OR if the fetched list is empty.
-const FALLBACK_USERNAME = 'admin';
-const FALLBACK_PASSWORD = 'admin123';
+// --- SUPER ADMIN CREDENTIALS (NEW CONCEPT) ---
+// This is a permanent, hardcoded bypass for emergency access and setup.
+const SUPER_ADMIN_USERNAME = 'superadmin'; // Change this to your desired super admin name
+const SUPER_ADMIN_PASSWORD = 'superadminpass'; // Change this to a very strong password
 // -------------------------------------------------------------------
 
 // --------------------------------------------------
@@ -97,6 +97,7 @@ async function fetchSheetData(dataType) {
 
     } catch (error) {
         console.error("Fetch API (GET) error:", error);
+        // Return null on catastrophic failure (e.g., network error)
         return null;
     }
 }
@@ -107,44 +108,47 @@ async function fetchSheetData(dataType) {
 
 /**
  * Helper function to store session data.
+ * The isSuperAdmin flag is new and important for bypassing restrictions later.
  */
-function completeLogin(username, isManager) {
-    // Generate a simple token (e.g., base64 encoding username + timestamp)
+function completeLogin(username, isManager, isSuperAdmin = false) {
+    // Generate a simple token 
     const token = btoa(`${username}:${Date.now()}`); 
     localStorage.setItem('sv_user_token', token);
     localStorage.setItem('sv_user_name', username);
     localStorage.setItem('sv_is_manager', isManager ? 'true' : 'false');
+    // Store the Super Admin status
+    localStorage.setItem('sv_is_superadmin', isSuperAdmin ? 'true' : 'false'); 
     window.location.href = './dashboard.html';
 }
 
 /**
- * The core login logic with the new Fallback Admin check.
+ * The core login logic with the new Super Admin check as the highest priority.
  */
 async function handleLogin(username, password) {
-    // 1. Attempt to fetch credentials from the Google Sheet
-    const usersList = await fetchSheetData('USER_CREDENTIALS');
-    
-    // Check if the input matches the Fallback Admin credentials first
-    if (username === FALLBACK_USERNAME && password === FALLBACK_PASSWORD) {
-         // This check runs regardless of the sheet state
-         console.warn("Using fallback admin credentials.");
-         completeLogin(username, true); 
+    // 1. SUPER ADMIN BYPASS CHECK (Highest Priority)
+    if (username === SUPER_ADMIN_USERNAME && password === SUPER_ADMIN_PASSWORD) {
+         console.warn("Super Admin bypass engaged.");
+         // Super Admin is always a Manager
+         completeLogin(username, true, true); 
          return; // Exit successfully
     }
-
-    // 2. If it's NOT the fallback admin, we MUST rely on the sheet data.
+    
+    // 2. STANDARD CHECK: Attempt to fetch credentials from the Google Sheet
+    const usersList = await fetchSheetData('USER_CREDENTIALS');
+    
     if (usersList && usersList.length > 0) {
+        // If data was fetched and is NOT empty, use the Sheet data
         const match = usersList.find(row => row[0] === username && row[1] === password);
         
         if (match) {
             // Success: Found user in the Sheet
             const isManager = match[2] === 'Yes'; 
-            completeLogin(username, isManager);
+            completeLogin(username, isManager, false);
             return; // Exit successfully
         }
     }
-    
-    // Login Failed
+
+    // 3. LOGIN FAILED (Either credentials don't match or sheet access failed)
     throw new Error("Invalid username or password.");
 }
 
@@ -174,7 +178,7 @@ function logout() {
 }
 
 // --------------------------------------------------
-// --- GLOBAL EXPORTS (CRITICAL FIX FOR TYPEERRORS) ---
+// --- GLOBAL EXPORTS ---
 // --------------------------------------------------
 
 window.sendDataToScript = sendDataToScript;
