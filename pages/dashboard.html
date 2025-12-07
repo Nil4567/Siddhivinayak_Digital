@@ -5,22 +5,8 @@
   <title>Dashboard — Siddhivinayak Digital</title>
   <link rel="stylesheet" href="../styles/internal.css">
   <style>
-    /* Styling for Topbar User Display */
-    .user-display {
-        background: #e9f2ff; 
-        color: #0b2540;
-        padding: 5px 10px;
-        border-radius: 8px;
-        font-size: 13px;
-        font-weight: 600;
-        margin-right: 15px;
-        border: 1px solid rgba(15,111,255,0.1);
-    }
-    .user-display span {
-        font-weight: 800;
-        color: var(--primary);
-    }
-    /* Add specific dashboard CSS styles here */
+    /* Dashboard specific styling is mostly covered in internal.css, 
+       but you can add more here if needed. */
   </style>
 </head>
 <body>
@@ -96,10 +82,11 @@
 
   <script src="../script.js"></script>
   <script>
-    // Constants and functions expected from script.js
+    // Functions are assumed to be available from script.js
     const ACCESS_PERMISSIONS = window.ACCESS_PERMISSIONS || {}; 
+    const USER_ROLE = localStorage.getItem("sv_user_role");
     
-    // --- Dashboard Specific Functions (You might already have these) ---
+    // --- Dashboard Specific Functions ---
     function getStatusClass(status) {
         if (status === 'Pending') return 'status-pending';
         if (status === 'Completed') return 'status-completed';
@@ -108,8 +95,8 @@
     }
 
     function renderDashboard() {
-        // Fetch all jobs (assumes sv_jobs is available in localStorage)
         const allJobs = JSON.parse(localStorage.getItem('sv_jobs') || '[]');
+        const allExpenses = JSON.parse(localStorage.getItem('sv_expenses') || '[]');
         const today = new Date().toISOString().slice(0, 10);
         
         // --- Stats Calculation ---
@@ -118,9 +105,7 @@
             const pending = parseFloat(job.pendingAmount) || 0;
             const isToday = jobDate === today;
 
-            if (isToday) {
-                acc.todayJobs += 1;
-            }
+            if (isToday) { acc.todayJobs += 1; }
             if (job.status === 'Pending') {
                 acc.pendingJobs += 1;
                 acc.dueAmount += pending;
@@ -128,13 +113,15 @@
             return acc;
         }, { todayJobs: 0, pendingJobs: 0, dueAmount: 0 });
 
+        const todayExpenseTotal = allExpenses
+            .filter(e => e.date === today)
+            .reduce((sum, e) => sum + parseFloat(e.amount), 0);
+
         // --- Render Stats ---
         document.getElementById('statTodayJobs').textContent = stats.todayJobs;
         document.getElementById('statPendingJobs').textContent = stats.pendingJobs;
         document.getElementById('statDueAmount').textContent = `₹ ${stats.dueAmount.toFixed(0)}`;
-        
-        // Placeholder for Expenses (requires fetching expenses data if implemented)
-        document.getElementById('statExpenses').textContent = '₹ 0'; 
+        document.getElementById('statExpenses').textContent = `₹ ${todayExpenseTotal.toFixed(0)}`; 
 
         // --- Render Latest Jobs ---
         const latestJobs = allJobs.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
@@ -158,34 +145,23 @@
         });
     }
     
-    // --- Initialization and Role-Based Access Filter (START) ---
+    // --- Initialization and Role-Based Access Filter ---
     document.addEventListener("DOMContentLoaded", function() {
-        // 1. Run the primary authentication check (includes initHeader and checkAccess)
-        if (typeof checkAuth === 'function') {
-            checkAuth(); 
-        } else {
-            console.error("checkAuth() function not found. Ensure script.js is loaded.");
-            return; // Stop if auth cannot be verified
-        }
+        checkAuth(); // 1. Run Auth & Access Check
         
-        // 2. Access Control Navigation Filter
-        const userRole = localStorage.getItem("sv_user_role");
-        const allowedPages = ACCESS_PERMISSIONS[userRole] || [];
+        // 2. Run dashboard rendering function
+        renderDashboard();
         
+        // 3. Hide sidebar links based on role access
+        const allowedPages = ACCESS_PERMISSIONS[USER_ROLE] || [];
         document.querySelectorAll('.sidebar .nav-link').forEach(link => {
             const href = link.getAttribute('href');
             const pageName = href ? href.split('/').pop() : '';
-            
-            // Hide the link if the current role doesn't have permission
             if (pageName && !allowedPages.includes(pageName)) {
                 link.style.display = 'none';
             }
         });
-        
-        // 3. Run dashboard rendering function
-        renderDashboard();
     });
-    // --- Initialization and Role-Based Access Filter (END) ---
   </script>
 </body>
 </html>
