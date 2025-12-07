@@ -1,35 +1,191 @@
-<script src="../script.js"></script>
-  <script>
-    // 1. Authentication Check (from script.js)
-    checkAuth(); // This now calls checkAccess() and initHeader()
-    
-    // ... existing dashboard helper functions (loadLocalJobs, getStatusClass, etc.) ...
-    
-    // ... existing renderDashboard() function ...
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Dashboard — Siddhivinayak Digital</title>
+  <link rel="stylesheet" href="../styles/internal.css">
+  <style>
+    /* Styling for Topbar User Display */
+    .user-display {
+        background: #e9f2ff; 
+        color: #0b2540;
+        padding: 5px 10px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-right: 15px;
+        border: 1px solid rgba(15,111,255,0.1);
+    }
+    .user-display span {
+        font-weight: 800;
+        color: var(--primary);
+    }
+    /* Add specific dashboard CSS styles here */
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">Siddhivinayak Digital</div>
+    <div class="controls">
+        <button class="btn secondary" onclick="history.back()">Back</button>
+        <a href="../index.html" class="btn secondary">Home</a>
+        <div class="user-display">Logged in as: <span id="sv_user_name"></span></div>
+        <span id="liveTime"></span>
+        <button class="btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
 
-    // Initialize the dashboard
-    document.addEventListener("DOMContentLoaded", function() {
-        renderDashboard();
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand-small">Control Panel</div>
+      <a href="dashboard.html" class="nav-link active">Dashboard</a>
+      <a href="job-entry.html" class="nav-link">New Job Entry</a>
+      <a href="job-queue.html" class="nav-link">Job Queue</a>
+      <a href="customers.html" class="nav-link">Customers</a>
+      <a href="expenses.html" class="nav-link">Daily Expenses</a>
+      <a href="reports.html" class="nav-link">Reports</a>
+      <a href="settings.html" class="nav-link">Settings</a>
+    </aside>
+
+    <main class="main">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Dashboard Overview</div>
+          <div class="page-sub">Quick view of shop performance and pending tasks.</div>
+        </div>
+      </div>
+
+      <div class="grid-4">
+        <div class="card stat-card primary">
+          <h4>Total Jobs Today</h4>
+          <p id="statTodayJobs">0</p>
+        </div>
+        <div class="card stat-card accent">
+          <h4>Pending Jobs</h4>
+          <p id="statPendingJobs">0</p>
+        </div>
+        <div class="card stat-card danger">
+          <h4>Total Due Amount (₹)</h4>
+          <p id="statDueAmount">₹ 0</p>
+        </div>
+        <div class="card stat-card info">
+          <h4>Today's Expenses (₹)</h4>
+          <p id="statExpenses">₹ 0</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 20px;">
+        <h3>Latest 5 Job Entries</h3>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Customer</th>
+              <th>Amount (₹)</th>
+              <th>Assigned</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="latestJobsTableBody">
+            <tr><td colspan="5" style="text-align: center;">Loading data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <script src="../script.js"></script>
+  <script>
+    // Constants and functions expected from script.js
+    const ACCESS_PERMISSIONS = window.ACCESS_PERMISSIONS || {}; 
+    
+    // --- Dashboard Specific Functions (You might already have these) ---
+    function getStatusClass(status) {
+        if (status === 'Pending') return 'status-pending';
+        if (status === 'Completed') return 'status-completed';
+        if (status === 'Cancelled') return 'status-cancelled';
+        return 'status-default';
+    }
+
+    function renderDashboard() {
+        // Fetch all jobs (assumes sv_jobs is available in localStorage)
+        const allJobs = JSON.parse(localStorage.getItem('sv_jobs') || '[]');
+        const today = new Date().toISOString().slice(0, 10);
         
-        // --- Access Control Navigation Filter (START) ---
+        // --- Stats Calculation ---
+        const stats = allJobs.reduce((acc, job) => {
+            const jobDate = job.orderDate;
+            const pending = parseFloat(job.pendingAmount) || 0;
+            const isToday = jobDate === today;
+
+            if (isToday) {
+                acc.todayJobs += 1;
+            }
+            if (job.status === 'Pending') {
+                acc.pendingJobs += 1;
+                acc.dueAmount += pending;
+            }
+            return acc;
+        }, { todayJobs: 0, pendingJobs: 0, dueAmount: 0 });
+
+        // --- Render Stats ---
+        document.getElementById('statTodayJobs').textContent = stats.todayJobs;
+        document.getElementById('statPendingJobs').textContent = stats.pendingJobs;
+        document.getElementById('statDueAmount').textContent = `₹ ${stats.dueAmount.toFixed(0)}`;
+        
+        // Placeholder for Expenses (requires fetching expenses data if implemented)
+        document.getElementById('statExpenses').textContent = '₹ 0'; 
+
+        // --- Render Latest Jobs ---
+        const latestJobs = allJobs.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
+        const tableBody = document.getElementById('latestJobsTableBody');
+        tableBody.innerHTML = '';
+
+        if (latestJobs.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No jobs entered yet.</td></tr>';
+            return;
+        }
+
+        latestJobs.forEach(job => {
+            const row = tableBody.insertRow();
+            row.innerHTML = `
+                <td>${job.id}</td>
+                <td>${job.customer}</td>
+                <td>₹ ${job.amount}</td>
+                <td>${job.assignedPerson || 'N/A'}</td>
+                <td><span class="status-badge ${getStatusClass(job.status)}">${job.status}</span></td>
+            `;
+        });
+    }
+    
+    // --- Initialization and Role-Based Access Filter (START) ---
+    document.addEventListener("DOMContentLoaded", function() {
+        // 1. Run the primary authentication check (includes initHeader and checkAccess)
+        if (typeof checkAuth === 'function') {
+            checkAuth(); 
+        } else {
+            console.error("checkAuth() function not found. Ensure script.js is loaded.");
+            return; // Stop if auth cannot be verified
+        }
+        
+        // 2. Access Control Navigation Filter
         const userRole = localStorage.getItem("sv_user_role");
         const allowedPages = ACCESS_PERMISSIONS[userRole] || [];
         
-        const navLinks = document.querySelectorAll('.sidebar .nav-link');
-        
-        navLinks.forEach(link => {
+        document.querySelectorAll('.sidebar .nav-link').forEach(link => {
             const href = link.getAttribute('href');
-            if (href) {
-                const pageName = href.split('/').pop();
-                
-                // Hide the link if the current role doesn't have permission
-                if (!allowedPages.includes(pageName)) {
-                    link.style.display = 'none';
-                }
+            const pageName = href ? href.split('/').pop() : '';
+            
+            // Hide the link if the current role doesn't have permission
+            if (pageName && !allowedPages.includes(pageName)) {
+                link.style.display = 'none';
             }
         });
-        // --- Access Control Navigation Filter (END) ---
+        
+        // 3. Run dashboard rendering function
+        renderDashboard();
     });
-
-</script>
+    // --- Initialization and Role-Based Access Filter (END) ---
+  </script>
+</body>
 </html>
