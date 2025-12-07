@@ -2,8 +2,10 @@
 
 /* --------------------------------------------------
     BASE URL FOR REDIRECTION
+    (Used for internal redirects like logout and checkAuth)
 -------------------------------------------------- */
-const BASE = "https://nil4567.github.io/Siddhivinayak_Digital";
+// Use the root directory path for reliable redirection from any page
+const BASE_PATH = "/Siddhivinayak_Digital"; 
 
 /* --------------------------------------------------
     LOCAL STORAGE KEYS
@@ -111,7 +113,8 @@ function login() {
         
         initManagers();
         
-        window.location.href = `${BASE}/pages/dashboard.html`;
+        // Use relative path for internal navigation
+        window.location.href = `${BASE_PATH}/pages/dashboard.html`;
     } else {
         errEl.textContent = "Invalid username or password! Access Denied.";
         errEl.style.display = "block";
@@ -123,12 +126,13 @@ function logout() {
     localStorage.removeItem("username");
     localStorage.removeItem("sv_user_role");
     localStorage.removeItem("sv_user_permissions"); 
-    window.location.href = `${BASE}/index.html`;
+    // Use relative path for navigation back to index/login
+    window.location.href = `${BASE_PATH}/index.html`;
 }
 
 
 /* --------------------------------------------------
-    ACCESS CONTROL CHECK 🛑 (Added null checks for robustness)
+    ACCESS CONTROL CHECK
 -------------------------------------------------- */
 function checkAccess() {
     const userPermissions = JSON.parse(localStorage.getItem("sv_user_permissions") || "{}");
@@ -148,23 +152,23 @@ function checkAccess() {
         
         if (currentPage !== 'dashboard.html') {
              alert("Access Denied: You do not have permission to view this page.");
-             window.location.href = `${BASE}/pages/dashboard.html`;
+             // Use relative path for redirection
+             window.location.href = `${BASE_PATH}/pages/dashboard.html`;
         }
     }
 }
 
 function checkAuth() {
+    // CRITICAL FIX: Ensure user is logged in first.
     if (localStorage.getItem("loggedIn") !== "yes") {
-        window.location.href = `${BASE}/index.html`;
+        // Use relative path for redirection
+        window.location.href = `${BASE_PATH}/index.html`; 
+        return; // Stop execution if redirecting
     }
     
-    // 1. Run Access Check
+    // If logged in, proceed with initialization
     checkAccess();
-    
-    // 2. Initialize Header (added null checks)
     initHeader(); 
-
-    // 3. Initialize Sidebar Hiding
     initSidebarVisibility();
 }
 
@@ -183,7 +187,6 @@ function initSidebarVisibility() {
             features[key].page === pageName
         );
 
-        // Crucial null check: If the feature key is found, then check permissions
         if (featureKey) {
             const hasViewPermission = userPermissions[featureKey] && userPermissions[featureKey].includes('view');
 
@@ -196,7 +199,7 @@ function initSidebarVisibility() {
 
 
 /* --------------------------------------------------
-    HEADER & MANAGER UTILITIES (Added null checks)
+    HEADER & MANAGER UTILITIES
 -------------------------------------------------- */
 function initManagers() {
     const users = getUserCredentials(); 
@@ -245,6 +248,7 @@ function startLiveClock() {
 /* --------------------------------------------------
     DATA READING FUNCTIONS
 -------------------------------------------------- */
+// DATA_HOST_BASE remains the full URL since it fetches external data (JSON from GitHub)
 const DATA_HOST_BASE = "https://raw.githubusercontent.com/nil4567/Siddhivinayak_Digital/main/data";
 const DATA_JOB_FILE = 'jobs.json';
 const DATA_EXPENSE_FILE = 'expenses.json';
@@ -289,9 +293,8 @@ async function sendDataToScript(type, data) {
 
     if (!scriptUrl || !token) {
         alert("CRITICAL ERROR: Google Apps Script URL or Token is not configured. Please contact the Admin.");
-        // Only redirect if we are NOT on the credentials page, to avoid loop
         if (window.location.pathname.indexOf('admin-credentials.html') === -1) {
-            window.location.href = `${BASE}/pages/admin-credentials.html`;
+            window.location.href = `${BASE_PATH}/pages/admin-credentials.html`; // Use BASE_PATH
         }
         return false;
     }
@@ -335,14 +338,12 @@ window.saveExpenseToScript = saveExpenseToScript;
 
 
 /* --------------------------------------------------
-    AUTO INIT (CRITICAL FIXES HERE)
+    AUTO INIT
 -------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", function () {
-    // These functions ensure data is prepared, they are safe to run early.
     getUserCredentials(); 
     initManagers(); 
 
-    // Find the login form if it exists (only on login.html)
     const loginForm = document.getElementById("loginForm");
     if (loginForm) {
         loginForm.addEventListener("submit", function (e) {
@@ -351,13 +352,10 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
     
-    // Only run checkAuth on internal pages, which will call initHeader and initSidebarVisibility
     const currentPage = window.location.pathname.split('/').pop();
     if (currentPage !== 'index.html' && currentPage !== 'login.html') {
-        // This is the gatekeeper for all internal pages
         checkAuth(); 
     } else {
-        // Run header and clock even if not authenticated (e.g., on index page)
         initHeader();
     }
     
