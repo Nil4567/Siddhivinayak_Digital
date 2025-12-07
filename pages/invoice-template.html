@@ -8,77 +8,138 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <style>
-        body { background: #f4f7f9; }
+        /* FIX 3: ENHANCED STYLING FOR ATTRACTIVE INVOICE */
+        body { background: var(--bg); }
         .invoice-container {
-            max-width: 800px;
+            max-width: 700px;
             margin: 30px auto;
             background: #fff;
             padding: 40px;
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            position: relative;
         }
         .invoice-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 20px;
-            margin-bottom: 20px;
+            border-bottom: 3px solid var(--primary); /* Strong primary line */
+            padding-bottom: 15px;
+            margin-bottom: 25px;
         }
         .invoice-header h1 {
-            color: var(--primary);
-            font-size: 32px;
+            color: #333;
+            font-size: 36px;
             margin: 0;
         }
         .shop-details p {
             margin: 2px 0;
             font-size: 14px;
+            color: var(--muted);
         }
+        .shop-details strong {
+            color: var(--primary);
+        }
+
+        .job-info h4 {
+            margin: 5px 0;
+            font-size: 15px;
+            font-weight: 400;
+            color: #333;
+        }
+        .job-info span {
+            font-weight: 700;
+            color: var(--primary);
+        }
+
         .customer-details {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
+            margin-bottom: 30px;
+            padding: 10px 0;
         }
         .customer-details div {
             flex-basis: 48%;
+            padding: 10px;
+            border-left: 4px solid var(--primary);
         }
         .customer-details h4 {
             margin: 0 0 5px 0;
             font-size: 16px;
             color: var(--muted);
         }
+        .customer-details p {
+            margin: 2px 0;
+        }
+        
+        /* Item Details Table */
         .invoice-details table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .invoice-details thead {
+            background-color: var(--primary);
+            color: #fff;
         }
         .invoice-details th, .invoice-details td {
-            border: 1px solid #ddd;
-            padding: 10px;
+            padding: 12px;
             text-align: left;
+            border: 1px solid #eee;
         }
-        .invoice-details th {
-            background-color: #f7f7f7;
+        .invoice-details td {
             font-size: 14px;
+            color: #444;
+            vertical-align: top;
         }
-        .summary-row td {
-            font-weight: 700;
+        .invoice-details th:nth-child(3), .invoice-details td:nth-child(3) {
+            text-align: right;
+            width: 20%;
         }
-        .total-amount {
+
+        /* Summary Area (Receipt style) */
+        .summary-wrapper {
+            float: right;
+            width: 100%;
+            max-width: 300px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 15px;
+            font-size: 15px;
+        }
+        .summary-row.total {
+            background: var(--primary);
+            color: white;
             font-size: 18px;
-            color: #d84315;
             font-weight: 800;
         }
+        .summary-row.advance {
+            background: #eef3ff;
+            color: var(--primary);
+            font-weight: 700;
+        }
+        .summary-row.balance {
+            background: #ffebee;
+            color: #d84315;
+            font-weight: 800;
+            border-top: 2px solid #ffcdd2;
+        }
+
+        /* Footer */
         .signature-area {
             text-align: right;
-            margin-top: 50px;
+            margin-top: 150px; /* Space for the float */
             padding-top: 15px;
             border-top: 1px dashed #ccc;
+            clear: both;
         }
         
-        /* Utility bar for print/share actions (Hidden in the final JPEG) */
+        /* Utility bar for print/share actions */
         .utility-bar {
             text-align: center;
             margin-bottom: 20px;
@@ -90,10 +151,10 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) rotate(-45deg);
-            font-size: 70px;
+            font-size: 80px;
             font-weight: 900;
-            color: rgba(255, 0, 0, 0.1); /* Very light red */
-            pointer-events: none; /* Allows clicks to pass through */
+            color: rgba(255, 0, 0, 0.1); 
+            pointer-events: none; 
             z-index: 10;
         }
     </style>
@@ -107,27 +168,29 @@
     <div class="invoice-container" id="invoiceContent">
         <div id="invoiceDraftWatermark">DRAFT</div> <div class="invoice-header">
             <div class="shop-details">
-                <h1>INVOICE</h1>
+                <h1 style="color:var(--primary);">INVOICE</h1>
                 <p><strong>Siddhivinayak Digital</strong></p>
                 <p>Printing, Xerox, & Design Services</p>
                 <p>Contact: [Your Shop Number]</p>
             </div>
             <div class="job-info">
                 <h4>Invoice Date: <span id="invoiceDate"></span></h4>
-                <h4>Job ID: <span id="jobId"></span></h4>
+                <h4>Job ID: **#<span id="jobId"></span>**</h4>
             </div>
         </div>
 
         <div class="customer-details">
             <div>
                 <h4>Billed To:</h4>
-                <p id="customerName"></p>
+                <p><strong><span id="customerName"></span></strong></p>
                 <p id="customerContact"></p>
                 <p id="customerEmail"></p>
             </div>
             <div>
                 <h4>Managed By:</h4>
-                <p id="assignedPerson"></p>
+                <p><strong><span id="assignedPerson"></span></strong></p>
+                <p>Order Date: <span id="orderDate"></span></p>
+                <p>Urgency: <span id="urgency"></span></p>
             </div>
         </div>
 
@@ -144,41 +207,50 @@
                     <tr>
                         <td>1</td>
                         <td>
-                            <span id="jobDescription"></span>
-                            <br><small style="color:var(--muted)">Order Date: <span id="orderDate"></span> | Urgency: <span id="urgency"></span></small>
+                            <span id="jobDescription" style="font-weight: 700;"></span>
                         </td>
                         <td style="text-align: right;"><span id="jobAmount"></span></td>
-                    </tr>
-                    <tr class="summary-row" style="background: #f7f7f7;">
-                        <td colspan="2" style="text-align: right; font-weight: bold;">Subtotal</td>
-                        <td style="text-align: right;">₹ <span id="subtotal"></span></td>
-                    </tr>
-                    <tr class="summary-row">
-                        <td colspan="2" style="text-align: right; font-weight: bold; color: var(--primary);">Advance Paid</td>
-                        <td style="text-align: right; color: var(--primary);">₹ <span id="advancePaid"></span></td>
-                    </tr>
-                    <tr class="summary-row" style="background: #fff3e0;">
-                        <td colspan="2" style="text-align: right; font-weight: bold; color: #d84315;">BALANCE DUE</td>
-                        <td style="text-align: right;" class="total-amount">₹ <span id="balanceDue"></span></td>
                     </tr>
                 </tbody>
             </table>
         </div>
         
+        <div class="summary-wrapper">
+            <div class="summary-row">
+                <span class="label">Subtotal</span>
+                <span class="value">₹ <span id="subtotal"></span></span>
+            </div>
+            <div class="summary-row advance">
+                <span class="label">Advance Paid</span>
+                <span class="value">₹ <span id="advancePaid"></span></span>
+            </div>
+            <div class="summary-row balance">
+                <span class="label">BALANCE DUE</span>
+                <span class="value">₹ <span id="balanceDue"></span></span>
+            </div>
+        </div>
+        
         <div class="signature-area">
             <p style="font-style: italic; font-size: 12px; margin-bottom: 5px;">Thank you for your business!</p>
-            <p>_________________________</p>
+            <p style="font-weight: 700;">_________________________</p>
             <p>Signature (Manager)</p>
         </div>
     </div>
 
     <script src="../script.js"></script>
     <script>
-        // Placeholder function for client-side image generation
+        
+        // FIX 1: Helper function to safely extract number from a string (handles currency symbols, etc.)
+        function cleanAndParseAmount(amountStr) {
+            if (!amountStr) return 0;
+            // Remove common currency symbols (₹, $, etc.) and commas, then parse
+            const cleaned = String(amountStr).replace(/[₹$,]/g, '').trim();
+            return parseFloat(cleaned) || 0;
+        }
+
         function shareAsJpeg() {
-            // Check if html2canvas is available (it should be now, thanks to the script link above)
             if (typeof html2canvas === 'undefined') {
-                alert("Image conversion failed. The html2canvas script could not be loaded.");
+                alert("Image conversion is currently disabled. The 'html2canvas' script library failed to load.");
                 return;
             }
 
@@ -186,34 +258,37 @@
             const utilityBar = document.querySelector('.utility-bar');
             const watermark = document.getElementById('invoiceDraftWatermark');
 
-            // Temporarily hide the utility bar and display the watermark clearly for the screenshot
+            // Temporarily hide the utility bar and adjust watermark for screenshot
             utilityBar.style.display = 'none';
-            watermark.style.color = 'rgba(255, 0, 0, 0.15)'; // Make watermark a bit clearer for the image
+            watermark.style.color = 'rgba(255, 0, 0, 0.15)'; 
 
             // Use html2canvas to capture the content
             html2canvas(element, { 
-                scale: 2, // Use a higher scale for better quality
-                allowTaint: true 
+                scale: 2, // Higher scale for better quality JPEG
+                allowTaint: true,
+                useCORS: true // Allow cross-origin images if any are present
             }).then(canvas => {
                 // Restore the hidden elements immediately
                 utilityBar.style.display = 'block';
-                watermark.style.color = 'rgba(255, 0, 0, 0.1)'; // Restore original transparency
+                watermark.style.color = 'rgba(255, 0, 0, 0.1)'; 
 
                 // Convert canvas to base64 JPEG
                 const image = canvas.toDataURL('image/jpeg', 0.9);
                 
-                // Create a download link
+                // Trigger download
                 const link = document.createElement('a');
                 link.href = image;
                 link.download = `Invoice_Job_${document.getElementById('jobId').textContent}.jpg`;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
+            }).catch(error => {
+                console.error('Error generating image:', error);
+                alert('An error occurred during image generation.');
             });
         }
         
         function loadInvoiceData() {
-            // 1. Get Job ID from URL parameters
             const params = new URLSearchParams(window.location.search);
             const jobId = params.get('jobId');
 
@@ -222,7 +297,6 @@
                 return;
             }
 
-            // 2. Load Job Data from Local Storage
             const allJobs = JSON.parse(localStorage.getItem('sv_jobs') || '[]');
             const job = allJobs.find(j => j.id === jobId);
 
@@ -237,8 +311,8 @@
             
             // Customer Details
             document.getElementById('customerName').textContent = job.customer;
-            document.getElementById('customerContact').textContent = `Ph: ${job.contact}`;
-            document.getElementById('customerEmail').textContent = `Email: ${job.customerEmail}`;
+            document.getElementById('customerContact').textContent = `Ph: ${job.contact || 'N/A'}`;
+            document.getElementById('customerEmail').textContent = `Email: ${job.customerEmail || 'N/A'}`;
             
             // Job Details
             document.getElementById('assignedPerson').textContent = job.assignedPerson;
@@ -246,9 +320,23 @@
             document.getElementById('orderDate').textContent = job.orderDate;
             document.getElementById('urgency').textContent = job.urgency;
             
-            // Financials
-            const amount = parseFloat(job.amount) || 0;
-            const advance = parseFloat(job.advance) || 0;
-            const balance = parseFloat(job.pendingAmount) || 0;
+            // FIX 1: Safely parse and calculate financials
+            const amount = cleanAndParseAmount(job.amount);
+            const advance = cleanAndParseAmount(job.advance);
+            const balance = cleanAndParseAmount(job.pendingAmount);
+            
+            // It's safer to re-calculate the balance to ensure consistency, but we'll use the stored pending amount if it seems right.
+            const calculatedBalance = Math.max(0, amount - advance); 
 
+            // Display values
             document.getElementById('jobAmount').textContent = amount.toFixed(0);
+            document.getElementById('subtotal').textContent = amount.toFixed(0);
+            document.getElementById('advancePaid').textContent = advance.toFixed(0);
+            document.getElementById('balanceDue').textContent = balance.toFixed(0); // Use stored pending amount
+        }
+
+        document.addEventListener("DOMContentLoaded", loadInvoiceData);
+        
+    </script>
+</body>
+</html>
