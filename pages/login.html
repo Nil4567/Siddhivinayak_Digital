@@ -1,67 +1,31 @@
-<form id="login-form" class="space-y-6">
-  <div>
-    <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
-    <input
-      id="username"
-      type="text"
-      required
-      class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm sm:text-sm"
-      placeholder="e.g., superadmin"
-    >
-  </div>
-
-  <div>
-    <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-    <input
-      id="password"
-      type="password"
-      required
-      class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm sm:text-sm"
-      placeholder="Enter your password"
-    >
-  </div>
-  
-  <div id="login-error-message" class="text-red-600 text-sm mt-4 p-3 bg-red-50 rounded-md border border-red-200" style="display: none;">
-    Invalid username or password.
-  </div>
-
-  <div class="flex justify-center">
-    <button type="submit" id="login-button" 
-      class="w-full inline-flex justify-center items-center px-6 py-3 text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500 rounded-md shadow-sm"
-    >
-      Log In
-    </button>
-  </div>
-</form>
-
 <script src="../script.js"></script>
 
 <script>
+    // CRITICAL: Check if handleLogin is loaded before trying to use it
+    if (typeof handleLogin !== 'function') {
+        console.error("CRITICAL ERROR: handleLogin function not found. Check if script.js is loaded correctly.");
+    }
+    
     document.getElementById('login-form').addEventListener('submit', async (e) => {
-        e.preventDefault(); // Stop the default form submission
+        e.preventDefault();
         
-        const usernameInput = document.getElementById('username');
-        const passwordInput = document.getElementById('password');
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
         const errorMessage = document.getElementById('login-error-message');
         const loginButton = document.getElementById('login-button');
         
-        const username = usernameInput.value;
-        const password = passwordInput.value;
-        
-        // Hide previous error
         errorMessage.style.display = 'none';
         loginButton.textContent = 'Logging in...';
         loginButton.disabled = true;
 
         try {
-            // Call the globally available handleLogin function from script.js
-            // This function contains the Super Admin bypass logic
+            // This calls the Super Admin bypass logic
             await handleLogin(username, password);
             
-            // Success: handleLogin redirects on success, so no code here runs
+            // On success, handleLogin performs the redirect, so the code ends here.
             
         } catch (error) {
-            // Failure: handleLogin throws an error on failure
+            // On failure
             console.error("Login failed:", error.message);
             errorMessage.textContent = error.message;
             errorMessage.style.display = 'block';
