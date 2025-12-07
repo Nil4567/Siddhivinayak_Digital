@@ -1,14 +1,14 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-15" />
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Siddhivinayak Digital — Home</title>
 
   <link rel="stylesheet" href="style.css" />
 
   <style>
-    /* Big animated title */
+    /* Big animated title - uses specific animation colors */
     .big-title {
       font-size: 56px;
       font-weight: 900;
@@ -20,7 +20,7 @@
     @keyframes hue {
       0%   { color: #ff0000; }
       25%  { color: #ff8c00; }
-      50%  { color: #0073ff; }
+      50%  { color: var(--primary-color, #0073ff); } /* Now uses variable */
       75%  { color: #00a86b; }
       100% { color: #b0009e; }
     }
@@ -28,7 +28,7 @@
     .tagline {
       font-size: 20px;
       text-align:center;
-      color:#444;
+      color: var(--text-color-light, #444); /* Now uses variable */
       margin-bottom: 25px;
     }
 
@@ -43,22 +43,22 @@
     .brochure {
       background:white;
       padding:25px;
-      border-radius:14px;
+      border-radius: var(--border-radius, 14px); /* Now uses variable */
       margin:25px auto;
       max-width:760px;
-      box-shadow:0 8px 20px rgba(0,0,0,0.06);
+      box-shadow: var(--shadow-large, 0 8px 20px rgba(0,0,0,0.06)); /* Now uses variable */
       text-align:left;
     }
     .brochure h3 {
       margin-top:0;
-      color:#003366;
+      color: var(--primary-color, #003366); /* Now uses variable */
       font-size:22px;
       font-weight:700;
     }
     .brochure ul {
       margin-top:12px;
       margin-left:20px;
-      color:#333;
+      color: var(--text-color-dark, #333); /* Now uses variable */
       line-height:1.7;
     }
     .brochure li {
@@ -70,7 +70,7 @@
       display:inline-block;
       margin-top:20px;
       padding:12px 26px;
-      background:#0073ff;
+      background: var(--primary-color, #0073ff); /* Now uses variable */
       color:white;
       border:none;
       border-radius:10px;
@@ -81,7 +81,7 @@
       transition:0.2s;
     }
     .btn-login:hover {
-      background:#005fd6;
+      background: #005fd6;
       transform:scale(1.05);
     }
 
@@ -113,7 +113,6 @@
       </ul>
     </article>
 
-    <!-- Login only -->
     <a class="btn-login" href="pages/login.html">Login to Staff Dashboard</a>
 
     <div class="footer">© 2025 Siddhivinayak Digital. All rights reserved.</div>
