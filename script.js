@@ -1,4 +1,22 @@
+/* --------------------------------------------------
+    INITIAL LOGIN CREDENTIALS 🔒
+-------------------------------------------------- */
+const INITIAL_CREDENTIALS = [
+    { username: "admin", password: "admin123", name: "Admin User", role: "admin", permissions: ACCESS_PERMISSIONS.admin }
+];
 
+/* --------------------------------------------------
+    USER CREDENTIAL MANAGEMENT
+-------------------------------------------------- */
+function getUserCredentials() {
+    let users = JSON.parse(localStorage.getItem(USER_CREDENTIALS_KEY));
+    if (!users || users.length === 0) {
+        users = INITIAL_CREDENTIALS; // <-- Used here if local storage is empty
+        localStorage.setItem(USER_CREDENTIALS_KEY, JSON.stringify(users));
+    }
+    
+    // ... (rest of the function)
+}
  /**
  * Adds a new user to local storage and updates the manager list.
  * @param {object} newUserDetails - Contains username, password, name, and role.
