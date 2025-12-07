@@ -168,3 +168,33 @@ document.addEventListener("DOMContentLoaded", function () {
     
     startLiveClock();
 });
+ /* --------------------------------------------------
+    NEW: SAFE GITHUB EXPENSE DISPATCH
+    This sends the expense to GitHub to be permanently saved.
+-------------------------------------------------- */
+async function saveExpenseToGitHub(newExpense) {
+    // Requires your GITHUB_SITE_KEY to be defined globally (from data/config.js)
+    if (typeof GITHUB_SITE_KEY === "undefined" || !GITHUB_SITE_KEY) {
+        console.error("❌ ERROR: GITHUB_SITE_KEY missing. Cannot dispatch expense.");
+        return false;
+    }
+
+    const dispatchUrl =
+        "https://api.github.com/repos/Nil4567/Siddhivinayak_Digital/dispatches";
+
+    const res = await fetch(dispatchUrl, {
+        method: "POST",
+        headers: {
+            "Accept": "application/vnd.github+json",
+            "Authorization": "Bearer " + GITHUB_SITE_KEY,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            // IMPORTANT: Use a unique event_type so your GitHub Action workflow can distinguish between a new JOB and a new EXPENSE.
+            event_type: "add-expense", 
+            client_payload: { expense: newExpense }
+        })
+    });
+
+    return res.ok;
+}
