@@ -3,16 +3,14 @@
     // 1. Authentication Check (from script.js)
     checkAuth();
     
-    // --- Dashboard Helper Functions (CRITICAL) ---
+    // --- Dashboard Helper Functions (REQUIRED) ---
     
-    // Loads all jobs stored in the browser's local storage
     function loadLocalJobs() {
       // Assumes job data is stored under the key 'sv_jobs'
       const jobs = JSON.parse(localStorage.getItem('sv_jobs') || '[]');
       return jobs;
     }
 
-    // Helper function to return the correct CSS class for status coloring
     function getStatusClass(status) {
       switch (status) {
         case 'Completed': return 'status-completed';
@@ -52,7 +50,8 @@
         
         const latestJobs = sortedJobs.slice(0, 7);
 
-        // --- Display Counts (FIXED: Now includes null checks to prevent crashes) ---
+        // --- Display Counts (CRASH PREVENTION ADDED) ---
+        // If the element is not found (null), the script skips it instead of crashing.
         let el = document.getElementById('todayJobs');
         if (el) el.textContent = todayJobCount;
 
