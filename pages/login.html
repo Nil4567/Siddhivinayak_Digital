@@ -6,27 +6,21 @@
     <title>Login - Siddhivinayak Digital</title>
     <link rel="stylesheet" href="/Siddhivinayak_Digital/css/styles.css">
 </head>
-
-<body class="login-body">
+<body>
 
     <div class="login-container">
         <h2>Login</h2>
 
         <form id="loginForm">
-            <div class="input-group">
-                <label>Username</label>
-                <input type="text" id="username" required>
-            </div>
-
-            <div class="input-group">
-                <label>Password</label>
-                <input type="password" id="password" required>
-            </div>
-
-            <button type="submit" class="btn-primary">Login</button>
+            <input type="text" id="username" placeholder="Username" required />
+            <input type="password" id="password" placeholder="Password" required />
+            <button type="submit">Login</button>
         </form>
+
     </div>
 
-    <script type="module" src="./login.js"></script>
+    <!-- Correct script path for GitHub Pages -->
+    <script type="module" src="/Siddhivinayak_Digital/pages/login.js"></script>
+
 </body>
 </html>
