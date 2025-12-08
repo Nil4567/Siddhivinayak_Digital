@@ -1,121 +1,79 @@
 /*******************************************************
- * USER MANAGEMENT BACKEND — FIXED
+ * GLOBAL CONFIG
  *******************************************************/
+const HARDCODED_SCRIPT_URL =
+  "https://script.google.com/macros/s/AKfycbzVcME3Xb95pDU8faZ1HhGGB1k5hYiBhSlx6GPFUcE2CbCtzO5_9Y3KLv12aoFF70M8sQ/exec";
 
-// ========================
-// SECURITY TOKEN
-// ========================
-const APP_TOKEN = "Siddhivi!n@yakD1gital-T0ken-987";
+const SECURITY_TOKEN = "SIDDHIVINAYAK123";
 
-// ========================
-// SHEET CONFIG
-// ========================
-const SHEET_USERS = "USER_CREDENTIALS";   // <-- correct sheet name
+/*******************************************************
+ * MASTER SUPERADMIN (bypass sheet)
+ *******************************************************/
+const MASTER_ADMIN = {
+  username: "superadmin",
+  password: "12345",
+  role: "SUPERADMIN",
+  name: "System Super Admin"
+};
 
-function getSheet() {
-  return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_USERS);
-}
+/*******************************************************
+ * LOGIN HANDLER
+ *******************************************************/
+async function handleLogin(username, password) {
+  console.log("Login attempt:", username);
 
-// ========================
-// GET HANDLER (No CORS issues)
-// ========================
-function doGet(e) {
-  return ContentService
-    .createTextOutput(JSON.stringify({
-      result: "success",
-      data: getAllUsers()
-    }))
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeader("Access-Control-Allow-Origin", "*");
-}
+  // 1️⃣ SUPERADMIN MASTER LOGIN (Always allowed)
+  if (
+    username === MASTER_ADMIN.username &&
+    password === MASTER_ADMIN.password
+  ) {
+    console.log("Master SuperAdmin login successful");
 
-// ========================
-// POST HANDLER (form-data only → no preflight)
-// ========================
-function doPost(e) {
-  const token = e.parameter.appToken;
-  const type = e.parameter.dataType;
+    const adminData = {
+      username: MASTER_ADMIN.username,
+      role: MASTER_ADMIN.role,
+      name: MASTER_ADMIN.name
+    };
 
-  if (token !== APP_TOKEN) {
-    return corsError("Invalid security token");
+    completeLogin(adminData);
+    return;
   }
 
-  try {
-    switch (type) {
+  // 2️⃣ Normal users → Fetch from Google Sheet
+  const url =
+    `${HARDCODED_SCRIPT_URL}?type=listUsers&` +
+    `securityToken=${SECURITY_TOKEN}&t=${Date.now()}`;
 
-      case "ADD_USER":
-        return corsSuccess(addUser({
-          username: e.parameter.username,
-          passwordHash: e.parameter.passwordHash,
-          role: e.parameter.role
-        }));
+  const response = await fetch(url);
+  const data = await response.json();
 
-      case "DELETE_USER":
-        return corsSuccess(deleteUser({
-          username: e.parameter.username
-        }));
+  console.log("Sheet user list:", data);
 
-      default:
-        return corsError("Unknown POST type: " + type);
-    }
-
-  } catch (err) {
-    return corsError("POST error: " + err);
-  }
-}
-
-// ========================
-// USER FUNCTIONS
-// ========================
-function getAllUsers() {
-  const sh = getSheet();
-  const last = sh.getLastRow();
-
-  if (last < 2) return [];
-  return sh.getRange(2, 1, last - 1, 3).getValues();
-}
-
-function addUser(obj) {
-  const sh = getSheet();
-  const { username, passwordHash, role } = obj;
-
-  if (!username || !passwordHash) throw "Missing fields";
-
-  const rows = getAllUsers();
-  if (rows.some(r => r[0] === username)) {
-    throw "Username already exists";
+  if (!data || !data.users) {
+    throw new Error("System error: Could not load users.");
   }
 
-  sh.appendRow([username, passwordHash, role]);
-  return "User added.";
+  const users = data.users;
+  const found = users.find(
+    (u) =>
+      u.username.toLowerCase() === username.toLowerCase() &&
+      u.password === password
+  );
+
+  if (!found) {
+    throw new Error("Invalid username or password");
+  }
+
+  // 3️⃣ Normal user login success
+  completeLogin(found);
 }
 
-function deleteUser(obj) {
-  const sh = getSheet();
-  const username = obj.username;
+/*******************************************************
+ * COMPLETE LOGIN
+ *******************************************************/
+function completeLogin(user) {
+  localStorage.setItem("sd_user", JSON.stringify(user));
+  console.log("Login OK:", user);
 
-  const rows = getAllUsers();
-  const index = rows.findIndex(r => r[0] === username);
-
-  if (index === -1) throw "User not found";
-
-  sh.deleteRow(index + 2);
-  return "User deleted.";
-}
-
-// ========================
-// CORS HELPERS
-// ========================
-function corsSuccess(data) {
-  return ContentService
-    .createTextOutput(JSON.stringify({ result: "success", data }))
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeader("Access-Control-Allow-Origin", "*");
-}
-
-function corsError(msg) {
-  return ContentService
-    .createTextOutput(JSON.stringify({ result: "error", error: msg }))
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeader("Access-Control-Allow-Origin", "*");
+  window.location.href = "/Siddhivinayak_Digital/pages/dashboard.html";
 }
