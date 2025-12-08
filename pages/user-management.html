@@ -4,16 +4,24 @@
     <meta charset="UTF-8">
     <title>User Management</title>
     <link rel="stylesheet" href="../css/styles.css">
+
     <style>
-        body { font-family: Arial; margin: 0; background: #f7f7f7; }
+        body { font-family: Arial; margin: 0; background: #f1f3f4; }
         .container { padding: 20px; max-width: 900px; margin: auto; }
 
-        h2 { text-align: center; margin-bottom: 20px; }
+        h2 { text-align: center; margin-bottom: 20px; color: #333; }
 
-        table { width: 100%; border-collapse: collapse; background: white; }
-        th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
+        th { background: #f8f9fa; }
 
-        .btn { padding: 8px 12px; border: none; cursor: pointer; border-radius: 4px; }
+        .btn {
+            padding: 8px 12px;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+        }
         .btn-add { background: #28a745; color: white; }
         .btn-danger { background: #dc3545; color: white; }
 
@@ -25,10 +33,21 @@
             background: rgba(0,0,0,0.5);
             justify-content: center;
             align-items: center;
+            z-index: 1000;
         }
         #modalBox {
-            background: white; padding: 20px; width: 300px;
+            background: white;
+            padding: 20px;
+            width: 320px;
             border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        #modalBox input, #modalBox select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
         }
 
         /* Toast */
@@ -38,9 +57,11 @@
             right: 20px;
             background: #323232;
             color: white;
-            padding: 10px 20px;
+            padding: 12px 20px;
             border-radius: 8px;
             display: none;
+            font-size: 14px;
+            z-index: 2000;
         }
     </style>
 </head>
@@ -70,27 +91,27 @@
         <h3>Add User</h3>
 
         <label>Username</label>
-        <input type="text" id="new-username" class="input" style="width:100%; margin-bottom:8px;">
+        <input type="text" id="new-username">
 
         <label>Password</label>
-        <input type="password" id="new-password" class="input" style="width:100%; margin-bottom:8px;">
+        <input type="password" id="new-password">
 
         <label>Role</label>
-        <select id="new-role" style="width:100%; margin-bottom:12px;">
+        <select id="new-role">
             <option value="Staff">Staff</option>
             <option value="Manager">Manager</option>
         </select>
 
         <button class="btn btn-add" onclick="submitNewUser()">Save</button>
-        <button class="btn btn-danger" onclick="closeUserModal()">Cancel</button>
+        <button class="btn btn-danger" onclick="closeUserModal()" style="float:right;">Cancel</button>
     </div>
 </div>
 
 <!-- Toast -->
 <div id="toast"></div>
 
-<!-- JS File -->
-<script src="../js/user-management.js"></script>
+<!-- Correct JS path -->
+<script src="user-management.js"></script>
 
 </body>
 </html>
