@@ -1,66 +1,51 @@
-/********************************************************
- * LOGIN.JS — FRONTEND LOGIC
- ********************************************************/
-
 import { SCRIPT_URL, SECURITY_TOKEN, DASHBOARD_PAGE } from "./config.js";
 
-document.addEventListener("DOMContentLoaded", () => {
-    const loginForm = document.getElementById("loginForm");
+document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-    loginForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const errorMsg = document.getElementById("errorMsg");
 
-        const username = document.getElementById("username").value.trim();
-        const password = document.getElementById("password").value.trim();
+    errorMsg.textContent = "";
 
-        /*****************************************************
-         * 🔥 SUPERADMIN — ALWAYS LOGIN WITHOUT API
-         *****************************************************/
-        if (username === "superadmin" && password === "admin123") {
-            localStorage.setItem(
-                "loggedInUser",
-                JSON.stringify({
-                    username: "superadmin",
-                    role: "SuperAdmin",
-                    isHardcoded: true
-                })
-            );
-            alert("SuperAdmin Login Success!");
+    if (!username || !password) {
+        errorMsg.textContent = "Please enter both username and password.";
+        return;
+    }
+
+    try {
+        const response = await fetch(SCRIPT_URL, {
+            method: "POST",
+            mode: "cors",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                action: "login",
+                username,
+                password,
+                token: SECURITY_TOKEN
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.status === "success") {
+            
+            // Store user session
+            localStorage.setItem("sd_username", result.username);
+            localStorage.setItem("sd_role", result.role);  // superadmin / admin / user
+
+            // Redirect
             window.location.href = DASHBOARD_PAGE;
-            return;
+        } 
+        else {
+            errorMsg.textContent = result.message || "Invalid credentials";
         }
 
-        /*****************************************************
-         * 🔥 Normal Users — via Google Apps Script backend
-         *****************************************************/
-        try {
-            const url =
-                `${SCRIPT_URL}?type=login&securityToken=${SECURITY_TOKEN}` +
-                `&username=${encodeURIComponent(username)}` +
-                `&password=${encodeURIComponent(password)}`;
-
-            const res = await fetch(url);
-            const data = await res.json();
-
-            console.log("Login API Response:", data);
-
-            if (data.status === "success") {
-                localStorage.setItem(
-                    "loggedInUser",
-                    JSON.stringify({
-                        username: data.username,
-                        role: data.role,
-                        isHardcoded: false
-                    })
-                );
-                alert("Login Successful!");
-                window.location.href = DASHBOARD_PAGE;
-            } else {
-                alert(data.message || "Invalid login credentials");
-            }
-        } catch (err) {
-            console.error("Login Error:", err);
-            alert("Login failed. Check your connection or server.");
-        }
-    });
+    } catch (err) {
+        console.error(err);
+        errorMsg.textContent = "Network error — try again.";
+    }
 });
