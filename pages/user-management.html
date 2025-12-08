@@ -1,73 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>User Management — Siddhivinayak Digital</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>User Management</title>
 
-<link rel="stylesheet" href="../styles/internal.css">
+<link rel="stylesheet" href="../styles/internal.css" />
 
 <style>
     body { font-family: Arial; background: #f7f7f7; }
-
     .container {
-        width: 90%;
-        max-width: 900px;
-        margin: 30px auto;
-        background: white;
-        padding: 20px;
-        border-radius: 10px;
+        width: 90%; max-width: 900px;
+        margin: 30px auto; background: white;
+        padding: 20px; border-radius: 10px;
         box-shadow: 0 0 10px #ccc;
     }
-
-    h2 { margin-bottom: 10px; }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 15px;
-    }
-
-    table th, table td {
-        border: 1px solid #ccc;
-        padding: 10px;
-        text-align: left;
-    }
-
-    table th {
-        background: #eee;
-    }
-
     .btn {
-        padding: 8px 12px;
-        background: #4CAF50;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
+        padding: 8px 12px; background: #4CAF50; color: white;
+        border: none; border-radius: 6px; cursor: pointer;
     }
-    .btn:hover { background: #45a049; }
-
-    .btn-danger { background: #d9534f !important; }
-    .btn-danger:hover { background: #c9302c !important; }
-
-    /* Modal */
+    .btn-danger { background: #d9534f; }
     .modal-bg {
-        display: none;
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
+        display: none; position: fixed; inset: 0;
         background: rgba(0,0,0,0.6);
-        justify-content: center;
-        align-items: center;
+        justify-content: center; align-items: center;
     }
-
     .modal {
-        background: white;
-        width: 350px;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 0 10px #333;
+        background: white; padding: 20px; width: 350px;
+        border-radius: 10px; box-shadow: 0 0 10px #333;
     }
+    .toast {
+        position: fixed; top: 20px; right: 20px;
+        padding: 12px 20px; border-radius: 6px;
+        color: white; display: none; z-index: 9999;
+    }
+</style>
+</head>
 
-    .modal input, .modal s
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="container">
+    <h2>User Management</h2>
+
+    <button class="btn" onclick="openAddUserModal()">+ Add User</button>
+
+    <table style="width:100%; border-collapse: collapse; margin-top:20px;">
+        <thead>
+            <tr style="background:#eee;">
+                <th>Username</th>
+                <th>Role</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="userBody">
+            <tr><td colspan="3">Loading...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+
+<!-- ADD USER MODAL -->
+<div class="modal-bg" id="userModal">
+    <div class="modal">
+        <h3>Add New User</h3>
+
+        <input type="text" id="new-username" placeholder="Username" />
+        <input type="password" id="new-password" placeholder="Password" />
+        <select id="new-role">
+            <option value="staff">Staff</option>
+            <option value="manager">Manager</option>
+        </select>
+
+        <button class="btn" onclick="submitNewUser()">Save</button>
+        <button class="btn btn-danger" onclick="closeUserModal()">Cancel</button>
+    </div>
+</div>
+
+<!-- ⭐ Correct JS path (VERY IMPORTANT) -->
+<script src="../script.js"></script>
+
+<!-- ⭐ Extra logging — prevents blank page -->
+<script>
+window.onerror = function(msg, url, line) {
+    document.getElementById("userBody").innerHTML =
+        "<tr><td colspan='3' style='color:red;'>JS Error: "
+        + msg + " (Line " + line + ")</td></tr>";
+};
+</script>
+
+</body>
+</html>
