@@ -1,65 +1,32 @@
-/********************************************************
- * LOGIN.JS — FRONTEND LOGIC
- ********************************************************/
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Siddhivinayak Digital</title>
+    <link rel="stylesheet" href="/Siddhivinayak_Digital/css/styles.css">
+</head>
 
-// Load Config
-import { SCRIPT_URL, SECURITY_TOKEN } from "./config.js";
+<body class="login-body">
 
-document.addEventListener("DOMContentLoaded", () => {
-    const loginForm = document.getElementById("loginForm");
+    <div class="login-container">
+        <h2>Login</h2>
 
-    loginForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
+        <form id="loginForm">
+            <div class="input-group">
+                <label>Username</label>
+                <input type="text" id="username" required>
+            </div>
 
-        const username = document.getElementById("username").value.trim();
-        const password = document.getElementById("password").value.trim();
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="password" required>
+            </div>
 
-        /*****************************************************
-         * 🔥 SUPERADMIN HARD-CODED LOGIN (ALWAYS ALLOWED)
-         *****************************************************/
-        if (username === "superadmin" && password === "admin123") {
-            localStorage.setItem("loggedInUser", JSON.stringify({
-                username: "superadmin",
-                role: "SuperAdmin",
-                isHardcoded: true
-            }));
+            <button type="submit" class="btn-primary">Login</button>
+        </form>
+    </div>
 
-            alert("SuperAdmin Login Success!");
-            window.location.href = "/Siddhivinayak_Digital/pages/dashboard.html";
-            return;
-        }
-
-        /*****************************************************
-         * 🔥 Validate Normal Users via Google Apps Script
-         *****************************************************/
-        try {
-            const url =
-                `${SCRIPT_URL}?type=login&securityToken=${SECURITY_TOKEN}` +
-                `&username=${encodeURIComponent(username)}` +
-                `&password=${encodeURIComponent(password)}`;
-
-            const res = await fetch(url);
-            const data = await res.json();
-
-            console.log("Login API Response:", data);
-
-            if (data.status === "success") {
-                localStorage.setItem("loggedInUser", JSON.stringify({
-                    username: data.username,
-                    role: data.role,
-                    isHardcoded: false
-                }));
-
-                alert("Login Successful!");
-                window.location.href = "/Siddhivinayak_Digital/pages/dashboard.html";
-
-            } else {
-                alert(data.message || "Invalid login credentials");
-            }
-
-        } catch (err) {
-            console.error("Login Error:", err);
-            alert("Login failed. Check your internet connection or server.");
-        }
-    });
-});
+    <script type="module" src="./login.js"></script>
+</body>
+</html>
