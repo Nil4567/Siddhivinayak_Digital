@@ -1,195 +1,293 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Siddhivinayak Digital — Staff Login</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Siddhivinayak Digital — Staff Login</title>
 
-    <link rel="stylesheet" href="../css/styles.css" />
+  <!-- your existing stylesheet -->
+  <link rel="stylesheet" href="../css/styles.css" />
 
-    <style>
-        /* FIX global override */
-        body {
-            height: auto !important;
-            overflow: auto !important;
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-            /* Beautiful gradient background */
-            background: linear-gradient(135deg, #4f46e5, #6a5df5, #8f7dff);
-            background-size: 400% 400%;
-            animation: bgAnim 12s ease infinite;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+  <style>
+    :root{
+      --card-bg: rgba(255,255,255,0.94);
+      --accent: #7c4dff;
+      --accent-2: #ffb86b;
+      --glass-shadow: 0 12px 40px rgba(20, 10, 40, 0.35);
+    }
 
-        /* Background animation */
-        @keyframes bgAnim {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
+    /* Page layout */
+    html,body{height:100%;margin:0;font-family:Inter, "Segoe UI", Roboto, Arial, sans-serif;}
+    body{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:100vh;
+      overflow:auto;
+      /* Primary background: prefer external bg image in assets, otherwise gradient fallback */
+      background: radial-gradient(1200px 600px at 10% 20%, rgba(124,77,255,0.18), transparent 8%),
+                  radial-gradient(1000px 500px at 90% 80%, rgba(255,184,107,0.12), transparent 6%),
+                  linear-gradient(135deg, #2a165f, #5636d8 40%, #8c52ff 100%);
+      background-blend-mode: screen;
+      position:relative;
+    }
 
-        /* Centered welcome text */
-        .welcome-text {
-            position: absolute;
-            top: 25px;
-            width: 100%;
-            text-align: center;
-            color: white;
-            font-size: 22px;
-            font-weight: 600;
-            animation: fadeIn 1.5s ease-out forwards;
-        }
+    /* If you place assets/bg-sample.jpg in /assets, that image will be used as background (uncomment below)
+       - To use your own background, upload assets/bg-sample.jpg and keep the rule as-is.
+       - If you want a large full-screen image without gradient, replace with background-image: url('../assets/your-bg.jpg'); */
+    body.bg-image {
+      background-image:
+        url('../assets/bg-sample.jpg'),
+        radial-gradient(1200px 600px at 10% 20%, rgba(124,77,255,0.12), transparent 8%),
+        radial-gradient(1000px 500px at 90% 80%, rgba(255,184,107,0.08), transparent 6%),
+        linear-gradient(135deg, #2a165f, #5636d8 40%, #8c52ff 100%);
+      background-size: cover, auto, auto, auto;
+      background-blend-mode: overlay, screen, screen, normal;
+    }
 
-        /* Typing animation effect */
-        .typing {
-            display: inline-block;
-            border-right: 3px solid rgba(255,255,255,0.75);
-            white-space: nowrap;
-            overflow: hidden;
-            animation: typing 4s steps(40, end), blink 0.75s step-end infinite;
-        }
+    /* Decorative watermark (image file override if you upload assets/wm-sample.png) */
+    .watermark {
+      position: absolute;
+      inset: 0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      pointer-events:none;
+      opacity: 0.10;
+      z-index: 0;
+    }
+    .watermark img{
+      max-width: 60%;
+      transform: rotate(-6deg);
+      filter: blur(0.5px) saturate(120%);
+    }
 
-        @keyframes typing {
-            from { width: 0; }
-            to { width: 100%; }
-        }
-        @keyframes blink {
-            50% { border-color: transparent; }
-        }
+    /* If you upload assets/wm-sample.png, class 'watermark-img' will show it.
+       Otherwise we render an inline SVG (provided below). */
+    .watermark.inline-svg { opacity: 0.08; }
 
-        @keyframes fadeIn {
-            from { opacity: 0; margin-top: -20px; }
-            to { opacity: 1; margin-top: 0; }
-        }
+    /* Login card */
+    .login-wrap {
+      width: 100%;
+      max-width: 720px;
+      margin: 40px;
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 28px;
+      align-items: center;
+      z-index: 2;
+    }
 
-        /* Login box */
-        .login-box {
-            background: rgba(255, 255, 255, 0.92);
-            width: 90%;
-            max-width: 400px;
-            padding: 35px;
-            border-radius: 14px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.25), 0 0 30px rgba(255,255,255,0.2);
-            text-align: center;
-            backdrop-filter: blur(6px);
-            animation: boxFade 0.8s ease-out;
-        }
+    /* Left promotional area */
+    .promo {
+      color: #fff;
+      padding: 28px;
+      border-radius: 14px;
+      display:flex;
+      flex-direction:column;
+      gap: 16px;
+      justify-content:center;
+      min-height:360px;
+      position:relative;
+      overflow:hidden;
+    }
+    .brand {
+      display:flex;
+      align-items:center;
+      gap:14px;
+    }
+    .brand .logo {
+      width:72px;height:72px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent-2));
+      display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:20px;box-shadow: 0 8px 30px rgba(92,33,255,0.25);
+    }
+    .brand h1{margin:0;font-size:24px;letter-spacing:0.2px}
+    .promo p{margin:0;color:rgba(255,255,255,0.95);line-height:1.45}
+    .promo .features{margin-top:6px;color:rgba(255,255,255,0.9)}
+    .promo .cta { margin-top: 12px; display:inline-block; padding:10px 16px; background: rgba(255,255,255,0.08); color: #fff; border-radius:8px; text-decoration:none; font-weight:600; }
 
-        @keyframes boxFade {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
-        }
+    /* Right login card */
+    .card {
+      background: var(--card-bg);
+      border-radius: 14px;
+      padding: 28px;
+      box-shadow: var(--glass-shadow);
+      position:relative;
+      z-index:3;
+    }
 
-        .login-box h1 {
-            margin-bottom: 10px;
-            color: #222;
-        }
+    .card h2 { margin:0 0 6px 0; font-size:28px; color:#111; text-align:center; }
+    .card p.sub { margin:0 0 18px 0; color:#666; text-align:center; }
 
-        .input-group { margin-bottom: 20px; text-align: left; }
-        .input-group label { font-weight: 600; display: block; margin-bottom: 6px; }
-        .input-group input {
-            width: 100%;
-            padding: 12px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-            font-size: 16px;
-        }
+    .form-group { margin-bottom:14px; }
+    label { display:block; font-weight:700; margin-bottom:8px; color:#222; font-size:14px;}
+    input[type="text"], input[type="password"] {
+      width:100%; padding:12px 14px; border-radius:10px; border:1px solid rgba(20,20,30,0.06); font-size:15px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+    }
 
-        .login-btn {
-            width: 100%;
-            padding: 12px;
-            font-size: 18px;
-            border: none;
-            border-radius: 8px;
-            background: #4f46e5;
-            color: white;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .login-btn:hover {
-            background: #372fc2;
-            transform: scale(1.03);
-        }
+    .btn {
+      display:block;
+      width:100%;
+      margin-top:6px;
+      padding:12px;
+      border-radius:10px;
+      font-size:16px;
+      font-weight:700;
+      border:none;
+      cursor:pointer;
+      color:#fff;
+      background: linear-gradient(90deg,var(--accent),var(--accent-2));
+      box-shadow: 0 10px 20px rgba(92,33,255,0.18), 0 2px 6px rgba(0,0,0,0.12);
+      transition: transform .14s ease, box-shadow .14s ease;
+    }
+    .btn:active { transform: translateY(1px) scale(.999); }
+    .muted { color:#888; font-size:14px; text-align:center; margin-top:12px; }
 
-        .error-message {
-            margin-top: 10px;
-            padding: 10px;
-            background: #fde7e7;
-            color: #b70000;
-            border-radius: 5px;
-            display: none;
-        }
+    /* watermark behind card using inline SVG fallback (printer icon) */
+    .wm-svg {
+      width: 52%;
+      opacity:0.08;
+      transform: rotate(-6deg);
+      filter: drop-shadow(0 8px 40px rgba(0,0,0,0.12));
+    }
 
-        .back-home {
-            display: inline-block;
-            margin-top: 18px;
-            color: white;
-            font-size: 14px;
-            text-decoration: underline;
-        }
-    </style>
+    /* small screens: stack */
+    @media (max-width:900px){
+      .login-wrap { grid-template-columns: 1fr; padding: 22px; }
+      .promo { order:2; }
+    }
+  </style>
 </head>
-
 <body>
 
-    <!-- Welcome animated quote -->
-    <div class="welcome-text">
-        <span class="typing">“Quality is our habit, not an act — Welcome to Siddhivinayak Digital!”</span>
-    </div>
+  <!-- Watermark: prefer your upload at ../assets/wm-sample.png -->
+  <div class="watermark" id="watermark">
+    <!-- if assets/wm-sample.png exists (you can upload), it will be used automatically by JS below -->
+    <!-- Inline SVG fallback watermark (printer + neon dots) -->
+    <svg class="wm-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <linearGradient id="g1" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stop-color="#7c4dff" stop-opacity="0.9"/>
+          <stop offset="1" stop-color="#ffb86b" stop-opacity="0.9"/>
+        </linearGradient>
+      </defs>
+      <g transform="translate(6,6) scale(0.8)">
+        <rect x="6" y="26" width="88" height="58" rx="6" fill="none" stroke="url(#g1)" stroke-width="3"/>
+        <rect x="18" y="40" width="62" height="26" rx="3" fill="url(#g1)" opacity="0.18"/>
+        <rect x="20" y="44" width="18" height="7" rx="2" fill="#fff"/>
+        <rect x="46" y="44" width="30" height="7" rx="2" fill="#fff"/>
+        <circle cx="92" cy="16" r="4" fill="url(#g1)" />
+      </g>
+    </svg>
+  </div>
 
-    <div class="login-box">
-        <h1>Staff Login</h1>
-        <p>Access your digital work panel</p>
+  <main class="login-wrap">
+    <!-- left promo / visual -->
+    <section class="promo" aria-hidden="true">
+      <div style="display:flex;align-items:center;justify-content:flex-start;">
+        <div class="brand">
+          <div class="logo">SD</div>
+          <div>
+            <h1 style="margin:0;color:#fff;">Siddhivinayak Digital</h1>
+            <div style="font-size:13px;color:rgba(255,255,255,0.9);margin-top:6px;">Digital Printing • Design • Finishing</div>
+          </div>
+        </div>
+      </div>
 
-        <form id="login-form">
-            <div class="input-group">
-                <label>Username</label>
-                <input id="username" type="text" required />
-            </div>
+      <p style="margin-top:18px;font-size:16px;max-width:520px;">
+        High-quality prints, quick turnaround and professional finishing. Manage jobs, expenses and staff from one clean dashboard.
+      </p>
 
-            <div class="input-group">
-                <label>Password</label>
-                <input id="password" type="password" required />
-            </div>
+      <ul class="features" style="list-style:none;padding:0;margin:12px 0 0 0;">
+        <li>• A4/A3, posters, brochures</li>
+        <li>• Spiral, comb & thermal binding</li>
+        <li>• Fast turnaround & bulk copy</li>
+      </ul>
 
-            <div id="login-error-message" class="error-message"></div>
+      <a class="cta" href="../index.html">Visit Shopfront</a>
+    </section>
 
-            <button type="submit" id="login-button" class="login-btn">
-                Login
-            </button>
-        </form>
+    <!-- right: login card -->
+    <aside class="card" aria-label="Login">
+      <h2>Staff Login</h2>
+      <p class="sub">Access your management dashboard</p>
 
-        <a href="../index.html" class="back-home">← Back to Home</a>
-    </div>
+      <form id="login-form" novalidate>
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input id="username" name="username" type="text" required autocomplete="username" />
+        </div>
 
-    <script src="../script.js"></script>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" required autocomplete="current-password" />
+        </div>
 
-    <script>
-        document.getElementById("login-form").addEventListener("submit", async (e) => {
-            e.preventDefault();
+        <div id="login-error-message" class="muted" style="display:none;color:#b00020;"></div>
 
-            const u = username.value.trim();
-            const p = password.value;
-            const errorBox = document.getElementById("login-error-message");
-            const btn = document.getElementById("login-button");
+        <button id="login-button" class="btn" type="submit">Login</button>
+      </form>
 
-            btn.textContent = "Checking...";
-            btn.disabled = true;
-            errorBox.style.display = "none";
+      <div class="muted">Forgot password? Contact the admin</div>
+    </aside>
+  </main>
 
-            try {
-                await handleLogin(u, p);
-            } catch (err) {
-                errorBox.innerText = err.message;
-                errorBox.style.display = "block";
-                btn.textContent = "Login";
-                btn.disabled = false;
-            }
+  <!-- core script (keeps your login logic) -->
+  <script src="../script.js"></script>
+
+  <!-- small script: if you upload ../assets/wm-sample.png or ../assets/bg-sample.jpg, enable them -->
+  <script>
+    (function(){
+      // try to load assets (non-blocking). If the file exists, enable it.
+      const testImage = (url) => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve(true);
+          img.onerror = () => resolve(false);
+          img.src = url + '?_t=' + Date.now();
         });
-    </script>
+      };
 
+      // If you upload assets/bg-sample.jpg, add .bg-image to body to show it
+      testImage('../assets/bg-sample.jpg').then(hasBg => {
+        if (hasBg) document.body.classList.add('bg-image');
+      });
+
+      // If you upload assets/wm-sample.png, replace watermark svg with image
+      testImage('../assets/wm-sample.png').then(hasWm => {
+        if (!hasWm) return;
+        const wm = document.getElementById('watermark');
+        if (!wm) return;
+        wm.innerHTML = '<img src="../assets/wm-sample.png" alt="watermark">';
+        wm.classList.remove('inline-svg');
+        wm.style.opacity = '0.12';
+      });
+
+      // Form handling: keep UX glue but delegate auth to handleLogin in script.js
+      const form = document.getElementById('login-form');
+      const err = document.getElementById('login-error-message');
+      const btn = document.getElementById('login-button');
+
+      form.addEventListener('submit', async function(e){
+        e.preventDefault();
+        err.style.display = 'none';
+        btn.textContent = 'Checking...';
+        btn.disabled = true;
+
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+
+        try {
+          await handleLogin(username, password); // function from your script.js
+          // on success, script.js -> completeLogin() should redirect
+        } catch (error) {
+          err.textContent = error.message || 'Login failed';
+          err.style.display = 'block';
+          btn.textContent = 'Login';
+          btn.disabled = false;
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
