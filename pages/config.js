@@ -24,3 +24,7 @@ export const SECURITY_TOKEN = "SIDDHIVINAYAK123";
 
 export const DASHBOARD_PAGE = "/Siddhivinayak_Digital/pages/dashboard.html";
 
+import { SCRIPT_URL, SECURITY_TOKEN, DASHBOARD_PAGE }
+    from "./config.js";  // <-- MUST BE ./ not /pages
+
+
