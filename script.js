@@ -11,9 +11,9 @@ const HARDCODED_SECURITY_TOKEN = "Siddhivi!n@yakD1gital-T0ken-987";
 ------------------------------ */
 const SUPER_ADMIN_USERNAME = "superadmin";
 
-// SHA-256("admin@123")
+// FINAL Correct SHA256 Hash of "admin@123" from your browser
 const SUPER_ADMIN_HASHED_PASSWORD =
-  "6f247eac497bb7d5005c45e26dfec66f64fdf75f1a4bb7a4484a1d45a726fe2c";
+  "7676aaafb027c825bd9abab78b234070e702752f625b752e55e55b48e607e358";
 
 /* --------------------------------------------------
    UTIL — HASHING
@@ -89,7 +89,7 @@ function completeLogin(username, isManager, isSuperAdmin = false) {
   localStorage.setItem("sv_is_manager", isManager ? "true" : "false");
   localStorage.setItem("sv_is_superadmin", isSuperAdmin ? "true" : "false");
 
-  window.location.href = "./dashboard.html";
+  window.location.href = "./dashboard.html"; // correct for GitHub Pages
 }
 
 /* --------------------------------------------------
