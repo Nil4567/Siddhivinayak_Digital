@@ -5,18 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Siddhivinayak Digital — Staff Login</title>
 
-    <!-- Correct path for GitHub Pages -->
     <link rel="stylesheet" href="../css/styles.css" />
 
     <style>
+        /* FIX: override global CSS that created blue blank screen */
         body {
-            display:flex;
-            justify-content:center;
-            align-items:center;
-            min-height:100vh;
-            background:#4f46e5;
-            margin:0;
-            font-family:Arial, sans-serif;
+            background: #4f46e5 !important;
+            height: auto !important;
+            overflow: auto !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            padding: 0;
+            margin: 0;
         }
 
         .login-box {
@@ -30,23 +31,94 @@
         }
 
         .login-box h1 {
-            margin:0 0 10px;
+            margin-bottom:10px;
             color:#222;
-            font-size:26px;
         }
 
-        .login-box p {
-            color:#666;
-            margin-top:0;
-            margin-bottom:25px;
+        .input-group { text-align:left; margin-bottom:20px; }
+        .input-group label { font-weight:600; margin-bottom:6px; display:block; }
+        .input-group input { width:100%; padding:12px; border:1px solid #ccc; border-radius:6px; }
+
+        .login-btn {
+            background:#4f46e5;
+            color:white;
+            border:none;
+            padding:12px;
+            width:100%;
+            border-radius:6px;
+            font-size:18px;
+            cursor:pointer;
         }
 
-        .input-group {
-            text-align:left;
-            margin-bottom:20px;
+        .error-message {
+            margin-top:10px;
+            color:#b70000;
+            background:#fde7e7;
+            padding:10px;
+            border-radius:5px;
+            display:none;
         }
 
-        .input-group label {
-            display:block;
-            font-weight:600;
-            margin-b
+        .back-home {
+            display:inline-block;
+            margin-top:18px;
+            color:white;
+            text-decoration:underline;
+            font-size:14px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="login-box">
+        <h1>Staff Login</h1>
+        <p>Enter your login credentials</p>
+
+        <form id="login-form">
+            <div class="input-group">
+                <label for="username">Username</label>
+                <input id="username" type="text" required />
+            </div>
+
+            <div class="input-group">
+                <label for="password">Password</label>
+                <input id="password" type="password" required />
+            </div>
+
+            <div id="login-error-message" class="error-message"></div>
+
+            <button type="submit" id="login-button" class="login-btn">Login</button>
+        </form>
+
+        <a href="../index.html" class="back-home">← Back to Home</a>
+    </div>
+
+    <script src="../script.js"></script>
+
+    <script>
+        document.getElementById("login-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById("username").value.trim();
+            const password = document.getElementById("password").value;
+            const errorBox = document.getElementById("login-error-message");
+            const loginBtn = document.getElementById("login-button");
+
+            loginBtn.textContent = "Logging in...";
+            loginBtn.disabled = true;
+            errorBox.style.display = "none";
+
+            try {
+                await handleLogin(username, password);
+            } catch (err) {
+                errorBox.textContent = err.message;
+                errorBox.style.display = "block";
+                loginBtn.textContent = "Login";
+                loginBtn.disabled = false;
+            }
+        });
+    </script>
+
+</body>
+</html>
