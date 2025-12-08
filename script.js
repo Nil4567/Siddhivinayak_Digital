@@ -1,36 +1,55 @@
 /* --------------------------------------------------
-   *** CONFIGURATION & HARDCODED CREDENTIALS ***
-   
-   CRITICAL: Ensure these values match Code.gs and your deployment.
+   CONFIGURATION & HARDCODED CREDENTIALS
+   (Keep for dev; move to server for production)
 -------------------------------------------------- */
-const HARDCODED_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVcME3Xb95pDU8faZ1HhGGB1k5hYiBhSlx6GPFUcE2CbCtzO5_9Y3KLv12aoFF70M8sQ/exec"; 
-const HARDCODED_SECURITY_TOKEN = "Siddhivi!n@yakD1gital-T0ken-987"; 
+const HARDCODED_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVcME3Xb95pDU8faZ1HhGGB1k5hYiBhSlx6GPFUcE2CbCtzO5_9Y3KLv12aoFF70M8sQ/exec";
+const HARDCODED_SECURITY_TOKEN = "Siddhivi!n@yakD1gital-T0ken-987";
 
-// --- SUPER ADMIN CREDENTIALS (NEW CONCEPT) ---
-// This is a permanent, hardcoded bypass for emergency access and setup.
+// SUPER ADMIN (Emergency bypass). Remove or rotate for production.
 const SUPER_ADMIN_USERNAME = 'superadmin';
 const SUPER_ADMIN_PASSWORD = 'superadminpass';
-// -------------------------------------------------------------------
 
-// --------------------------------------------------
-// --- CORE DATA SUBMISSION (POST) ---
-// --------------------------------------------------
+/* --------------------------------------------------
+   Helpers
+--------------------------------------------------*/
 
 /**
- * Core function to send data to the Google Apps Script (POST).
+ * Try a list of relative/absolute paths and navigate to the first one.
+ * (We can't detect file existence reliably due to CORS, so attempt sensible defaults.)
  */
+function navigateToFirst(possiblePaths = []) {
+    if (!Array.isArray(possiblePaths) || possiblePaths.length === 0) return;
+    // Use first path — caller should order by preference.
+    window.location.href = possiblePaths[0];
+}
+
+/**
+ * Small UI helper used by pages that call handleLogin directly.
+ * Disables / enables button and updates text.
+ */
+function setLoginButtonState(buttonEl, { disabled = false, text = 'Log In' } = {}) {
+    if (!buttonEl) return;
+    buttonEl.disabled = disabled;
+    buttonEl.textContent = text;
+}
+
+/* --------------------------------------------------
+   CORE: POST to Google Apps Script
+--------------------------------------------------*/
 async function sendDataToScript(dataObject, dataType) {
     const url = HARDCODED_SCRIPT_URL;
     const token = HARDCODED_SECURITY_TOKEN;
 
-    if (url.includes('YOUR_DEPLOYED') || token.includes('YOUR_UNIQUE')) {
-        alert("CRITICAL ERROR: Google Apps Script URL or Token is not configured in script.js!");
-        return false;
+    if (!url || !token || url.includes('YOUR_DEPLOYED') || token.includes('YOUR_UNIQUE')) {
+        const msg = "CRITICAL ERROR: Google Apps Script URL or Token is not configured in script.js!";
+        console.error(msg);
+        alert(msg);
+        return { success: false, error: msg };
     }
-    
+
     const payload = {
         appToken: token,
-        dataType: dataType,
+        dataType,
         data: dataObject
     };
 
@@ -41,165 +60,219 @@ async function sendDataToScript(dataObject, dataType) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        
-        const result = await response.json();
 
-        if (result.result === 'success') {
-            return true;
+        // If non-2xx, still attempt to parse JSON to get error text
+        const result = await response.json().catch(() => null);
+
+        if (!response.ok) {
+            const err = result && result.error ? result.error : `HTTP ${response.status}`;
+            console.error("Server POST error:", err);
+            return { success: false, error: err };
+        }
+
+        if (result && result.result === 'success') {
+            return { success: true, data: result.data || null };
         } else {
-            console.error("Server Error:", result.error);
-            alert(`Submission failed! Server responded with: ${result.error}`);
-            return false;
+            const err = result && result.error ? result.error : 'Unknown server response';
+            console.error("Server Error:", err);
+            return { success: false, error: err };
         }
 
     } catch (error) {
-        console.error("Fetch API (POST) error:", error);
-        alert("Could not connect to the Google Apps Script URL. Check your URL and internet connection.");
-        return false;
+        console.error("Fetch POST error:", error);
+        return { success: false, error: error.message || String(error) };
     }
 }
 
-/**
- * Specialized POST request for saving user settings.
- */
 async function saveUserSettingsToSheet(settingsData) {
     return sendDataToScript(settingsData, 'USER_SETTINGS');
 }
 
-// --------------------------------------------------
-// --- CORE DATA RETRIEVAL (GET) ---
-// --------------------------------------------------
-
-/**
- * Core function to RETRIEVE data (GET request) from the Google Apps Script.
- */
+/* --------------------------------------------------
+   CORE: GET from Google Apps Script
+--------------------------------------------------*/
 async function fetchSheetData(dataType) {
     const url = HARDCODED_SCRIPT_URL;
     const token = HARDCODED_SECURITY_TOKEN;
 
-    if (url.includes('YOUR_DEPLOYED') || token.includes('YOUR_UNIQUE')) {
-        alert("CRITICAL ERROR: Google Apps Script URL or Token is not configured in script.js!");
+    if (!url || !token || url.includes('YOUR_DEPLOYED') || token.includes('YOUR_UNIQUE')) {
+        console.error("CRITICAL ERROR: Google Apps Script URL or Token not configured.");
         return null;
     }
 
-    const fetchUrl = `${url}?appToken=${token}&dataType=${dataType}`;
-    
+    const fetchUrl = `${url}?appToken=${encodeURIComponent(token)}&dataType=${encodeURIComponent(dataType)}`;
+
     try {
         const response = await fetch(fetchUrl, { method: 'GET', mode: 'cors' });
-        const result = await response.json();
+        const result = await response.json().catch(() => null);
 
-        if (result.result === 'success' && Array.isArray(result.data)) {
-            return result.data; 
-        } else {
-            console.error(`Server Error fetching ${dataType}:`, result.error || 'Unknown error');
+        if (!response.ok) {
+            console.error(`Server GET error: HTTP ${response.status}`, result);
             return null;
         }
 
+        // Normalize response shapes: accept {result:'success', data: [...] } or {result:'success', data: {rows: [...]}}
+        if (result && result.result === 'success') {
+            if (Array.isArray(result.data)) return result.data;
+            if (result.data && Array.isArray(result.data.rows)) return result.data.rows;
+            // If server returns a single object, return it wrapped in array
+            if (result.data && typeof result.data === 'object') return [result.data];
+            // If no usable data, return empty array to allow graceful handling
+            return [];
+        } else {
+            console.error(`Server Error fetching ${dataType}:`, result && result.error ? result.error : 'Unknown error');
+            return null;
+        }
     } catch (error) {
-        console.error("Fetch API (GET) error:", error);
-        // Return null on catastrophic failure (e.g., network error)
+        console.error("Fetch GET error:", error);
         return null;
     }
 }
 
-// --------------------------------------------------
-// --- AUTHENTICATION & SESSION MANAGEMENT ---
-// --------------------------------------------------
+/* --------------------------------------------------
+   AUTH: session creation, redirects
+--------------------------------------------------*/
 
 /**
- * Helper function to store session data.
- * The isSuperAdmin flag is new and important for bypassing restrictions later.
+ * Save session into localStorage and redirect to dashboard.
+ * - isManager: boolean or truthy string
+ * - isSuperAdmin: boolean
  */
-function completeLogin(username, isManager, isSuperAdmin = false) {
-    // Generate a simple token 
-    const token = btoa(`${username}:${Date.now()}`); 
+function completeLogin(username, isManager = false, isSuperAdmin = false) {
+    const token = btoa(`${username}:${Date.now()}`);
     localStorage.setItem('sv_user_token', token);
     localStorage.setItem('sv_user_name', username);
     localStorage.setItem('sv_is_manager', isManager ? 'true' : 'false');
-    // Store the Super Admin status
-    localStorage.setItem('sv_is_superadmin', isSuperAdmin ? 'true' : 'false'); 
-    window.location.href = './dashboard.html';
+    localStorage.setItem('sv_is_superadmin', isSuperAdmin ? 'true' : 'false');
+
+    // Attempt to redirect to dashboard. Depending on where login page is hosted, use relative paths.
+    // Order them by most-likely location for common deployments.
+    const candidates = [
+        './dashboard.html',                        // same folder as login
+        'dashboard.html',                          // same folder fallback
+        '/Siddhivinayak_Digital/dashboard.html',   // absolute known project path
+        '/dashboard.html',                         // root fallback
+    ];
+    navigateToFirst(candidates);
 }
 
 /**
- * The core login logic with the new Super Admin check as the highest priority.
+ * Clear session and redirect to login/index.
  */
-async function handleLogin(username, password) {
-    // 1. SUPER ADMIN BYPASS CHECK (Highest Priority)
-    if (username === SUPER_ADMIN_USERNAME && password === SUPER_ADMIN_PASSWORD) {
-         console.warn("Super Admin bypass engaged.");
-         // Super Admin is always a Manager
-         completeLogin(username, true, true); 
-         return; // Exit successfully
+function logout() {
+    localStorage.removeItem('sv_user_token');
+    localStorage.removeItem('sv_user_name');
+    localStorage.removeItem('sv_is_manager');
+    localStorage.removeItem('sv_is_superadmin');
+
+    // Try a few reasonable index paths (adjust order if your hosting differs)
+    const candidates = [
+        '../index.html', // if current page is in a subfolder (e.g., pages/)
+        './index.html',
+        '/Siddhivinayak_Digital/index.html',
+        '/index.html'
+    ];
+    navigateToFirst(candidates);
+}
+
+/* --------------------------------------------------
+   AUTH: Login flow
+--------------------------------------------------*/
+
+/**
+ * handleLogin: main entry point used by the login form.
+ * - throws Error on auth failure (so caller can show message)
+ */
+async function handleLogin(usernameRaw, passwordRaw) {
+    const username = (usernameRaw || '').toString().trim();
+    const password = (passwordRaw || '').toString().trim();
+
+    // Basic client-side validation
+    if (!username || !password) {
+        throw new Error("Please enter username and password.");
     }
-    
-    // 2. STANDARD CHECK: Attempt to fetch credentials from the Google Sheet
+
+    // 1) SUPER ADMIN BYPASS (Highest priority)
+    if (username === SUPER_ADMIN_USERNAME && password === SUPER_ADMIN_PASSWORD) {
+        console.warn("Super Admin bypass engaged.");
+        // Super Admin is always a manager in your model
+        completeLogin(username, true, true);
+        return;
+    }
+
+    // 2) Fetch stored credentials from sheet
     const usersList = await fetchSheetData('USER_CREDENTIALS');
-    
-    if (usersList && usersList.length > 0) {
-        // If data was fetched and is NOT empty, use the Sheet data
-        const match = usersList.find(row => row[0] === username && row[1] === password);
-        
+
+    // If fetch failed completely (null), inform the user that authentication is not available.
+    if (usersList === null) {
+        throw new Error("Unable to reach the authentication server. Try again later.");
+    }
+
+    // If usersList is empty array, the sheet returned success but has no rows.
+    if (Array.isArray(usersList) && usersList.length === 0) {
+        // Optionally allow fallback to a local admin? For security, we don't automatically allow fallback.
+        throw new Error("No user data available. Contact administrator.");
+    }
+
+    // Normalize: usersList is expected as array of rows: [username, password, isManagerFlag,...]
+    if (Array.isArray(usersList)) {
+        const match = usersList.find(row => {
+            // row may be array or object
+            if (Array.isArray(row)) return row[0] === username && row[1] === password;
+            if (row && typeof row === 'object') return (row.username === username || row[0] === username) && (row.password === password || row[1] === password);
+            return false;
+        });
+
         if (match) {
-            // Success: Found user in the Sheet
-            const isManager = match[2] === 'Yes'; 
-            completeLogin(username, isManager, false);
-            return; // Exit successfully
+            // Determine manager flag
+            let isManager = false;
+            if (Array.isArray(match)) {
+                isManager = (match[2] === 'Yes' || match[2] === 'yes' || match[2] === 'true');
+            } else if (match && typeof match === 'object') {
+                isManager = (match.isManager === 'Yes' || match.isManager === true || match.isManager === 'true');
+            }
+            completeLogin(username, !!isManager, false);
+            return;
         }
     }
 
-    // 3. LOGIN FAILED (Either credentials don't match or sheet access failed)
+    // If we reach here -> no match
     throw new Error("Invalid username or password.");
 }
 
-/**
- * Clears the session.
- */
-function logout() {
-    localStorage.clear(); // Clear all keys
-    window.location.href = '../index.html';
-}
-
-// --------------------------------------------------
-// --- AUTHENTICATION & AUTHORIZATION ---
-// --------------------------------------------------
-
-/**
- * Checks if a user is logged in and authorized to view the page.
- * This is the ONLY DEFINITION.
- */
+/* --------------------------------------------------
+   AUTH: Page protection (only one definition)
+--------------------------------------------------*/
 function checkAuth() {
     const userToken = localStorage.getItem('sv_user_token');
     const userName = localStorage.getItem('sv_user_name');
-    // CRITICAL: This retrieves the flag set during successful login.
-    const isSuperAdmin = localStorage.getItem('sv_is_superadmin') === 'true'; 
-    
-    // Check 1: If no token or name, redirect to login (Standard failure)
+    const isSuperAdmin = localStorage.getItem('sv_is_superadmin') === 'true';
+
     if (!userToken || !userName) {
-        // The path needs to be absolute or reliably relative to the root index.html
-        window.location.href = '/Siddhivinayak_Digital/index.html'; 
-        return; 
-    } 
-    
-    // Check 2: Update the display name (Always runs if logged in)
-    const userNameElement = document.getElementById('sv_user_name');
-    if (userNameElement) {
-        userNameElement.textContent = userName;
+        // Not logged in — redirect to index/login. Try a few likely locations.
+        const candidates = [
+            '../index.html', // if page is in a subfolder
+            '/Siddhivinayak_Digital/index.html',
+            '/index.html',
+            './index.html'
+        ];
+        navigateToFirst(candidates);
+        return;
     }
 
-    // If the user reaches this point, they are logged in and authorized for a standard page.
-    // Further page-specific checks (e.g., locking down the "User Management" link) can happen in the HTML script block.
+    // Update display name if present
+    const userNameElement = document.getElementById('sv_user_name');
+    if (userNameElement) userNameElement.textContent = userName;
+
     console.log(`User logged in: ${userName}. Super Admin: ${isSuperAdmin}`);
 }
 
-
-// --------------------------------------------------
-// --- GLOBAL EXPORTS ---
-// --------------------------------------------------
-
+/* --------------------------------------------------
+   EXPORTS (make functions available to pages)
+--------------------------------------------------*/
 window.sendDataToScript = sendDataToScript;
 window.saveUserSettingsToSheet = saveUserSettingsToSheet;
-window.fetchSheetData = fetchSheetData; 
-window.checkAuth = checkAuth;           
+window.fetchSheetData = fetchSheetData;
+window.checkAuth = checkAuth;
 window.logout = logout;
 window.handleLogin = handleLogin;
