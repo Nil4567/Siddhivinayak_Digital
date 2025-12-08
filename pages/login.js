@@ -1,6 +1,6 @@
-/********************************************************
+/*******************************************************
  * LOGIN.JS — FRONTEND LOGIC
- ********************************************************/
+ *******************************************************/
 
 import { SCRIPT_URL, SECURITY_TOKEN, DASHBOARD_PAGE } from "./config.js";
 
@@ -14,25 +14,24 @@ document.addEventListener("DOMContentLoaded", () => {
         const password = document.getElementById("password").value.trim();
 
         /*****************************************************
-         * 🔥 SUPERADMIN — ALWAYS BYPASS BACKEND
+         * 🔥 SUPERADMIN HARD-CODED LOGIN (ALWAYS ALLOWED)
          *****************************************************/
         if (username === "superadmin" && password === "admin123") {
-            localStorage.setItem(
-                "loggedInUser",
+            localStorage.setItem("loggedInUser",
                 JSON.stringify({
                     username: "superadmin",
                     role: "SuperAdmin",
-                    isHardcoded: true,
+                    isHardcoded: true
                 })
             );
 
-            alert("SuperAdmin Login Successful!");
+            alert("SuperAdmin Login Success!");
             window.location.href = DASHBOARD_PAGE;
             return;
         }
 
         /*****************************************************
-         * 🔥 NORMAL USERS — Validate via Google Apps Script
+         * 🔥 NORMAL USER LOGIN VIA GOOGLE SCRIPT
          *****************************************************/
         try {
             const url =
@@ -43,23 +42,21 @@ document.addEventListener("DOMContentLoaded", () => {
             const res = await fetch(url);
             const data = await res.json();
 
-            console.log("Login API Response:", data);
-
             if (data.status === "success") {
-                localStorage.setItem(
-                    "loggedInUser",
+                localStorage.setItem("loggedInUser",
                     JSON.stringify({
-                        username: data.username,
-                        role: data.role,
-                        isHardcoded: false,
+                        username: data.data.username,
+                        role: data.data.role,
+                        isHardcoded: false
                     })
                 );
 
                 alert("Login Successful!");
                 window.location.href = DASHBOARD_PAGE;
             } else {
-                alert(data.message || "Invalid login credentials.");
+                alert(data.message || "Invalid login credentials");
             }
+
         } catch (err) {
             console.error("Login Error:", err);
             alert("Login failed. Check internet or server.");
