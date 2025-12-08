@@ -1,144 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Siddhivinayak Digital — Home</title>
 
-    <title>Siddhivinayak Digital - Login</title>
-
-    <!-- Global Styles -->
-    <link href="/Siddhivinayak_Digital/css/styles.css" rel="stylesheet" />
-
-    <!-- Font Awesome -->
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+    <link rel="stylesheet" href="css/styles.css">
 
     <style>
         body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            background-color: var(--primary-color, #4f46e5);
+            background: #f5f5f5;
             font-family: Arial, sans-serif;
         }
 
-        .login-box {
-            background: #fff;
+        .container {
+            max-width: 800px;
+            margin: 60px auto;
+            background: white;
             padding: 40px;
-            border-radius: var(--border-radius, 12px);
-            box-shadow: var(--shadow-large, 0 4px 12px rgba(0, 0, 0, 0.2));
-            width: 90%;
-            max-width: 400px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             text-align: center;
         }
 
-        .login-box h1 {
-            margin-bottom: 10px;
-            color: var(--text-color-dark, #333);
-        }
-
-        .input-group {
+        h1 {
+            font-size: 42px;
             margin-bottom: 20px;
-            text-align: left;
+            color: #4f46e5;
         }
 
-        .input-group label {
-            font-weight: bold;
-            margin-bottom: 6px;
-            display: block;
-        }
-
-        .input-group input {
-            width: 100%;
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-        }
-
-        .login-btn {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 6px;
-            background: var(--primary-color, #7a5bfd);
-            color: white;
+        p {
             font-size: 18px;
-            cursor: pointer;
+            color: #444;
+            margin-bottom: 30px;
+        }
+
+        .btn-primary {
+            display: inline-block;
+            padding: 14px 30px;
+            background: #4f46e5;
+            color: #fff;
+            font-size: 18px;
+            border-radius: 8px;
+            text-decoration: none;
             transition: 0.2s;
         }
 
-        .login-btn:hover {
-            background: #5a3fe0;
+        .btn-primary:hover {
+            background: #4338ca;
         }
-
-        .error-message {
-            display: none;
-            padding: 10px;
-            margin-top: 12px;
-            background: #ffe8e8;
-            border-left: 4px solid #e84343;
-            color: #b50000;
-            border-radius: 4px;
-        }
-    </style>
-</head>
-<body>
-
-    <div class="login-box">
-        <h1>Staff Login</h1>
-        <p>Enter your credentials to access the portal</p>
-
-        <form id="login-form">
-            <div class="input-group">
-                <label for="username">Username</label>
-                <input id="username" type="text" required placeholder="e.g., superadmin or admin" />
-            </div>
-
-            <div class="input-group">
-                <label for="password">Password</label>
-                <input id="password" type="password" required placeholder="Enter your password" />
-            </div>
-
-            <div id="login-error-message" class="error-message"></div>
-
-            <button id="login-button" class="login-btn" type="submit">
-                Log In
-            </button>
-        </form>
-    </div>
-
-    <!-- Load your script AFTER DOM -->
-    <script src="/Siddhivinayak_Digital/script.js"></script>
-
-    <script>
-        document.getElementById("login-form").addEventListener("submit", async function (e) {
-            e.preventDefault();
-
-            const username = document.getElementById("username").value.trim();
-            const password = document.getElementById("password").value.trim();
-
-            const errorBox = document.getElementById("login-error-message");
-            const loginBtn = document.getElementById("login-button");
-
-            errorBox.style.display = "none";
-            loginBtn.disabled = true;
-            loginBtn.textContent = "Logging in...";
-
-            try {
-                // This MUST exist in script.js
-                await handleLogin(username, password);
-                // If success → completeLogin() handles redirect
-            } catch (err) {
-                errorBox.textContent = err.message || "Invalid login.";
-                errorBox.style.display = "block";
-
-                loginBtn.disabled = false;
-                loginBtn.textContent = "Log In";
-            }
-        });
-    </script>
-
-</body>
-</html>
