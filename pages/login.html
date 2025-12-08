@@ -14,7 +14,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const username = document.getElementById("username").value.trim();
         const password = document.getElementById("password").value.trim();
 
-        // 🔥 SUPERADMIN HARD-CODED LOGIN (ALWAYS ALLOWED)
+        /*****************************************************
+         * 🔥 SUPERADMIN HARD-CODED LOGIN (ALWAYS ALLOWED)
+         *****************************************************/
         if (username === "superadmin" && password === "admin123") {
             localStorage.setItem("loggedInUser", JSON.stringify({
                 username: "superadmin",
@@ -27,9 +29,13 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // 🔥 Validate via Google Apps Script
+        /*****************************************************
+         * 🔥 Validate Normal Users via Google Apps Script
+         *****************************************************/
         try {
-            const url = `${SCRIPT_URL}?type=login&securityToken=${SECURITY_TOKEN}&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+            const url = `${SCRIPT_URL}?type=login&securityToken=${SECURITY_TOKEN}` +
+                        `&username=${encodeURIComponent(username)}` +
+                        `&password=${encodeURIComponent(password)}`;
 
             const res = await fetch(url);
             const data = await res.json();
@@ -37,7 +43,6 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("Login API Response:", data);
 
             if (data.status === "success") {
-                // Save session
                 localStorage.setItem("loggedInUser", JSON.stringify({
                     username: data.username,
                     role: data.role,
@@ -51,7 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         } catch (err) {
             console.error(err);
-            alert("Login failed. Check internet or server.");
+            alert("Login failed. Check your connection or server.");
         }
     });
 });
