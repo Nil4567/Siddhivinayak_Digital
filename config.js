@@ -1,6 +1,3 @@
-// ================================
-// GLOBAL CONFIGURATION FILE
-// ================================
+export const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzzstPJX9Oh-KN_vRQJOFssuAjhFTanjaVjHb-Rp_mYdiLShmM_56J2SNAR_vlNz7RV/exec";
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVcME3Xb95pDU8faZ1HhGGB1k5hYiBhSlx6GPFUcE2CbCtzO5_9Y3KLv12aoFF70M8sQ/exec";
-const SECURITY_TOKEN = "SUPERADMIN-TOKEN-123456";  // Change to your actual token
+export const SECURITY_TOKEN = "SIDDHIVINAYAK123";
