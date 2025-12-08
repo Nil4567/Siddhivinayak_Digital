@@ -2,116 +2,66 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Management</title>
-    <link rel="stylesheet" href="../css/styles.css">
+
+    <link rel="stylesheet" href="/Siddhivinayak_Digital/css/styles.css">
 
     <style>
-        body { font-family: Arial; margin: 0; background: #f1f3f4; }
-        .container { padding: 20px; max-width: 900px; margin: auto; }
-
-        h2 { text-align: center; margin-bottom: 20px; color: #333; }
-
-        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-        th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: left; }
-        th { background: #f8f9fa; }
-
-        .btn {
-            padding: 8px 12px;
-            border: none;
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        .btn-add { background: #28a745; color: white; }
-        .btn-danger { background: #dc3545; color: white; }
-
-        /* Modal */
-        #userModal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        #modalBox {
-            background: white;
-            padding: 20px;
-            width: 320px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        #modalBox input, #modalBox select {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 12px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-
-        /* Toast */
-        #toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #323232;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            display: none;
-            font-size: 14px;
-            z-index: 2000;
-        }
+        body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+        .container { background: white; padding: 20px; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 10px; border: 1px solid #ddd; }
+        th { background: #eee; }
+        button { padding: 6px 12px; cursor: pointer; }
+        #addUserModal { display: none; position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background: white; padding: 20px; width: 400px; margin: auto; transform: translateY(100px); border-radius: 8px; }
     </style>
 </head>
 
 <body>
+
 <div class="container">
 
     <h2>User Management</h2>
+    <button onclick="openAddUserModal()">Add User</button>
 
-    <button class="btn btn-add" onclick="openAddUserModal()">+ Add User</button>
-
-    <table>
+    <table id="userTable">
         <thead>
             <tr>
                 <th>Username</th>
                 <th>Role</th>
-                <th>Actions</th>
+                <th>Delete</th>
             </tr>
         </thead>
-        <tbody id="userBody"></tbody>
+        <tbody id="userTableBody"></tbody>
     </table>
 </div>
 
-<!-- Modal -->
-<div id="userModal">
-    <div id="modalBox">
+<!-- ADD USER MODAL -->
+<div id="addUserModal">
+    <div class="modal-content">
         <h3>Add User</h3>
 
         <label>Username</label>
-        <input type="text" id="new-username">
+        <input id="newUsername" type="text">
 
         <label>Password</label>
-        <input type="password" id="new-password">
+        <input id="newPassword" type="password">
 
         <label>Role</label>
-        <select id="new-role">
-            <option value="Staff">Staff</option>
-            <option value="Manager">Manager</option>
+        <select id="newRole">
+            <option value="Admin">Admin</option>
+            <option value="User">User</option>
         </select>
 
-        <button class="btn btn-add" onclick="submitNewUser()">Save</button>
-        <button class="btn btn-danger" onclick="closeUserModal()" style="float:right;">Cancel</button>
+        <br><br>
+
+        <button onclick="addUser()">Save</button>
+        <button onclick="closeAddUserModal()">Cancel</button>
     </div>
 </div>
 
-<!-- Toast -->
-<div id="toast"></div>
-
-<!-- Correct JS path -->
 <script src="user-management.js"></script>
-
 </body>
 </html>
