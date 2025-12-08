@@ -3,93 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Siddhivinayak Digital - Dashboard</title>
-    <link href="../css/styles.css" rel="stylesheet">
-    
+    <title>Siddhivinayak Digital — Dashboard</title>
+
+    <!-- Styles -->
     <style>
-        :root {
-            --primary-color: #4f46e5; /* Indigo-600 */
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f5f7;
+            margin: 0;
+            padding: 0;
+        }
+
+        .topbar {
+            background: #2b3a67;
+            color: #fff;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 18px;
+        }
+
+        .topbar span strong {
+            color: #ffd700;
+        }
+
+        .container {
+            margin: 30px auto;
+            max-width: 900px;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: 0.2s ease-in-out;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+        }
+
+        .logout-btn {
+            background: #ff5252;
+            border: none;
+            color: #fff;
+            padding: 8px 16px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            background: #e04646;
+        }
+
+        /* Manager / Super Admin visibility */
+        .adminOnly {
+            display: none;
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex">
 
-    <aside class="w-64 bg-gray-800 text-white flex-shrink-0">
-        <div class="p-4 border-b border-gray-700">
-            <h2 class="text-xl font-bold">SD Portal</h2>
-            <p class="text-sm text-gray-400">Welcome, <span id="sv_user_name" class="font-medium">User</span>!</p>
+<body onload="checkAuth(); loadDashboardAccess();">
+
+    <!-- 🌟 TOP BAR -->
+    <div class="topbar">
+        <div>Welcome, <strong id="sv_user_name">User</strong></div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <!-- 🌟 MAIN CARD SECTION -->
+    <div class="container">
+        <h2 style="text-align:center; margin-bottom:25px;">Dashboard</h2>
+
+        <div class="card-grid">
+
+            <!-- Job Entry -->
+            <div class="card" onclick="location.href='job-entry.html'">
+                <h3>Job Entry</h3>
+                <p>Add new customer jobs</p>
+            </div>
+
+            <!-- Job Reports -->
+            <div class="card" onclick="location.href='job-report.html'">
+                <h3>Job Reports</h3>
+                <p>View and search all jobs</p>
+            </div>
+
+            <!-- Daily Expenses -->
+            <div class="card" onclick="location.href='daily-expense.html'">
+                <h3>Daily Expense</h3>
+                <p>Track and manage expenses</p>
+            </div>
+
+            <!-- User Settings -->
+            <div class="card" onclick="location.href='settings.html'">
+                <h3>My Settings</h3>
+                <p>Update personal settings</p>
+            </div>
+
+            <!-- User Management (Managers & Super Admin only) -->
+            <div class="card adminOnly" onclick="location.href='user-management.html'">
+                <h3>User Management</h3>
+                <p>Create / Edit / Remove users</p>
+            </div>
+
+            <!-- System Logs (Super Admin only) -->
+            <div class="card adminOnly superAdminOnly" onclick="location.href='system-logs.html'">
+                <h3>System Logs</h3>
+                <p>Full activity logs</p>
+            </div>
+
         </div>
-        <nav class="p-4 space-y-2">
-            <a href="dashboard.html" class="block py-2 px-3 rounded-md bg-gray-700 hover:bg-gray-700 transition duration-150">
-                <i class="fas fa-home mr-2"></i> Dashboard
-            </a>
-            <a href="job-entry.html" class="block py-2 px-3 rounded-md hover:bg-gray-700 transition duration-150">
-                <i class="fas fa-tools mr-2"></i> Job Entry
-            </a>
-            <a href="daily-expense.html" class="block py-2 px-3 rounded-md hover:bg-gray-700 transition duration-150">
-                <i class="fas fa-money-bill-wave mr-2"></i> Daily Expense
-            </a>
-            
-            <a href="settings.html" class="block py-2 px-3 rounded-md hover:bg-gray-700 transition duration-150" id="settings-link" style="display: none;">
-                <i class="fas fa-users-cog mr-2"></i> User Management
-            </a>
-            
-            <button onclick="logout()" class="w-full text-left py-2 px-3 mt-4 text-red-400 hover:bg-gray-700 rounded-md transition duration-150">
-                <i class="fas fa-sign-out-alt mr-2"></i> Logout
-            </button>
-        </nav>
-    </aside>
+    </div>
 
-    <main class="flex-grow p-8">
-        <header class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">Application Dashboard</h1>
-            <p class="text-gray-600">Overview of recent activities and key metrics.</p>
-        </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <h3 class="text-lg font-medium text-gray-700">Total Jobs</h3>
-                <p class="text-4xl font-extrabold text-indigo-600 mt-2">156</p>
-            </div>
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <h3 class="text-lg font-medium text-gray-700">Pending Tasks</h3>
-                <p class="text-4xl font-extrabold text-yellow-600 mt-2">12</p>
-            </div>
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <h3 class="text-lg font-medium text-gray-700">Monthly Expenses</h3>
-                <p class="text-4xl font-extrabold text-red-600 mt-2">₹15,000</p>
-            </div>
-        </div>
-        
-        <section class="mt-8 bg-white p-6 rounded-lg shadow-md">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">Recent Activity</h2>
-            <ul>
-                <li class="border-b py-2 text-gray-700">Job #123 completed by Admin.</li>
-                <li class="border-b py-2 text-gray-700">New expense entry added.</li>
-            </ul>
-        </section>
-
-    </main>
-    
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-
-    <script src="../script.js"></script>
-
+    <!-- 🌟 DASHBOARD ACCESS CONTROL SCRIPT -->
     <script>
-        // Check the user's session status and authorization immediately upon load.
-        checkAuth();
+        function loadDashboardAccess() {
+            const isManager = localStorage.getItem("sv_is_manager") === "true";
+            const isSuperAdmin = localStorage.getItem("sv_is_superadmin") === "true";
 
-        // Additional script for showing restricted links based on Super Admin/Manager status
-        document.addEventListener('DOMContentLoaded', () => {
-            const isManager = localStorage.getItem('sv_is_manager') === 'true';
-            const isSuperAdmin = localStorage.getItem('sv_is_superadmin') === 'true';
-            const settingsLink = document.getElementById('settings-link');
-
-            // Only display the User Management/Settings link if the user is authorized.
-            if (settingsLink && (isManager || isSuperAdmin)) {
-                settingsLink.style.display = 'block';
-            }
-        });
-    </script>
-</body>
-</html>
+            //
