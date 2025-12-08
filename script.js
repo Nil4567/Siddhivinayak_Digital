@@ -11,7 +11,7 @@ const HARDCODED_SECURITY_TOKEN = "Siddhivi!n@yakD1gital-T0ken-987";
 ------------------------------ */
 const SUPER_ADMIN_USERNAME = "superadmin";
 
-// SHA-256(admin@123)
+// SHA-256("admin@123")
 const SUPER_ADMIN_HASHED_PASSWORD =
   "6f247eac497bb7d5005c45e26dfec66f64fdf75f1a4bb7a4484a1d45a726fe2c";
 
@@ -32,21 +32,7 @@ async function sendDataToScript(dataObject, dataType) {
   const url = HARDCODED_SCRIPT_URL;
   const token = HARDCODED_SECURITY_TOKEN;
 
-  if (
-    url.includes("YOUR_DEPLOYED") ||
-    token.includes("YOUR_UNIQUE")
-  ) {
-    alert(
-      "CRITICAL ERROR: Google Apps Script URL or Token is not configured!"
-    );
-    return false;
-  }
-
-  const payload = {
-    appToken: token,
-    dataType,
-    data: dataObject,
-  };
+  const payload = { appToken: token, dataType, data: dataObject };
 
   try {
     const response = await fetch(url, {
@@ -57,13 +43,9 @@ async function sendDataToScript(dataObject, dataType) {
     });
 
     const result = await response.json();
-    if (result.result === "success") return true;
-
-    alert("Submission failed: " + result.error);
-    return false;
+    return result.result === "success";
   } catch (error) {
     console.error("POST ERROR:", error);
-    alert("Network error connecting to server.");
     return false;
   }
 }
@@ -79,7 +61,6 @@ async function saveUserSettingsToSheet(settingsData) {
 async function fetchSheetData(dataType) {
   const url = HARDCODED_SCRIPT_URL;
   const token = HARDCODED_SECURITY_TOKEN;
-
   const finalURL = `${url}?appToken=${token}&dataType=${dataType}`;
 
   try {
@@ -89,11 +70,7 @@ async function fetchSheetData(dataType) {
     });
 
     const result = await response.json();
-    if (result.result === "success" && Array.isArray(result.data)) {
-      return result.data;
-    }
-
-    console.error("FETCH ERROR:", result.error);
+    if (result.result === "success") return result.data;
     return null;
   } catch (error) {
     console.error("GET ERROR:", error);
@@ -110,45 +87,56 @@ function completeLogin(username, isManager, isSuperAdmin = false) {
   localStorage.setItem("sv_user_token", token);
   localStorage.setItem("sv_user_name", username);
   localStorage.setItem("sv_is_manager", isManager ? "true" : "false");
-  localStorage.setItem(
-    "sv_is_superadmin",
-    isSuperAdmin ? "true" : "false"
-  );
+  localStorage.setItem("sv_is_superadmin", isSuperAdmin ? "true" : "false");
 
-  // IMPORTANT — GitHub Pages path is inside /pages/
   window.location.href = "./dashboard.html";
 }
 
-/* MAIN LOGIN HANDLER */
+/* --------------------------------------------------
+   DEBUG LOGIN HANDLER
+-------------------------------------------------- */
 async function handleLogin(username, password) {
-  /* 1. SUPER ADMIN LOGIN (highest priority) */
-  const hash = await sha256(password);
+  console.log("========== LOGIN DEBUG ==========");
+  console.log("Entered Username:", username);
+  console.log("Entered Password:", password);
 
+  const hash = await sha256(password);
+  console.log("SHA256 Hash Generated:", hash);
+  console.log("Expected Super Admin Hash:", SUPER_ADMIN_HASHED_PASSWORD);
+
+  /* 1. SUPER ADMIN LOGIN */
   if (
     username === SUPER_ADMIN_USERNAME &&
     hash === SUPER_ADMIN_HASHED_PASSWORD
   ) {
-    console.warn("Super Admin logged in.");
+    console.log("SUPER ADMIN MATCH ✓");
     completeLogin(username, true, true);
     return;
+  } else {
+    console.log("Super Admin Match FAILED ✗");
   }
 
-  /* 2. NORMAL USER LOGIN (sheet-based) */
+  /* 2. NORMAL USER LOGIN */
   const usersList = await fetchSheetData("USER_CREDENTIALS");
+
+  console.log("Fetched USER_CREDENTIALS:", usersList);
 
   if (usersList && usersList.length > 0) {
     const match = usersList.find(
       (row) => row[0] === username && row[1] === password
     );
 
+    console.log("Sheet Match Found:", match);
+
     if (match) {
+      console.log("NORMAL USER LOGIN SUCCESS ✓");
       const isManager = match[2] === "Yes";
       completeLogin(username, isManager, false);
       return;
     }
   }
 
-  /* 3. FAIL */
+  console.log("FINAL RESULT → LOGIN FAILED ✗");
   throw new Error("Invalid username or password.");
 }
 
