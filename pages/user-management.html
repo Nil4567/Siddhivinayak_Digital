@@ -1,21 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Management</title>
-
-    <link href="/Siddhivinayak_Digital/css/styles.css" rel="stylesheet">
+    <link href="../styles/styles.css" rel="stylesheet">
 </head>
 
 <body>
-
     <div class="container">
-        <h1>User Management</h1>
+        <h2>User Management</h2>
+        <button onclick="openAddUserModal()">Add User</button>
 
-        <button id="btnAddUser">Add User</button>
-
-        <table class="table">
+        <table>
             <thead>
                 <tr>
                     <th>Username</th>
@@ -25,32 +23,34 @@
             </thead>
             <tbody id="userTableBody"></tbody>
         </table>
-    </div>
 
-    <!-- Add User Modal -->
-    <div id="addUserModal" class="modal">
-        <div class="modal-content">
-            <h2>Add User</h2>
+        <!-- Add User Modal -->
+        <div id="addUserModal" class="modal">
+            <div class="modal-content">
+                <h3>Add User</h3>
 
-            <label>Username</label>
-            <input type="text" id="newUsername">
+                <label>Username</label>
+                <input type="text" id="newUsername">
 
-            <label>Password</label>
-            <input type="password" id="newPassword">
+                <label>Password</label>
+                <input type="password" id="newPassword">
 
-            <label>Role</label>
-            <select id="newRole">
-                <option value="Admin">Admin</option>
-                <option value="User">User</option>
-            </select>
+                <label>Role</label>
+                <select id="newRole">
+                    <option value="Admin">Admin</option>
+                    <option value="User">User</option>
+                </select>
 
-            <button id="saveUserBtn">Save</button>
-            <button id="cancelUserBtn">Cancel</button>
+                <div class="modal-buttons">
+                    <button onclick="saveUser()">Save</button>
+                    <button onclick="closeAddUserModal()">Cancel</button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- FIXED SCRIPT PATH (VERY IMPORTANT) -->
-    <script src="/Siddhivinayak_Digital/pages/js/user-management.js"></script>
+    <!-- FIXED JS PATH -->
+    <script src="/Siddhivinayak_Digital/pages/user-management.js"></script>
 
 </body>
 </html>
