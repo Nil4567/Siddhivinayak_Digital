@@ -1,36 +1,40 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVcME3Xb95pDU8faZ1HhGGB1k5hYiBhSlx6GPFUcE2CbCtzO5_9Y3KLv12aoFF70M8sQ/exec";
-const APP_TOKEN = "Siddhivi!n@yakD1gital-T0ken-987";
+/*******************************************************
+ * USER MANAGEMENT — FRONTEND WITH DEBUG LOGGING
+ *******************************************************/
+
+const SCRIPT_URL = "YOUR_WEB_APP_URL_HERE"; // <-- REPLACE
+
+// ------------------ Helper Logger ------------------
+function logDebug(msg, data = "") {
+    console.log("%c[DEBUG] " + msg, "color: green; font-weight: bold;", data);
+}
 
 // ------------------ Load Users ------------------
 async function loadUsers() {
+    logDebug("Loading users...");
+
     try {
-        const res = await fetch(`${SCRIPT_URL}?appToken=${APP_TOKEN}&dataType=USER_CREDENTIALS`);
-        const json = await res.json();
+        const res = await fetch(SCRIPT_URL + "?action=getUsers");
+        const data = await res.json();
 
-        if (json.result !== "success") {
-            alert("Error loading users: " + json.error);
-            return;
-        }
+        logDebug("Users fetched:", data);
 
-        const users = json.data;
         const tbody = document.getElementById("userTableBody");
         tbody.innerHTML = "";
 
-        users.forEach(user => {
+        data.forEach(user => {
             const row = document.createElement("tr");
 
             row.innerHTML = `
-               <td>${user[0]}</td>
-               <td>${user[2]}</td>
-               <td>
-                    <button onclick="deleteUser('${user[0]}')">Delete</button>
-               </td>
+               <td>${user.username}</td>
+               <td>${user.role}</td>
+               <td><button onclick="deleteUser('${user.username}')">Delete</button></td>
             `;
 
             tbody.appendChild(row);
         });
     } catch (err) {
-        console.error("Error loading users:", err);
+        console.error("❌ Error loading users:", err);
         alert("Failed to load users");
     }
 }
@@ -46,34 +50,25 @@ async function saveUser() {
         return;
     }
 
-    const payload = {
-        appToken: APP_TOKEN,
-        dataType: "ADD_USER",
-        data: {
-            username: username,
-            passwordHash: password,
-            role: role
-        }
-    };
+    logDebug("Sending Add User request", { username, role });
+
+    const formData = new FormData();
+    formData.append("action", "addUser");
+    formData.append("username", username);
+    formData.append("password", password);
+    formData.append("role", role);
 
     try {
-        const res = await fetch(SCRIPT_URL, {
-            method: "POST",
-            body: JSON.stringify(payload),
-            headers: { "Content-Type": "application/json" }
-        });
+        const res = await fetch(SCRIPT_URL, { method: "POST", body: formData });
+        const text = await res.text();
 
-        const json = await res.json();
-        if (json.result !== "success") {
-            alert("Error: " + json.error);
-            return;
-        }
+        logDebug("Add User Response:", text);
 
-        alert("User added!");
+        alert(text);
         closeAddUserModal();
         loadUsers();
     } catch (err) {
-        console.error("Error adding user:", err);
+        console.error("❌ Error adding user:", err);
     }
 }
 
@@ -81,29 +76,22 @@ async function saveUser() {
 async function deleteUser(username) {
     if (!confirm("Delete user " + username + "?")) return;
 
-    const payload = {
-        appToken: APP_TOKEN,
-        dataType: "DELETE_USER",
-        data: { username: username }
-    };
+    logDebug("Deleting user:", username);
+
+    const formData = new FormData();
+    formData.append("action", "deleteUser");
+    formData.append("username", username);
 
     try {
-        const res = await fetch(SCRIPT_URL, {
-            method: "POST",
-            body: JSON.stringify(payload),
-            headers: { "Content-Type": "application/json" }
-        });
+        const res = await fetch(SCRIPT_URL, { method: "POST", body: formData });
+        const text = await res.text();
 
-        const json = await res.json();
-        if (json.result !== "success") {
-            alert("Error: " + json.error);
-            return;
-        }
+        logDebug("Delete User Response:", text);
 
-        alert("User deleted");
+        alert(text);
         loadUsers();
     } catch (err) {
-        console.error("Error deleting user:", err);
+        console.error("❌ Error deleting:", err);
     }
 }
 
