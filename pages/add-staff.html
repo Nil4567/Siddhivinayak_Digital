@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Staff - Siddhivinayak Digital</title>
+    <link rel="stylesheet" href="/Siddhivinayak_Digital/css/styles.css">
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>Add New Staff</h2>
+
+        <div id="onlySuperadmin" style="color:red; display:none; margin-bottom:10px;">
+            Only SuperAdmin can add users.
+        </div>
+
+        <form id="addUserForm">
+            <input type="text" id="newUsername" placeholder="Username" required>
+            <input type="text" id="newPassword" placeholder="Password" required>
+
+            <select id="newRole" required>
+                <option value="" disabled selected>Select Role</option>
+                <option value="Staff">Staff</option>
+                <option value="Manager">Manager</option>
+                <option value="Admin">Admin</option>
+            </select>
+
+            <button type="submit">Add User</button>
+        </form>
+
+        <br>
+        <a href="/Siddhivinayak_Digital/pages/user-management.html">⬅️ Back to User Management</a>
+    </div>
+
+    <script type="module" src="./add-staff.js"></script>
+</body>
+</html>
