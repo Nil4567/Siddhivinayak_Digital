@@ -1,67 +1,85 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>User Management</title>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVcME3Xb95pDU8faZ1HhGGB1k5hYiBhSlx6GPFUcE2CbCtzO5_9Y3KLv12aoFF70M8sQ/exec";
 
-    <link rel="stylesheet" href="/Siddhivinayak_Digital/css/styles.css" />
-    <style>
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; }
-        .modal-content { background:#fff; padding:30px; width:450px; border-radius:8px; }
-        .form-group { margin-bottom:15px; }
-        label { display:block; margin-bottom:5px; }
-        input, select { width:100%; padding:8px; }
-        table { width:100%; border-collapse:collapse; margin-top:20px; }
-        th, td { padding:12px; border:1px solid #ddd; }
-        button { padding:10px 15px; cursor:pointer; }
-    </style>
-</head>
-<body>
+// ------------------ Load Users ------------------
+async function loadUsers() {
+    try {
+        const res = await fetch(SCRIPT_URL + "?action=getUsers");
+        const data = await res.json();
 
-    <h2>User Management</h2>
+        const tbody = document.getElementById("userTableBody");
+        tbody.innerHTML = "";
 
-    <button onclick="openAddUserModal()">➕ Add User</button>
+        data.forEach(user => {
+            const row = document.createElement("tr");
 
-    <table>
-        <thead>
-            <tr>
-                <th>Username</th>
-                <th>Role</th>
-                <th>Delete</th>
-            </tr>
-        </thead>
-        <tbody id="userTableBody"></tbody>
-    </table>
+            row.innerHTML = `
+               <td>${user.username}</td>
+               <td>${user.role}</td>
+               <td><button onclick="deleteUser('${user.username}')">Delete</button></td>
+            `;
 
-    <!-- ADD USER MODAL -->
-    <div id="addUserModal" class="modal">
-        <div class="modal-content">
-            <h3>Add User</h3>
+            tbody.appendChild(row);
+        });
+    } catch (err) {
+        console.error("Error loading users:", err);
+        alert("Failed to load users");
+    }
+}
 
-            <div class="form-group">
-                <label>Username</label>
-                <input type="text" id="newUsername" />
-            </div>
+// ------------------ Add User ------------------
+async function saveUser() {
+    const username = document.getElementById("newUsername").value.trim();
+    const password = document.getElementById("newPassword").value.trim();
+    const role = document.getElementById("newRole").value;
 
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="newPassword" />
-            </div>
+    if (!username || !password) {
+        alert("Please fill all fields");
+        return;
+    }
 
-            <div class="form-group">
-                <label>Role</label>
-                <select id="newRole">
-                    <option value="Admin">Admin</option>
-                    <option value="User">User</option>
-                </select>
-            </div>
+    const formData = new FormData();
+    formData.append("action", "addUser");
+    formData.append("username", username);
+    formData.append("password", password);
+    formData.append("role", role);
 
-            <button onclick="saveNewUser()">Save</button>
-            <button onclick="closeAddUserModal()">Cancel</button>
-        </div>
-    </div>
+    try {
+        const res = await fetch(SCRIPT_URL, { method: "POST", body: formData });
+        const text = await res.text();
+        alert(text);
+        closeAddUserModal();
+        loadUsers();
+    } catch (err) {
+        console.error("Error adding user:", err);
+    }
+}
 
-    <script src="user-management.js"></script>
-</body>
-</html>
+// ------------------ Delete User ------------------
+async function deleteUser(username) {
+    if (!confirm("Delete user " + username + "?")) return;
+
+    const formData = new FormData();
+    formData.append("action", "deleteUser");
+    formData.append("username", username);
+
+    try {
+        const res = await fetch(SCRIPT_URL, { method: "POST", body: formData });
+        const text = await res.text();
+        alert(text);
+        loadUsers();
+    } catch (err) {
+        console.error("Error deleting user:", err);
+    }
+}
+
+// ------------------ Modal Controls ------------------
+function openAddUserModal() {
+    document.getElementById("addUserModal").style.display = "block";
+}
+
+function closeAddUserModal() {
+    document.getElementById("addUserModal").style.display = "none";
+}
+
+// Load users on page load
+document.addEventListener("DOMContentLoaded", loadUsers);
