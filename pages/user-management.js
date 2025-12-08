@@ -1,21 +1,30 @@
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVcME3Xb95pDU8faZ1HhGGB1k5hYiBhSlx6GPFUcE2CbCtzO5_9Y3KLv12aoFF70M8sQ/exec";
+const APP_TOKEN = "Siddhivi!n@yakD1gital-T0ken-987";
 
 // ------------------ Load Users ------------------
 async function loadUsers() {
     try {
-        const res = await fetch(SCRIPT_URL + "?action=getUsers");
-        const data = await res.json();
+        const res = await fetch(`${SCRIPT_URL}?appToken=${APP_TOKEN}&dataType=USER_CREDENTIALS`);
+        const json = await res.json();
 
+        if (json.result !== "success") {
+            alert("Error loading users: " + json.error);
+            return;
+        }
+
+        const users = json.data;
         const tbody = document.getElementById("userTableBody");
         tbody.innerHTML = "";
 
-        data.forEach(user => {
+        users.forEach(user => {
             const row = document.createElement("tr");
 
             row.innerHTML = `
-               <td>${user.username}</td>
-               <td>${user.role}</td>
-               <td><button onclick="deleteUser('${user.username}')">Delete</button></td>
+               <td>${user[0]}</td>
+               <td>${user[2]}</td>
+               <td>
+                    <button onclick="deleteUser('${user[0]}')">Delete</button>
+               </td>
             `;
 
             tbody.appendChild(row);
@@ -37,16 +46,30 @@ async function saveUser() {
         return;
     }
 
-    const formData = new FormData();
-    formData.append("action", "addUser");
-    formData.append("username", username);
-    formData.append("password", password);
-    formData.append("role", role);
+    const payload = {
+        appToken: APP_TOKEN,
+        dataType: "ADD_USER",
+        data: {
+            username: username,
+            passwordHash: password,
+            role: role
+        }
+    };
 
     try {
-        const res = await fetch(SCRIPT_URL, { method: "POST", body: formData });
-        const text = await res.text();
-        alert(text);
+        const res = await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify(payload),
+            headers: { "Content-Type": "application/json" }
+        });
+
+        const json = await res.json();
+        if (json.result !== "success") {
+            alert("Error: " + json.error);
+            return;
+        }
+
+        alert("User added!");
         closeAddUserModal();
         loadUsers();
     } catch (err) {
@@ -58,14 +81,26 @@ async function saveUser() {
 async function deleteUser(username) {
     if (!confirm("Delete user " + username + "?")) return;
 
-    const formData = new FormData();
-    formData.append("action", "deleteUser");
-    formData.append("username", username);
+    const payload = {
+        appToken: APP_TOKEN,
+        dataType: "DELETE_USER",
+        data: { username: username }
+    };
 
     try {
-        const res = await fetch(SCRIPT_URL, { method: "POST", body: formData });
-        const text = await res.text();
-        alert(text);
+        const res = await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify(payload),
+            headers: { "Content-Type": "application/json" }
+        });
+
+        const json = await res.json();
+        if (json.result !== "success") {
+            alert("Error: " + json.error);
+            return;
+        }
+
+        alert("User deleted");
         loadUsers();
     } catch (err) {
         console.error("Error deleting user:", err);
