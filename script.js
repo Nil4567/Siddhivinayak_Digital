@@ -1,152 +1,128 @@
 /*******************************************************
- * USER MANAGEMENT — SCRIPT.JS
+ * USER MANAGEMENT BACKEND — CLEAN + MATCHES FRONTEND
  *******************************************************/
 
-const HARDCODED_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVcME3Xb95pDU8faZ1HhGGB1k5hYiBhSlx6GPFUcE2CbCtzO5_9Y3KLv12aoFF70M8sQ/exec"; 
-const HARDCODED_SECURITY_TOKEN = "Siddhivi!n@yakD1gital-T0ken-987";
+// ========================
+// SECURITY TOKEN
+// ========================
+const APP_TOKEN = "Siddhivi!n@yakD1gital-T0ken-987";
 
-/* ------------------ Toast Notification ------------------ */
-function showToast(msg, isError = false) {
-    const toast = document.getElementById("toast");
-    toast.style.background = isError ? "#d9534f" : "#323232";
-    toast.innerText = msg;
-    toast.style.display = "block";
+// ========================
+// SHEET CONFIG
+// ========================
+const SHEET_USERS = "https://script.google.com/macros/s/AKfycbzVcME3Xb95pDU8faZ1HhGGB1k5hYiBhSlx6GPFUcE2CbCtzO5_9Y3KLv12aoFF70M8sQ/exec";
 
-    setTimeout(() => {
-        toast.style.display = "none";
-    }, 3000);
+function getSheet() {
+  return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_USERS);
 }
 
-/* ------------------ SHA256 Function ------------------ */
-async function sha256(message) {
-    const msgBuffer = new TextEncoder().encode(message);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
-}
-
-/* ------------------ LOAD USERS ------------------ */
-async function loadUsers() {
-    try {
-        const res = await fetch(
-            `${HARDCODED_SCRIPT_URL}?appToken=${HARDCODED_SECURITY_TOKEN}&dataType=USER_CREDENTIALS`
-        );
-
-        const json = await res.json();
-
-        if (json.result !== "success") {
-            showToast("Error loading users", true);
-            return;
-        }
-
-        const users = json.data;
-        const tbody = document.getElementById("userBody");
-
-        tbody.innerHTML = "";
-
-        users.forEach(row => {
-            const [username, passHash, role] = row;
-
-            tbody.innerHTML += `
-                <tr>
-                    <td>${username}</td>
-                    <td>${role}</td>
-                    <td>
-                        <button class="btn btn-danger" onclick="deleteUser('${username}')">Delete</button>
-                    </td>
-                </tr>
-            `;
-        });
-
-    } catch (e) {
-        showToast("Connection error", true);
-    }
-}
-
-document.addEventListener("DOMContentLoaded", loadUsers);
-
-/* ------------------ ADD USER MODAL CONTROL ------------------ */
-
-function openAddUserModal() {
-    document.getElementById("userModal").style.display = "flex";
-}
-
-function closeUserModal() {
-    document.getElementById("userModal").style.display = "none";
-}
-
-/* ------------------ ADD USER FUNCTION ------------------ */
-async function submitNewUser() {
-    const username = document.getElementById("new-username").value.trim();
-    const password = document.getElementById("new-password").value.trim();
-    const role = document.getElementById("new-role").value;
-
-    if (!username || !password) {
-        showToast("Username & Password required!", true);
-        return;
+// ========================
+// API HANDLERS
+// ========================
+function doGet(e) {
+  try {
+    if (!e.parameter.appToken || e.parameter.appToken !== APP_TOKEN) {
+      return jsonError("Invalid or missing security token (GET).");
     }
 
-    const passwordHash = await sha256(password);
+    const dataType = e.parameter.dataType;
 
-    const payload = {
-        appToken: HARDCODED_SECURITY_TOKEN,
-        dataType: "ADD_USER",
-        data: {
-            username: username,
-            passwordHash: passwordHash,
-            role: role
-        }
-    };
-
-    try {
-        const response = await fetch(HARDCODED_SCRIPT_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
-
-        const json = await response.json();
-
-        if (json.result === "success") {
-            showToast("User added successfully!");
-            closeUserModal();
-            loadUsers();
-        } else {
-            showToast(json.error, true);
-        }
-
-    } catch (e) {
-        showToast("Network error", true);
+    if (dataType === "USER_CREDENTIALS") {
+      return jsonSuccess(getAllUsers());
     }
+
+    return jsonError("Unknown GET type: " + dataType);
+
+  } catch (err) {
+    return jsonError("GET exception: " + err);
+  }
 }
 
-/* ------------------ DELETE USER ------------------ */
-async function deleteUser(username) {
-    if (!confirm("Delete user: " + username + "?")) return;
+function doPost(e) {
+  try {
+    const body = JSON.parse(e.postData.contents);
 
-    const payload = {
-        appToken: HARDCODED_SECURITY_TOKEN,
-        dataType: "DELETE_USER",
-        data: { username }
-    };
-
-    try {
-        const response = await fetch(HARDCODED_SCRIPT_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
-
-        const json = await response.json();
-
-        if (json.result === "success") {
-            showToast("User deleted!");
-            loadUsers();
-        } else {
-            showToast(json.error, true);
-        }
-
-    } catch (e) {
-        showToast("Network error", true);
+    if (!body.appToken || body.appToken !== APP_TOKEN) {
+      return jsonError("Invalid or missing security token (POST).");
     }
+
+    const type = body.dataType;
+    const data = body.data;
+
+    switch (type) {
+      case "ADD_USER":
+        return jsonSuccess(addUser(data));
+
+      case "DELETE_USER":
+        return jsonSuccess(deleteUser(data));
+
+      default:
+        return jsonError("Unknown POST type: " + type);
+    }
+
+  } catch (err) {
+    return jsonError("POST exception: " + err);
+  }
+}
+
+// ========================
+// USER FUNCTIONS
+// ========================
+function getAllUsers() {
+  const sh = getSheet();
+  const last = sh.getLastRow();
+
+  if (last < 2) return [];
+
+  return sh.getRange(2, 1, last - 1, 3).getValues();
+}
+
+function addUser(obj) {
+  const sh = getSheet();
+
+  const username = obj.username;
+  const passwordHash = obj.passwordHash;
+  const role = obj.role;
+
+  if (!username || !passwordHash) throw "Missing username or password hash.";
+
+  const rows = getAllUsers();
+  if (rows.some(r => r[0] === username)) {
+    throw "Username already exists.";
+  }
+
+  sh.appendRow([username, passwordHash, role]);
+
+  return "User added.";
+}
+
+function deleteUser(obj) {
+  const sh = getSheet();
+  const username = obj.username;
+
+  if (!username) throw "Missing username in deleteUser().";
+
+  const rows = getAllUsers();
+  const index = rows.findIndex(r => r[0] === username);
+
+  if (index === -1) throw "User not found.";
+
+  sh.deleteRow(index + 2);
+
+  return "User deleted.";
+}
+
+// ========================
+// JSON HELPERS
+// ========================
+function jsonSuccess(data) {
+  return ContentService
+    .createTextOutput(JSON.stringify({ result: "success", data }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function jsonError(msg) {
+  return ContentService
+    .createTextOutput(JSON.stringify({ result: "error", error: msg }))
+    .setMimeType(ContentService.MimeType.JSON);
 }
