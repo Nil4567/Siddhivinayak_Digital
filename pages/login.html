@@ -8,87 +8,158 @@
     <link rel="stylesheet" href="../css/styles.css" />
 
     <style>
-        /* FIX: override global CSS that created blue blank screen */
+        /* FIX global override */
         body {
-            background: #4f46e5 !important;
             height: auto !important;
             overflow: auto !important;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-            padding: 0;
             margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            /* Beautiful gradient background */
+            background: linear-gradient(135deg, #4f46e5, #6a5df5, #8f7dff);
+            background-size: 400% 400%;
+            animation: bgAnim 12s ease infinite;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
+        /* Background animation */
+        @keyframes bgAnim {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Centered welcome text */
+        .welcome-text {
+            position: absolute;
+            top: 25px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 22px;
+            font-weight: 600;
+            animation: fadeIn 1.5s ease-out forwards;
+        }
+
+        /* Typing animation effect */
+        .typing {
+            display: inline-block;
+            border-right: 3px solid rgba(255,255,255,0.75);
+            white-space: nowrap;
+            overflow: hidden;
+            animation: typing 4s steps(40, end), blink 0.75s step-end infinite;
+        }
+
+        @keyframes typing {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+        @keyframes blink {
+            50% { border-color: transparent; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; margin-top: -20px; }
+            to { opacity: 1; margin-top: 0; }
+        }
+
+        /* Login box */
         .login-box {
-            background:white;
-            width:90%;
-            max-width:400px;
-            padding:35px;
-            border-radius:12px;
-            box-shadow:0 4px 14px rgba(0,0,0,0.18);
-            text-align:center;
+            background: rgba(255, 255, 255, 0.92);
+            width: 90%;
+            max-width: 400px;
+            padding: 35px;
+            border-radius: 14px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.25), 0 0 30px rgba(255,255,255,0.2);
+            text-align: center;
+            backdrop-filter: blur(6px);
+            animation: boxFade 0.8s ease-out;
+        }
+
+        @keyframes boxFade {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
         }
 
         .login-box h1 {
-            margin-bottom:10px;
-            color:#222;
+            margin-bottom: 10px;
+            color: #222;
         }
 
-        .input-group { text-align:left; margin-bottom:20px; }
-        .input-group label { font-weight:600; margin-bottom:6px; display:block; }
-        .input-group input { width:100%; padding:12px; border:1px solid #ccc; border-radius:6px; }
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { font-weight: 600; display: block; margin-bottom: 6px; }
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
 
         .login-btn {
-            background:#4f46e5;
-            color:white;
-            border:none;
-            padding:12px;
-            width:100%;
-            border-radius:6px;
-            font-size:18px;
-            cursor:pointer;
+            width: 100%;
+            padding: 12px;
+            font-size: 18px;
+            border: none;
+            border-radius: 8px;
+            background: #4f46e5;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .login-btn:hover {
+            background: #372fc2;
+            transform: scale(1.03);
         }
 
         .error-message {
-            margin-top:10px;
-            color:#b70000;
-            background:#fde7e7;
-            padding:10px;
-            border-radius:5px;
-            display:none;
+            margin-top: 10px;
+            padding: 10px;
+            background: #fde7e7;
+            color: #b70000;
+            border-radius: 5px;
+            display: none;
         }
 
         .back-home {
-            display:inline-block;
-            margin-top:18px;
-            color:white;
-            text-decoration:underline;
-            font-size:14px;
+            display: inline-block;
+            margin-top: 18px;
+            color: white;
+            font-size: 14px;
+            text-decoration: underline;
         }
     </style>
 </head>
 
 <body>
 
+    <!-- Welcome animated quote -->
+    <div class="welcome-text">
+        <span class="typing">“Quality is our habit, not an act — Welcome to Siddhivinayak Digital!”</span>
+    </div>
+
     <div class="login-box">
         <h1>Staff Login</h1>
-        <p>Enter your login credentials</p>
+        <p>Access your digital work panel</p>
 
         <form id="login-form">
             <div class="input-group">
-                <label for="username">Username</label>
+                <label>Username</label>
                 <input id="username" type="text" required />
             </div>
 
             <div class="input-group">
-                <label for="password">Password</label>
+                <label>Password</label>
                 <input id="password" type="password" required />
             </div>
 
             <div id="login-error-message" class="error-message"></div>
 
-            <button type="submit" id="login-button" class="login-btn">Login</button>
+            <button type="submit" id="login-button" class="login-btn">
+                Login
+            </button>
         </form>
 
         <a href="../index.html" class="back-home">← Back to Home</a>
@@ -100,22 +171,22 @@
         document.getElementById("login-form").addEventListener("submit", async (e) => {
             e.preventDefault();
 
-            const username = document.getElementById("username").value.trim();
-            const password = document.getElementById("password").value;
+            const u = username.value.trim();
+            const p = password.value;
             const errorBox = document.getElementById("login-error-message");
-            const loginBtn = document.getElementById("login-button");
+            const btn = document.getElementById("login-button");
 
-            loginBtn.textContent = "Logging in...";
-            loginBtn.disabled = true;
+            btn.textContent = "Checking...";
+            btn.disabled = true;
             errorBox.style.display = "none";
 
             try {
-                await handleLogin(username, password);
+                await handleLogin(u, p);
             } catch (err) {
-                errorBox.textContent = err.message;
+                errorBox.innerText = err.message;
                 errorBox.style.display = "block";
-                loginBtn.textContent = "Login";
-                loginBtn.disabled = false;
+                btn.textContent = "Login";
+                btn.disabled = false;
             }
         });
     </script>
