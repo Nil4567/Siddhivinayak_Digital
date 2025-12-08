@@ -33,9 +33,10 @@ document.addEventListener("DOMContentLoaded", () => {
          * 🔥 Validate Normal Users via Google Apps Script
          *****************************************************/
         try {
-            const url = `${SCRIPT_URL}?type=login&securityToken=${SECURITY_TOKEN}` +
-                        `&username=${encodeURIComponent(username)}` +
-                        `&password=${encodeURIComponent(password)}`;
+            const url =
+                `${SCRIPT_URL}?type=login&securityToken=${SECURITY_TOKEN}` +
+                `&username=${encodeURIComponent(username)}` +
+                `&password=${encodeURIComponent(password)}`;
 
             const res = await fetch(url);
             const data = await res.json();
@@ -51,12 +52,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 alert("Login Successful!");
                 window.location.href = "/Siddhivinayak_Digital/pages/dashboard.html";
+
             } else {
                 alert(data.message || "Invalid login credentials");
             }
+
         } catch (err) {
-            console.error(err);
-            alert("Login failed. Check your connection or server.");
+            console.error("Login Error:", err);
+            alert("Login failed. Check your internet connection or server.");
         }
     });
 });
