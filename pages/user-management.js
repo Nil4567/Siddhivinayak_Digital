@@ -1,108 +1,67 @@
-/*******************************************************
- * USER MANAGEMENT FRONTEND — FORM-DATA VERSION (NO PREFLIGHT)
- *******************************************************/
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Management</title>
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVcME3Xb95pDU8faZ1HhGGB1k5hYiBhSlx6GPFUcE2CbCtzO5_9Y3KLv12aoFF70M8sQ/exec";
-const APP_TOKEN = "Siddhivi!n@yakD1gital-T0ken-987";
+    <link rel="stylesheet" href="/Siddhivinayak_Digital/css/styles.css" />
+    <style>
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; }
+        .modal-content { background:#fff; padding:30px; width:450px; border-radius:8px; }
+        .form-group { margin-bottom:15px; }
+        label { display:block; margin-bottom:5px; }
+        input, select { width:100%; padding:8px; }
+        table { width:100%; border-collapse:collapse; margin-top:20px; }
+        th, td { padding:12px; border:1px solid #ddd; }
+        button { padding:10px 15px; cursor:pointer; }
+    </style>
+</head>
+<body>
 
-// ========================
-// LOAD USERS
-// ========================
-function loadUsers() {
-    fetch(`${SCRIPT_URL}?dataType=USER_CREDENTIALS&appToken=${APP_TOKEN}`)
-        .then(res => res.json())
-        .then(data => {
-            if (data.result !== "success") {
-                alert("Error loading users: " + data.error);
-                return;
-            }
+    <h2>User Management</h2>
 
-            const users = data.data;
-            const tbody = document.getElementById("userTableBody");
-            tbody.innerHTML = "";
+    <button onclick="openAddUserModal()">➕ Add User</button>
 
-            users.forEach(row => {
-                const [username, passwordHash, role] = row;
+    <table>
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+        <tbody id="userTableBody"></tbody>
+    </table>
 
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td>${username}</td>
-                    <td>${role}</td>
-                    <td><button onclick="deleteUser('${username}')">Delete</button></td>
-                `;
-                tbody.appendChild(tr);
-            });
-        })
-        .catch(err => alert("Load error: " + err));
-}
+    <!-- ADD USER MODAL -->
+    <div id="addUserModal" class="modal">
+        <div class="modal-content">
+            <h3>Add User</h3>
 
-window.onload = loadUsers;
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="newUsername" />
+            </div>
 
-// ========================
-// ADD USER
-// ========================
-function addUser() {
-    const username = document.getElementById("newUsername").value.trim();
-    const password = document.getElementById("newPassword").value.trim();
-    const role = document.getElementById("newRole").value;
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="newPassword" />
+            </div>
 
-    if (!username || !password) {
-        alert("Username & password required.");
-        return;
-    }
+            <div class="form-group">
+                <label>Role</label>
+                <select id="newRole">
+                    <option value="Admin">Admin</option>
+                    <option value="User">User</option>
+                </select>
+            </div>
 
-    const passwordHash = btoa(password); // simple encode
+            <button onclick="saveNewUser()">Save</button>
+            <button onclick="closeAddUserModal()">Cancel</button>
+        </div>
+    </div>
 
-    const formData = new FormData();
-    formData.append("appToken", APP_TOKEN);
-    formData.append("dataType", "ADD_USER");
-    formData.append("username", username);
-    formData.append("passwordHash", passwordHash);
-    formData.append("role", role);
-
-    fetch(SCRIPT_URL, { method: "POST", body: formData })
-        .then(res => res.json())
-        .then(data => {
-            if (data.result === "success") {
-                alert("User added successfully");
-                closeAddUserModal();
-                loadUsers();
-            } else {
-                alert("Error: " + data.error);
-            }
-        })
-        .catch(err => alert("Add error: " + err));
-}
-
-// ========================
-// DELETE USER
-// ========================
-function deleteUser(username) {
-    if (!confirm("Delete user: " + username + "?")) return;
-
-    const formData = new FormData();
-    formData.append("appToken", APP_TOKEN);
-    formData.append("dataType", "DELETE_USER");
-    formData.append("username", username);
-
-    fetch(SCRIPT_URL, { method: "POST", body: formData })
-        .then(res => res.json())
-        .then(data => {
-            if (data.result === "success") {
-                loadUsers();
-            } else {
-                alert("Error: " + data.error);
-            }
-        })
-        .catch(err => alert("Delete error: " + err));
-}
-
-// ========================
-// MODAL CONTROL
-// ========================
-function openAddUserModal() {
-    document.getElementById("addUserModal").style.display = "block";
-}
-function closeAddUserModal() {
-    document.getElementById("addUserModal").style.display = "none";
-}
+    <script src="user-management.js"></script>
+</body>
+</html>
