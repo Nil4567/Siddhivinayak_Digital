@@ -1,147 +1,153 @@
-/* ============================================================
-   USER MANAGEMENT MODULE (Super Admin Only)
-============================================================ */
+/*******************************************************
+ * USER MANAGEMENT — SCRIPT.JS
+ *******************************************************/
 
-async function initUserManagement() {
-    checkAuth();
+const HARDCODED_SCRIPT_URL =
+    "https://script.google.com/macros/s/AKfycbzVcME3Xb95pDU8faZ1HhGGB1k5hYiBhSlx6GPFUcE2CbCtzO5_9Y3KLv12aoFF70M8sQ/exec";
 
-    const isSuper = localStorage.getItem("sv_is_superadmin") === "true";
-    if (!isSuper) {
-        alert("Only Super Admin can access User Management.");
-        window.location.href = "./dashboard.html";
-        return;
-    }
+const HARDCODED_SECURITY_TOKEN = "Siddhivi!n@yakD1gital-T0ken-987";
 
-    loadUsers();
+/* ------------------ Toast Notification ------------------ */
+function showToast(msg, isError = false) {
+    const toast = document.getElementById("toast");
+    toast.style.background = isError ? "#d9534f" : "#323232";
+    toast.innerText = msg;
+    toast.style.display = "block";
+
+    setTimeout(() => {
+        toast.style.display = "none";
+    }, 3000);
 }
 
-/* LOAD USERS INTO TABLE */
+/* ------------------ SHA256 Function ------------------ */
+async function sha256(message) {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+/* ------------------ LOAD USERS ------------------ */
 async function loadUsers() {
-    const userList = await fetchSheetData("USER_CREDENTIALS");
-    const tbody = document.getElementById("userTableBody");
+    try {
+        const res = await fetch(
+            `${HARDCODED_SCRIPT_URL}?appToken=${HARDCODED_SECURITY_TOKEN}&dataType=USER_CREDENTIALS`
+        );
 
-    if (!userList || userList.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='3'>No users found.</td></tr>";
+        const json = await res.json();
+
+        if (json.result !== "success") {
+            showToast("Error loading users", true);
+            return;
+        }
+
+        const users = json.data;
+        const tbody = document.getElementById("userBody");
+        tbody.innerHTML = "";
+
+        users.forEach(row => {
+            const [username, passwordHash, role] = row;
+
+            tbody.innerHTML += `
+                <tr>
+                    <td>${username}</td>
+                    <td>${role}</td>
+                    <td>
+                        <button class="btn btn-danger" onclick="deleteUser('${username}')">Delete</button>
+                    </td>
+                </tr>
+            `;
+        });
+
+    } catch (e) {
+        showToast("Connection error", true);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", loadUsers);
+
+/* ------------------ ADD USER MODAL CONTROL ------------------ */
+
+function openAddUserModal() {
+    document.getElementById("userModal").style.display = "flex";
+}
+
+function closeUserModal() {
+    document.getElementById("userModal").style.display = "none";
+}
+
+/* ------------------ ADD USER FUNCTION ------------------ */
+async function submitNewUser() {
+    const username = document.getElementById("new-username").value.trim();
+    const password = document.getElementById("new-password").value.trim();
+    const role = document.getElementById("new-role").value;
+
+    if (!username || !password) {
+        showToast("Username & Password required!", true);
         return;
     }
 
-    tbody.innerHTML = "";
+    const passwordHash = await sha256(password);
 
-    userList.forEach(row => {
-        const username = row[0];
-        const role = row[2] === "Yes" ? "Manager" : "Staff";
+    const payload = {
+        appToken: HARDCODED_SECURITY_TOKEN,
+        dataType: "ADD_USER",
+        data: {
+            username: username,
+            passwordHash: passwordHash,
+            role: role
+        }
+    };
 
-        tbody.innerHTML += `
-            <tr>
-                <td>${username}</td>
-                <td>${role}</td>
-                <td>
-                    <button class="btn btn-edit" onclick="openModalEdit('${username}','${row[2]}')">Edit</button>
-                    <button class="btn btn-delete" onclick="deleteUser('${username}')">Delete</button>
-                </td>
-            </tr>
-        `;
-    });
-}
+    try {
+        const response = await fetch(HARDCODED_SCRIPT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
 
-/* OPEN ADD USER MODAL */
-function openModalAdd() {
-    document.getElementById("modalTitle").innerText = "Add User";
-    document.getElementById("mUsername").value = "";
-    document.getElementById("mPassword").value = "";
-    document.getElementById("mRole").value = "No";
-    document.getElementById("mOldUsername").value = "";
-    document.getElementById("modalBox").style.display = "flex";
-}
+        const json = await response.json();
 
-/* OPEN EDIT USER MODAL */
-function openModalEdit(username, isManager) {
-    document.getElementById("modalTitle").innerText = "Edit User";
+        if (json.result === "success") {
+            showToast("User added successfully!");
+            closeUserModal();
+            loadUsers();
+        } else {
+            showToast(json.error, true);
+        }
 
-    document.getElementById("mUsername").value = username;
-    document.getElementById("mPassword").value = "";
-    document.getElementById("mRole").value = isManager;
-    document.getElementById("mOldUsername").value = username;
-
-    document.getElementById("modalBox").style.display = "flex";
-}
-
-/* SAVE USER (ADD OR EDIT) */
-async function saveUser() {
-    const username = document.getElementById("mUsername").value.trim();
-    const password = document.getElementById("mPassword").value.trim();
-    const role = document.getElementById("mRole").value;
-    const oldUsername = document.getElementById("mOldUsername").value;
-
-    if (!username) {
-        alert("Username cannot be empty.");
-        return;
-    }
-
-    let payload;
-
-    if (oldUsername === "") {
-        // ADD USER
-        payload = {
-            dataType: "ADD_USER",
-            data: { username, password, isManager: role },
-            appToken: HARDCODED_SECURITY_TOKEN
-        };
-    } else {
-        // UPDATE USER
-        payload = {
-            dataType: "UPDATE_USER",
-            data: { oldUsername, username, password, isManager: role },
-            appToken: HARDCODED_SECURITY_TOKEN
-        };
-    }
-
-    const req = await fetch(HARDCODED_SCRIPT_URL, {
-        method: "POST",
-        mode: "cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-    });
-
-    const res = await req.json();
-
-    if (res.result === "success") {
-        alert("User saved successfully.");
-        closeModal();
-        loadUsers();
-    } else {
-        alert("Error: " + res.error);
+    } catch (e) {
+        showToast("Network error", true);
     }
 }
 
-/* DELETE USER */
+/* ------------------ DELETE USER ------------------ */
 async function deleteUser(username) {
     if (!confirm("Delete user: " + username + "?")) return;
 
     const payload = {
+        appToken: HARDCODED_SECURITY_TOKEN,
         dataType: "DELETE_USER",
-        data: { username },
-        appToken: HARDCODED_SECURITY_TOKEN
+        data: { username }
     };
 
-    const req = await fetch(HARDCODED_SCRIPT_URL, {
-        method: "POST",
-        mode: "cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-    });
+    try {
+        const response = await fetch(HARDCODED_SCRIPT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
 
-    const res = await req.json();
+        const json = await response.json();
 
-    if (res.result === "success") {
-        alert("User deleted.");
-        loadUsers();
-    } else {
-        alert("Error: " + res.error);
+        if (json.result === "success") {
+            showToast("User deleted!");
+            loadUsers();
+        } else {
+            showToast(json.error, true);
+        }
+
+    } catch (e) {
+        showToast("Network error", true);
     }
-}
-
-/* CLOSE MODAL */
-function closeModal() {
-    document.getElementById("modalBox").style.display = "none";
 }
