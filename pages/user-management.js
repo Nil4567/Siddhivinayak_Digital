@@ -1,153 +1,108 @@
 /*******************************************************
- * USER MANAGEMENT — SCRIPT.JS
+ * USER MANAGEMENT FRONTEND — FORM-DATA VERSION (NO PREFLIGHT)
  *******************************************************/
 
-const HARDCODED_SCRIPT_URL =
-    "https://script.google.com/macros/s/AKfycbzVcME3Xb95pDU8faZ1HhGGB1k5hYiBhSlx6GPFUcE2CbCtzO5_9Y3KLv12aoFF70M8sQ/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVcME3Xb95pDU8faZ1HhGGB1k5hYiBhSlx6GPFUcE2CbCtzO5_9Y3KLv12aoFF70M8sQ/exec";
+const APP_TOKEN = "Siddhivi!n@yakD1gital-T0ken-987";
 
-const HARDCODED_SECURITY_TOKEN = "Siddhivi!n@yakD1gital-T0ken-987";
+// ========================
+// LOAD USERS
+// ========================
+function loadUsers() {
+    fetch(`${SCRIPT_URL}?dataType=USER_CREDENTIALS&appToken=${APP_TOKEN}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.result !== "success") {
+                alert("Error loading users: " + data.error);
+                return;
+            }
 
-/* ------------------ Toast Notification ------------------ */
-function showToast(msg, isError = false) {
-    const toast = document.getElementById("toast");
-    toast.style.background = isError ? "#d9534f" : "#323232";
-    toast.innerText = msg;
-    toast.style.display = "block";
+            const users = data.data;
+            const tbody = document.getElementById("userTableBody");
+            tbody.innerHTML = "";
 
-    setTimeout(() => {
-        toast.style.display = "none";
-    }, 3000);
-}
+            users.forEach(row => {
+                const [username, passwordHash, role] = row;
 
-/* ------------------ SHA256 Function ------------------ */
-async function sha256(message) {
-    const msgBuffer = new TextEncoder().encode(message);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
-}
-
-/* ------------------ LOAD USERS ------------------ */
-async function loadUsers() {
-    try {
-        const res = await fetch(
-            `${HARDCODED_SCRIPT_URL}?appToken=${HARDCODED_SECURITY_TOKEN}&dataType=USER_CREDENTIALS`
-        );
-
-        const json = await res.json();
-
-        if (json.result !== "success") {
-            showToast("Error loading users", true);
-            return;
-        }
-
-        const users = json.data;
-        const tbody = document.getElementById("userBody");
-        tbody.innerHTML = "";
-
-        users.forEach(row => {
-            const [username, passwordHash, role] = row;
-
-            tbody.innerHTML += `
-                <tr>
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
                     <td>${username}</td>
                     <td>${role}</td>
-                    <td>
-                        <button class="btn btn-danger" onclick="deleteUser('${username}')">Delete</button>
-                    </td>
-                </tr>
-            `;
-        });
-
-    } catch (e) {
-        showToast("Connection error", true);
-    }
+                    <td><button onclick="deleteUser('${username}')">Delete</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        })
+        .catch(err => alert("Load error: " + err));
 }
 
-document.addEventListener("DOMContentLoaded", loadUsers);
+window.onload = loadUsers;
 
-/* ------------------ ADD USER MODAL CONTROL ------------------ */
-
-function openAddUserModal() {
-    document.getElementById("userModal").style.display = "flex";
-}
-
-function closeUserModal() {
-    document.getElementById("userModal").style.display = "none";
-}
-
-/* ------------------ ADD USER FUNCTION ------------------ */
-async function submitNewUser() {
-    const username = document.getElementById("new-username").value.trim();
-    const password = document.getElementById("new-password").value.trim();
-    const role = document.getElementById("new-role").value;
+// ========================
+// ADD USER
+// ========================
+function addUser() {
+    const username = document.getElementById("newUsername").value.trim();
+    const password = document.getElementById("newPassword").value.trim();
+    const role = document.getElementById("newRole").value;
 
     if (!username || !password) {
-        showToast("Username & Password required!", true);
+        alert("Username & password required.");
         return;
     }
 
-    const passwordHash = await sha256(password);
+    const passwordHash = btoa(password); // simple encode
 
-    const payload = {
-        appToken: HARDCODED_SECURITY_TOKEN,
-        dataType: "ADD_USER",
-        data: {
-            username: username,
-            passwordHash: passwordHash,
-            role: role
-        }
-    };
+    const formData = new FormData();
+    formData.append("appToken", APP_TOKEN);
+    formData.append("dataType", "ADD_USER");
+    formData.append("username", username);
+    formData.append("passwordHash", passwordHash);
+    formData.append("role", role);
 
-    try {
-        const response = await fetch(HARDCODED_SCRIPT_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
-
-        const json = await response.json();
-
-        if (json.result === "success") {
-            showToast("User added successfully!");
-            closeUserModal();
-            loadUsers();
-        } else {
-            showToast(json.error, true);
-        }
-
-    } catch (e) {
-        showToast("Network error", true);
-    }
+    fetch(SCRIPT_URL, { method: "POST", body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if (data.result === "success") {
+                alert("User added successfully");
+                closeAddUserModal();
+                loadUsers();
+            } else {
+                alert("Error: " + data.error);
+            }
+        })
+        .catch(err => alert("Add error: " + err));
 }
 
-/* ------------------ DELETE USER ------------------ */
-async function deleteUser(username) {
+// ========================
+// DELETE USER
+// ========================
+function deleteUser(username) {
     if (!confirm("Delete user: " + username + "?")) return;
 
-    const payload = {
-        appToken: HARDCODED_SECURITY_TOKEN,
-        dataType: "DELETE_USER",
-        data: { username }
-    };
+    const formData = new FormData();
+    formData.append("appToken", APP_TOKEN);
+    formData.append("dataType", "DELETE_USER");
+    formData.append("username", username);
 
-    try {
-        const response = await fetch(HARDCODED_SCRIPT_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
+    fetch(SCRIPT_URL, { method: "POST", body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if (data.result === "success") {
+                loadUsers();
+            } else {
+                alert("Error: " + data.error);
+            }
+        })
+        .catch(err => alert("Delete error: " + err));
+}
 
-        const json = await response.json();
-
-        if (json.result === "success") {
-            showToast("User deleted!");
-            loadUsers();
-        } else {
-            showToast(json.error, true);
-        }
-
-    } catch (e) {
-        showToast("Network error", true);
-    }
+// ========================
+// MODAL CONTROL
+// ========================
+function openAddUserModal() {
+    document.getElementById("addUserModal").style.display = "block";
+}
+function closeAddUserModal() {
+    document.getElementById("addUserModal").style.display = "none";
 }
