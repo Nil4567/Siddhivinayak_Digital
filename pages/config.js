@@ -3,28 +3,17 @@
  *******************************************************/
 
 /**
- * 🔥 Your Google Apps Script Web App URL
- * Make sure deployment is: 
- * - Execute as: Me
- * - Access: Anyone
+ * ✅ Your Google Apps Script Web App URL
  */
-export const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzvsxBRxAHMshglml3oFArYKm4Ag1-REw_R15t6WctODXk-etN_CLCp7b4qV2-4NmV7/exec";
+export const SCRIPT_URL =
+    "https://script.google.com/macros/s/AKfycbzvsxBRxAHMshglml3oFArYKm4Ag1-REw_R15t6WctODXk-etN_CLCp7b4qV2-4NmV7/exec";
 
 /**
- * 🔥 Security Token (must match Apps Script SECURITY_TOKEN)
+ * ✅ Security Token (must match Apps Script)
  */
 export const SECURITY_TOKEN = "SIDDHIVINAYAK123";
 
 /**
- * 🔥 Default redirect paths
+ * ✅ Redirect after login
  */
-export const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzvsxBRxAHMshglml3oFArYKm4Ag1-REw_R15t6WctODXk-etN_CLCp7b4qV2-4NmV7/exec";
-
-export const SECURITY_TOKEN = "SIDDHIVINAYAK123";
-
 export const DASHBOARD_PAGE = "/Siddhivinayak_Digital/pages/dashboard.html";
-
-import { SCRIPT_URL, SECURITY_TOKEN, DASHBOARD_PAGE }
-    from "./config.js";  // <-- MUST BE ./ not /pages
-
-
