@@ -2,7 +2,7 @@
  * USER MANAGEMENT — FRONTEND WITH DEBUG LOGGING
  *******************************************************/
 
-const SCRIPT_URL = "YOUR_WEB_APP_URL_HERE"; // <-- REPLACE
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzTu3dajvfhjC-lI0ZJpAJxiUMuNdqxPtwklv9OK5M2iKUvHrPUDY0jett2W7561qT5Ug/exec"; // <-- REPLACE
 
 // ------------------ Helper Logger ------------------
 function logDebug(msg, data = "") {
