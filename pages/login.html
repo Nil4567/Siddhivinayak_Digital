@@ -1,37 +1,52 @@
-<script src="../script.js"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Siddhivinayak Digital — Staff Login</title>
 
-<script>
-    // CRITICAL: Check if handleLogin is loaded before trying to use it
-    if (typeof handleLogin !== 'function') {
-        console.error("CRITICAL ERROR: handleLogin function not found. Check if script.js is loaded correctly.");
-    }
-    
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        const errorMessage = document.getElementById('login-error-message');
-        const loginButton = document.getElementById('login-button');
-        
-        errorMessage.style.display = 'none';
-        loginButton.textContent = 'Logging in...';
-        loginButton.disabled = true;
+    <!-- Correct path for GitHub Pages -->
+    <link rel="stylesheet" href="../css/styles.css" />
 
-        try {
-            // This calls the Super Admin bypass logic
-            await handleLogin(username, password);
-            
-            // On success, handleLogin performs the redirect, so the code ends here.
-            
-        } catch (error) {
-            // On failure
-            console.error("Login failed:", error.message);
-            errorMessage.textContent = error.message;
-            errorMessage.style.display = 'block';
-            
-            loginButton.textContent = 'Log In';
-            loginButton.disabled = false;
+    <style>
+        body {
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            min-height:100vh;
+            background:#4f46e5;
+            margin:0;
+            font-family:Arial, sans-serif;
         }
-    });
-</script>
+
+        .login-box {
+            background:white;
+            width:90%;
+            max-width:400px;
+            padding:35px;
+            border-radius:12px;
+            box-shadow:0 4px 14px rgba(0,0,0,0.18);
+            text-align:center;
+        }
+
+        .login-box h1 {
+            margin:0 0 10px;
+            color:#222;
+            font-size:26px;
+        }
+
+        .login-box p {
+            color:#666;
+            margin-top:0;
+            margin-bottom:25px;
+        }
+
+        .input-group {
+            text-align:left;
+            margin-bottom:20px;
+        }
+
+        .input-group label {
+            display:block;
+            font-weight:600;
+            margin-b
