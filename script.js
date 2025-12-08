@@ -1,176 +1,152 @@
-/* --------------------------------------------------
-   CONFIGURATION
--------------------------------------------------- */
-const HARDCODED_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVcME3Xb95pDU8faZ1HhGGB1k5hYiBhSlx6GPFUcE2CbCtzO5_9Y3KLv12aoFF70M8sQ/exec";
+/*******************************************************
+ * USER MANAGEMENT — SCRIPT.JS
+ *******************************************************/
 
+const HARDCODED_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVcME3Xb95pDU8faZ1HhGGB1k5hYiBhSlx6GPFUcE2CbCtzO5_9Y3KLv12aoFF70M8sQ/exec"; 
 const HARDCODED_SECURITY_TOKEN = "Siddhivi!n@yakD1gital-T0ken-987";
 
-/* ------------------------------
-   SUPER ADMIN CONFIG (SECURE)
------------------------------- */
-const SUPER_ADMIN_USERNAME = "superadmin";
+/* ------------------ Toast Notification ------------------ */
+function showToast(msg, isError = false) {
+    const toast = document.getElementById("toast");
+    toast.style.background = isError ? "#d9534f" : "#323232";
+    toast.innerText = msg;
+    toast.style.display = "block";
 
-// FINAL Correct SHA256 Hash of "admin@123" from your browser
-const SUPER_ADMIN_HASHED_PASSWORD =
-  "7676aaafb027c825bd9abab78b234070e702752f625b752e55e55b48e607e358";
+    setTimeout(() => {
+        toast.style.display = "none";
+    }, 3000);
+}
 
-/* --------------------------------------------------
-   UTIL — HASHING
--------------------------------------------------- */
+/* ------------------ SHA256 Function ------------------ */
 async function sha256(message) {
-  const msgBuffer = new TextEncoder().encode(message);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
-/* --------------------------------------------------
-   POST DATA TO GOOGLE SCRIPT
--------------------------------------------------- */
-async function sendDataToScript(dataObject, dataType) {
-  const url = HARDCODED_SCRIPT_URL;
-  const token = HARDCODED_SECURITY_TOKEN;
+/* ------------------ LOAD USERS ------------------ */
+async function loadUsers() {
+    try {
+        const res = await fetch(
+            `${HARDCODED_SCRIPT_URL}?appToken=${HARDCODED_SECURITY_TOKEN}&dataType=USER_CREDENTIALS`
+        );
 
-  const payload = { appToken: token, dataType, data: dataObject };
+        const json = await res.json();
 
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      mode: "cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+        if (json.result !== "success") {
+            showToast("Error loading users", true);
+            return;
+        }
 
-    const result = await response.json();
-    return result.result === "success";
-  } catch (error) {
-    console.error("POST ERROR:", error);
-    return false;
-  }
-}
+        const users = json.data;
+        const tbody = document.getElementById("userBody");
 
-/* SAVE USER SETTINGS */
-async function saveUserSettingsToSheet(settingsData) {
-  return sendDataToScript(settingsData, "USER_SETTINGS");
-}
+        tbody.innerHTML = "";
 
-/* --------------------------------------------------
-   GET DATA (USER CREDENTIALS, ETC.)
--------------------------------------------------- */
-async function fetchSheetData(dataType) {
-  const url = HARDCODED_SCRIPT_URL;
-  const token = HARDCODED_SECURITY_TOKEN;
-  const finalURL = `${url}?appToken=${token}&dataType=${dataType}`;
+        users.forEach(row => {
+            const [username, passHash, role] = row;
 
-  try {
-    const response = await fetch(finalURL, {
-      method: "GET",
-      mode: "cors",
-    });
+            tbody.innerHTML += `
+                <tr>
+                    <td>${username}</td>
+                    <td>${role}</td>
+                    <td>
+                        <button class="btn btn-danger" onclick="deleteUser('${username}')">Delete</button>
+                    </td>
+                </tr>
+            `;
+        });
 
-    const result = await response.json();
-    if (result.result === "success") return result.data;
-    return null;
-  } catch (error) {
-    console.error("GET ERROR:", error);
-    return null;
-  }
-}
-
-/* --------------------------------------------------
-   LOGIN FLOW
--------------------------------------------------- */
-function completeLogin(username, isManager, isSuperAdmin = false) {
-  const token = btoa(`${username}:${Date.now()}`);
-
-  localStorage.setItem("sv_user_token", token);
-  localStorage.setItem("sv_user_name", username);
-  localStorage.setItem("sv_is_manager", isManager ? "true" : "false");
-  localStorage.setItem("sv_is_superadmin", isSuperAdmin ? "true" : "false");
-
-  window.location.href = "./dashboard.html"; // correct for GitHub Pages
-}
-
-/* --------------------------------------------------
-   DEBUG LOGIN HANDLER
--------------------------------------------------- */
-async function handleLogin(username, password) {
-  console.log("========== LOGIN DEBUG ==========");
-  console.log("Entered Username:", username);
-  console.log("Entered Password:", password);
-
-  const hash = await sha256(password);
-  console.log("SHA256 Hash Generated:", hash);
-  console.log("Expected Super Admin Hash:", SUPER_ADMIN_HASHED_PASSWORD);
-
-  /* 1. SUPER ADMIN LOGIN */
-  if (
-    username === SUPER_ADMIN_USERNAME &&
-    hash === SUPER_ADMIN_HASHED_PASSWORD
-  ) {
-    console.log("SUPER ADMIN MATCH ✓");
-    completeLogin(username, true, true);
-    return;
-  } else {
-    console.log("Super Admin Match FAILED ✗");
-  }
-
-  /* 2. NORMAL USER LOGIN */
-  const usersList = await fetchSheetData("USER_CREDENTIALS");
-
-  console.log("Fetched USER_CREDENTIALS:", usersList);
-
-  if (usersList && usersList.length > 0) {
-    const match = usersList.find(
-      (row) => row[0] === username && row[1] === password
-    );
-
-    console.log("Sheet Match Found:", match);
-
-    if (match) {
-      console.log("NORMAL USER LOGIN SUCCESS ✓");
-      const isManager = match[2] === "Yes";
-      completeLogin(username, isManager, false);
-      return;
+    } catch (e) {
+        showToast("Connection error", true);
     }
-  }
-
-  console.log("FINAL RESULT → LOGIN FAILED ✗");
-  throw new Error("Invalid username or password.");
 }
 
-/* --------------------------------------------------
-   SESSION VALIDATION
--------------------------------------------------- */
-function checkAuth() {
-  const token = localStorage.getItem("sv_user_token");
-  const name = localStorage.getItem("sv_user_name");
+document.addEventListener("DOMContentLoaded", loadUsers);
 
-  if (!token || !name) {
-    window.location.href =
-      "/Siddhivinayak_Digital/pages/login.html";
-    return;
-  }
+/* ------------------ ADD USER MODAL CONTROL ------------------ */
 
-  const nameElement = document.getElementById("sv_user_name");
-  if (nameElement) nameElement.textContent = name;
+function openAddUserModal() {
+    document.getElementById("userModal").style.display = "flex";
 }
 
-/* --------------------------------------------------
-   LOGOUT
--------------------------------------------------- */
-function logout() {
-  localStorage.clear();
-  window.location.href =
-    "/Siddhivinayak_Digital/pages/login.html";
+function closeUserModal() {
+    document.getElementById("userModal").style.display = "none";
 }
 
-/* --------------------------------------------------
-   EXPORTS
--------------------------------------------------- */
-window.sendDataToScript = sendDataToScript;
-window.saveUserSettingsToSheet = saveUserSettingsToSheet;
-window.fetchSheetData = fetchSheetData;
-window.checkAuth = checkAuth;
-window.logout = logout;
-window.handleLogin = handleLogin;
+/* ------------------ ADD USER FUNCTION ------------------ */
+async function submitNewUser() {
+    const username = document.getElementById("new-username").value.trim();
+    const password = document.getElementById("new-password").value.trim();
+    const role = document.getElementById("new-role").value;
+
+    if (!username || !password) {
+        showToast("Username & Password required!", true);
+        return;
+    }
+
+    const passwordHash = await sha256(password);
+
+    const payload = {
+        appToken: HARDCODED_SECURITY_TOKEN,
+        dataType: "ADD_USER",
+        data: {
+            username: username,
+            passwordHash: passwordHash,
+            role: role
+        }
+    };
+
+    try {
+        const response = await fetch(HARDCODED_SCRIPT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        const json = await response.json();
+
+        if (json.result === "success") {
+            showToast("User added successfully!");
+            closeUserModal();
+            loadUsers();
+        } else {
+            showToast(json.error, true);
+        }
+
+    } catch (e) {
+        showToast("Network error", true);
+    }
+}
+
+/* ------------------ DELETE USER ------------------ */
+async function deleteUser(username) {
+    if (!confirm("Delete user: " + username + "?")) return;
+
+    const payload = {
+        appToken: HARDCODED_SECURITY_TOKEN,
+        dataType: "DELETE_USER",
+        data: { username }
+    };
+
+    try {
+        const response = await fetch(HARDCODED_SCRIPT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        const json = await response.json();
+
+        if (json.result === "success") {
+            showToast("User deleted!");
+            loadUsers();
+        } else {
+            showToast(json.error, true);
+        }
+
+    } catch (e) {
+        showToast("Network error", true);
+    }
+}
