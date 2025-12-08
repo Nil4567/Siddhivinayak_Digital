@@ -1,94 +1,96 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>User Management</title>
+    <meta charset="UTF-8">
+    <title>User Management</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        body { font-family: Arial; margin: 0; background: #f7f7f7; }
+        .container { padding: 20px; max-width: 900px; margin: auto; }
 
-<link rel="stylesheet" href="../styles/internal.css" />
+        h2 { text-align: center; margin-bottom: 20px; }
 
-<style>
-    body { font-family: Arial; background: #f7f7f7; }
-    .container {
-        width: 90%; max-width: 900px;
-        margin: 30px auto; background: white;
-        padding: 20px; border-radius: 10px;
-        box-shadow: 0 0 10px #ccc;
-    }
-    .btn {
-        padding: 8px 12px; background: #4CAF50; color: white;
-        border: none; border-radius: 6px; cursor: pointer;
-    }
-    .btn-danger { background: #d9534f; }
-    .modal-bg {
-        display: none; position: fixed; inset: 0;
-        background: rgba(0,0,0,0.6);
-        justify-content: center; align-items: center;
-    }
-    .modal {
-        background: white; padding: 20px; width: 350px;
-        border-radius: 10px; box-shadow: 0 0 10px #333;
-    }
-    .toast {
-        position: fixed; top: 20px; right: 20px;
-        padding: 12px 20px; border-radius: 6px;
-        color: white; display: none; z-index: 9999;
-    }
-</style>
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+
+        .btn { padding: 8px 12px; border: none; cursor: pointer; border-radius: 4px; }
+        .btn-add { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+
+        /* Modal */
+        #userModal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        #modalBox {
+            background: white; padding: 20px; width: 300px;
+            border-radius: 8px;
+        }
+
+        /* Toast */
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #323232;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: none;
+        }
+    </style>
 </head>
 
 <body>
-
-<div class="toast" id="toast"></div>
-
 <div class="container">
+
     <h2>User Management</h2>
 
-    <button class="btn" onclick="openAddUserModal()">+ Add User</button>
+    <button class="btn btn-add" onclick="openAddUserModal()">+ Add User</button>
 
-    <table style="width:100%; border-collapse: collapse; margin-top:20px;">
+    <table>
         <thead>
-            <tr style="background:#eee;">
+            <tr>
                 <th>Username</th>
                 <th>Role</th>
                 <th>Actions</th>
             </tr>
         </thead>
-        <tbody id="userBody">
-            <tr><td colspan="3">Loading...</td></tr>
-        </tbody>
+        <tbody id="userBody"></tbody>
     </table>
 </div>
 
+<!-- Modal -->
+<div id="userModal">
+    <div id="modalBox">
+        <h3>Add User</h3>
 
-<!-- ADD USER MODAL -->
-<div class="modal-bg" id="userModal">
-    <div class="modal">
-        <h3>Add New User</h3>
+        <label>Username</label>
+        <input type="text" id="new-username" class="input" style="width:100%; margin-bottom:8px;">
 
-        <input type="text" id="new-username" placeholder="Username" />
-        <input type="password" id="new-password" placeholder="Password" />
-        <select id="new-role">
-            <option value="staff">Staff</option>
-            <option value="manager">Manager</option>
+        <label>Password</label>
+        <input type="password" id="new-password" class="input" style="width:100%; margin-bottom:8px;">
+
+        <label>Role</label>
+        <select id="new-role" style="width:100%; margin-bottom:12px;">
+            <option value="Staff">Staff</option>
+            <option value="Manager">Manager</option>
         </select>
 
-        <button class="btn" onclick="submitNewUser()">Save</button>
+        <button class="btn btn-add" onclick="submitNewUser()">Save</button>
         <button class="btn btn-danger" onclick="closeUserModal()">Cancel</button>
     </div>
 </div>
 
-<!-- ⭐ Correct JS path (VERY IMPORTANT) -->
-<script src="../script.js"></script>
+<!-- Toast -->
+<div id="toast"></div>
 
-<!-- ⭐ Extra logging — prevents blank page -->
-<script>
-window.onerror = function(msg, url, line) {
-    document.getElementById("userBody").innerHTML =
-        "<tr><td colspan='3' style='color:red;'>JS Error: "
-        + msg + " (Line " + line + ")</td></tr>";
-};
-</script>
+<!-- JS File -->
+<script src="../js/user-management.js"></script>
 
 </body>
 </html>
