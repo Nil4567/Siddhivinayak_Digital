@@ -1,324 +1,144 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>User Management — Siddhivinayak Digital</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Management — Siddhivinayak Digital</title>
 
-  <link rel="stylesheet" href="../css/styles.css" />
+    <link href="../css/styles.css" rel="stylesheet">
 
-  <style>
-    :root{
-      --accent: #7c4dff;
-      --accent-2: #ffb86b;
-      --card-bg: #ffffff;
-      --muted: #6b7280;
-    }
-    body { font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; margin:0; background: #f6f7fb; color:#111; }
-    .page { max-width:1100px; margin:36px auto; padding:18px; }
-    header{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px;}
-    header h1{ margin:0; font-size:22px; }
-    .top-actions { display:flex; gap:12px; align-items:center; }
-
-    /* Add user form */
-    .card { background:var(--card-bg); padding:18px; border-radius:12px; box-shadow:0 6px 18px rgba(16,24,40,0.06); }
-    .add-form{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
-    .add-form input, .add-form select { padding:10px 12px; border-radius:8px; border:1px solid #e6e9ee; min-width:160px; }
-    .btn { padding:10px 14px; border-radius:10px; border:none; cursor:pointer; font-weight:700; }
-    .btn-primary { background: linear-gradient(90deg,var(--accent),var(--accent-2)); color:white; }
-    .btn-danger { background:#ef4444; color:white; }
-
-    /* Table */
-    table{ width:100%; border-collapse:collapse; margin-top:16px; background:transparent; }
-    th,td{ padding:12px 14px; text-align:left; border-bottom:1px solid #eef2f6; vertical-align:middle; }
-    th{ font-size:13px; color:var(--muted); font-weight:700; background:transparent; }
-    td small { color:var(--muted); font-size:13px; }
-
-    .actions button{ margin-right:8px; }
-
-    /* Modal */
-    .modal-backdrop { position:fixed; inset:0; background:rgba(2,6,23,0.5); display:none; align-items:center; justify-content:center; z-index:999; }
-    .modal { background: white; width:100%; max-width:520px; border-radius:12px; padding:18px; box-shadow:0 10px 30px rgba(2,6,23,0.2); }
-    .modal h3 { margin:0 0 8px 0; }
-    .form-row { display:flex; gap:10px; margin-bottom:10px; }
-    .form-row input, .form-row select { flex:1; padding:10px 12px; border-radius:8px; border:1px solid #e6e9ee; }
-
-    .muted { color:var(--muted); font-size:13px; }
-
-    @media (max-width:720px){
-      .add-form{ flex-direction:column; align-items:stretch; }
-      .form-row{ flex-direction:column; }
-    }
-  </style>
-</head>
-<body>
-  <div class="page">
-    <header>
-      <div>
-        <h1>User Management</h1>
-        <div class="muted">Create, edit and remove users — Super Admin only</div>
-      </div>
-
-      <div class="top-actions">
-        <button class="btn" onclick="location.href='../pages/dashboard.html'">← Dashboard</button>
-        <button id="refreshBtn" class="btn" title="Reload users">Refresh</button>
-      </div>
-    </header>
-
-    <section class="card">
-      <h3 style="margin-top:0">Add New User</h3>
-
-      <div class="add-form" style="margin-top:12px;">
-        <input id="new_username" placeholder="Username (e.g. john_doe)" />
-        <input id="new_password" placeholder="Password" type="password" />
-        <select id="new_role">
-          <option value="No">Staff</option>
-          <option value="Yes">Manager</option>
-        </select>
-        <button id="addUserBtn" class="btn btn-primary">Add User</button>
-      </div>
-
-      <div id="add-msg" style="margin-top:10px;color:green;display:none;"></div>
-    </section>
-
-    <section style="margin-top:16px;">
-      <div class="card">
-        <h3 style="margin-top:0">All Users</h3>
-
-        <table id="usersTable" style="margin-top:12px;">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Username</th>
-              <th>Role</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="users-tbody">
-            <tr><td colspan="4">Loading users…</td></tr>
-          </tbody>
-        </table>
-
-      </div>
-    </section>
-  </div>
-
-  <!-- Edit modal -->
-  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true">
-    <div class="modal" role="document" aria-labelledby="modalTitle">
-      <h3 id="modalTitle">Edit User</h3>
-
-      <div style="margin-top:10px;">
-        <div class="form-row">
-          <input id="edit_username" placeholder="Username" />
-          <select id="edit_role"><option value="No">Staff</option><option value="Yes">Manager</option></select>
-        </div>
-        <div class="form-row">
-          <input id="edit_password" placeholder="New password (leave blank to keep current)" type="password" />
-        </div>
-
-        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
-          <button id="modalCancel" class="btn">Cancel</button>
-          <button id="modalSave" class="btn btn-primary">Save changes</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script src="../script.js"></script>
-  <script>
-    // Ensure only superadmin can access — if not, redirect
-    (function ensureSuperAdmin() {
-      const isSuperAdmin = localStorage.getItem('sv_is_superadmin') === 'true';
-      const logged = localStorage.getItem('sv_user_token');
-      if (!logged) {
-        // not logged — go to login
-        window.location.href = '../pages/login.html';
-        return;
-      }
-      if (!isSuperAdmin) {
-        alert('Access denied — Super Admin only.');
-        window.location.href = '../pages/dashboard.html';
-        return;
-      }
-    })();
-
-    // DOM refs
-    const usersTbody = document.getElementById('users-tbody');
-    const refreshBtn = document.getElementById('refreshBtn');
-    const addUserBtn = document.getElementById('addUserBtn');
-    const addMsg = document.getElementById('add-msg');
-
-    const modalBackdrop = document.getElementById('modalBackdrop');
-    const editUsernameInput = document.getElementById('edit_username');
-    const editRoleSelect = document.getElementById('edit_role');
-    const editPasswordInput = document.getElementById('edit_password');
-    const modalSave = document.getElementById('modalSave');
-    const modalCancel = document.getElementById('modalCancel');
-
-    let usersCache = [];
-    let editingUserOld = null;
-
-    // Load users from sheet
-    async function loadUsers() {
-      usersTbody.innerHTML = '<tr><td colspan="4">Loading users…</td></tr>';
-      const data = await fetchSheetData('USER_CREDENTIALS');
-      if (!data) {
-        usersTbody.innerHTML = '<tr><td colspan="4">Unable to load users.</td></tr>';
-        return;
-      }
-
-      usersCache = data.map((r, idx) => {
-        if (Array.isArray(r)) {
-          return { username: r[0] || '', password: r[1] || '', isManager: (r[2] || 'No') };
-        } else {
-          return { username: r.username || '', password: r.password || '', isManager: r.isManager || 'No' };
+    <style>
+        body {
+            background: #f4f4f9;
+            font-family: Arial, sans-serif;
         }
-      });
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+        }
+        h1 {
+            font-size: 28px;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border-bottom: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background: #4f46e5;
+            color: white;
+        }
+        .btn {
+            padding: 7px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .btn-add {
+            background: #4f46e5;
+            color: white;
+            float: right;
+            margin-bottom: 10px;
+        }
+        .btn-edit {
+            background: #00aaff;
+            color: white;
+        }
+        .btn-delete {
+            background: #e00000;
+            color: white;
+        }
+        .modal-bg {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal {
+            width: 400px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .input-box {
+            margin-bottom: 10px;
+        }
+        .input-box label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .input-box input, select {
+            width: 100%;
+            padding: 8px;
+        }
+    </style>
+</head>
 
-      renderUsers();
-    }
+<body onload="initUserManagement()">
 
-    // Render table
-    function renderUsers() {
-      if (!usersCache.length) {
-        usersTbody.innerHTML = '<tr><td colspan="4">No users found.</td></tr>';
-        return;
-      }
+    <div class="container">
+        <h1>User Management</h1>
 
-      usersTbody.innerHTML = usersCache.map((u, i) => {
-        const roleText = (u.isManager === 'Yes' || u.isManager === true) ? 'Manager' : 'Staff';
-        return `<tr>
-          <td style="width:60px">${i+1}</td>
-          <td><strong>${escapeHtml(u.username)}</strong><div style="margin-top:6px;"><small>● Password: <em>hidden</em></small></div></td>
-          <td style="width:140px">${roleText}</td>
-          <td class="actions" style="width:220px">
-            <button class="btn" data-action="edit" data-idx="${i}">Edit</button>
-            <button class="btn" data-action="delete" data-idx="${i}" style="background:#f97316;color:white;">Delete</button>
-          </td>
-        </tr>`;
-      }).join('');
-    }
+        <button class="btn btn-add" onclick="openModalAdd()">+ Add User</button>
 
-    // Escape helper
-    function escapeHtml(s){ if (!s) return ''; return s.toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th style="width:150px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="userTableBody">
+                <tr><td colspan="3">Loading users...</td></tr>
+            </tbody>
+        </table>
+    </div>
 
-    // Add user
-    addUserBtn.addEventListener('click', async () => {
-      const username = document.getElementById('new_username').value.trim();
-      const password = document.getElementById('new_password').value;
-      const isManager = document.getElementById('new_role').value;
+    <!-- MODAL -->
+    <div class="modal-bg" id="modalBox">
+        <div class="modal">
+            <h3 id="modalTitle">Add User</h3>
 
-      if (!username || !password) {
-        alert('Please enter username and password.');
-        return;
-      }
+            <div class="input-box">
+                <label>Username</label>
+                <input type="text" id="mUsername">
+            </div>
 
-      addUserBtn.disabled = true;
-      addUserBtn.textContent = 'Adding...';
-      addMsg.style.display = 'none';
+            <div class="input-box">
+                <label>Password</label>
+                <input type="text" id="mPassword" placeholder="Leave empty to keep same (edit mode)">
+            </div>
 
-      const payload = { username, password, isManager };
-      const ok = await sendDataToScript(payload, 'ADD_USER');
-      if (ok === true) {
-        addMsg.textContent = 'User added.';
-        addMsg.style.color = 'green';
-        addMsg.style.display = 'block';
-        document.getElementById('new_username').value = '';
-        document.getElementById('new_password').value = '';
-        await loadUsers();
-      } else {
-        addMsg.textContent = 'Failed to add user.';
-        addMsg.style.color = 'red';
-        addMsg.style.display = 'block';
-      }
+            <div class="input-box">
+                <label>Role</label>
+                <select id="mRole">
+                    <option value="No">Staff</option>
+                    <option value="Yes">Manager</option>
+                </select>
+            </div>
 
-      addUserBtn.disabled = false;
-      addUserBtn.textContent = 'Add User';
-    });
+            <input type="hidden" id="mOldUsername">
 
-    // Table action delegation (edit/delete)
-    usersTbody.addEventListener('click', (e) => {
-      const btn = e.target.closest('button');
-      if (!btn) return;
-      const action = btn.dataset.action;
-      const idx = Number(btn.dataset.idx);
-      if (action === 'edit') openEditModal(idx);
-      if (action === 'delete') deleteUser(idx);
-    });
+            <button class="btn btn-add" onclick="saveUser()">Save</button>
+            <button class="btn" onclick="closeModal()" style="background:#555;color:white;margin-left:10px;">Cancel</button>
+        </div>
+    </div>
 
-    // Open modal to edit
-    function openEditModal(idx) {
-      const user = usersCache[idx];
-      if (!user) return;
-      editingUserOld = user.username;
-      editUsernameInput.value = user.username;
-      editRoleSelect.value = user.isManager === 'Yes' ? 'Yes' : 'No';
-      editPasswordInput.value = ''; // blank = keep existing
-      modalBackdrop.style.display = 'flex';
-      editUsernameInput.focus();
-    }
+    <script src="../script.js"></script>
+    <script src="user-management.js"></script>
 
-    modalCancel.addEventListener('click', closeModal);
-    function closeModal(){
-      modalBackdrop.style.display = 'none';
-      editingUserOld = null;
-      editPasswordInput.value = '';
-    }
-
-    // Save changes
-    modalSave.addEventListener('click', async () => {
-      const newUsername = editUsernameInput.value.trim();
-      const newRole = editRoleSelect.value;
-      const newPass = editPasswordInput.value;
-
-      if (!newUsername) {
-        alert('Username cannot be empty.');
-        return;
-      }
-
-      modalSave.disabled = true;
-      modalSave.textContent = 'Saving...';
-
-      const payload = {
-        oldUsername: editingUserOld,
-        username: newUsername,
-        password: newPass || null,
-        isManager: newRole
-      };
-
-      const ok = await sendDataToScript(payload, 'UPDATE_USER');
-      if (ok === true) {
-        alert('User updated.');
-        await loadUsers();
-        closeModal();
-      } else {
-        alert('Failed to update user.');
-      }
-
-      modalSave.disabled = false;
-      modalSave.textContent = 'Save changes';
-    });
-
-    // Delete
-    async function deleteUser(idx) {
-      const user = usersCache[idx];
-      if (!user) return;
-      if (!confirm(`Delete user "${user.username}" ? This cannot be undone.`)) return;
-
-      const ok = await sendDataToScript({ username: user.username }, 'DELETE_USER');
-      if (ok === true) {
-        alert('User deleted.');
-        await loadUsers();
-      } else {
-        alert('Failed to delete user.');
-      }
-    }
-
-    refreshBtn.addEventListener('click', loadUsers);
-
-    // initial load
-    loadUsers();
-  </script>
 </body>
 </html>
