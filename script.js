@@ -2,7 +2,7 @@
    CONFIGURATION
 -------------------------------------------------- */
 const HARDCODED_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbzVcME3Xb95pDU8faZ1HhGGB1k5hYiBhSlx6GPFUcE2CbCtzO5_9Y3KLv12aoFF70M8sQ/exec";
+  "https://script.google.com/macros/s/AKfycbyMKT93c-nLP5xNIswZCxAgyuv2ohZw9kD4qYM5Qw-X/dev";
 
 const HARDCODED_SECURITY_TOKEN = "Siddhivi!n@yakD1gital-T0ken-987";
 
