@@ -1,26 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script>
-// PUBLIC SUPABASE CREDS (SAFE FOR FRONTEND)
-
-const SUPABASE_URL = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXFqY3h6eXRqdHNpa3pyZHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMzA4NjAsImV4cCI6MjA4MDgwNjg2MH0.q0gkhSgqT_BNfsZBCd2stkgskf2V-CDVIG9p6S5LHdM";  // Replace with your real anon key
-
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-</script>
-
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Siddhivinayak Digital Services — Login</title>
+
+  <!-- Fonts -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Login Page CSS -->
   <link rel="stylesheet" href="../styles/login.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <!-- supabase-js via CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.26.0/dist/supabase.min.js"></script>
+
+  <!-- Supabase CDN (GLOBAL) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    // Initialize Supabase globally
+    window.SUPABASE_URL = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
+    window.SUPABASE_ANON_KEY =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXFqY3h6eXRqdHNpa3pyZHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMzA4NjAsImV4cCI6MjA4MDgwNjg2MH0.q0gkhSgqT_BNfsZBCd2stkgskf2V-CDVIG9p6S5LHdM";
+
+    window.supabaseClient = supabase.createClient(
+      window.SUPABASE_URL,
+      window.SUPABASE_ANON_KEY
+    );
+  </script>
 </head>
+
 <body>
   <header class="top-header">
     <div class="brand">Siddhivinayak Digital Services</div>
@@ -41,11 +50,13 @@ const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         <button type="submit" class="btn-login">Login</button>
       </form>
 
+      <p id="errorMessage" style="color:red;margin-top:10px;"></p>
+
       <p class="footer-text">© 2025 Siddhivinayak Digital Services</p>
     </div>
   </div>
 
-  <!-- Login module (ES module so we can import config) -->
+  <!-- Login Logic -->
   <script type="module" src="./login.js"></script>
 </body>
 </html>
