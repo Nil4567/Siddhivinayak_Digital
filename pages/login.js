@@ -1,54 +1,33 @@
-import { SCRIPT_URL, SECURITY_TOKEN, DASHBOARD_PAGE } from "./config.js";
+import { SCRIPT_URL, SECURITY_TOKEN, DASHBOARD_PAGE } from "/pages/config.js";
 
-document.addEventListener("DOMContentLoaded", () => {
+document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-    const loginForm = document.getElementById("loginForm");
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const status = document.getElementById("loginMessage");
 
-    loginForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
+    status.textContent = "Checking...";
+    
+    try {
+        const url = `${SCRIPT_URL}?type=login&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&securityToken=${SECURITY_TOKEN}`;
 
-        const username = document.getElementById("username").value.trim();
-        const password = document.getElementById("password").value.trim();
+        const res = await fetch(url);
+        const json = await res.json();
 
-        /***************************************
-         * 🔥 SUPERADMIN ALWAYS ALLOWED
-         ***************************************/
-        if (username === "superadmin" && password === "admin123") {
-            localStorage.setItem("loggedInUser", JSON.stringify({
-                username: "superadmin",
-                role: "SuperAdmin",
-            }));
+        if (json.status === "success") {
+            const role = json.data.role;
 
-            alert("SuperAdmin Login Successful!");
-            window.location.href = DASHBOARD_PAGE;
-            return;
-        }
-
-        /***************************************
-         * 🔥 NORMAL STAFF LOGIN
-         ***************************************/
-        try {
-            const url =
-                `${SCRIPT_URL}?type=login&securityToken=${SECURITY_TOKEN}` +
-                `&username=${encodeURIComponent(username)}` +
-                `&password=${encodeURIComponent(password)}`;
-
-            const res = await fetch(url);
-            const data = await res.json();
-
-            if (data.status === "success") {
-                localStorage.setItem("loggedInUser", JSON.stringify({
-                    username: data.data.username,
-                    role: data.data.role
-                }));
-                window.location.href = DASHBOARD_PAGE;
-            } else {
-                alert(data.message || "Invalid login credentials");
+            if (role === "SuperAdmin") {
+                alert("Welcome SuperAdmin!");
             }
 
-        } catch (error) {
-            console.error(error);
-            alert("Network error. Please try again.");
+            // Redirect to dashboard
+            window.location.href = DASHBOARD_PAGE;
+        } else {
+            status.textContent = "❌ Invalid username or password";
         }
-    });
+    } catch (err) {
+        status.textContent = "❌ Network error";
+    }
 });
