@@ -1,5 +1,70 @@
-// small guard — run in dashboard.js
-const user = JSON.parse(localStorage.getItem("sd_user"));
-if (!user) {
-  window.location.href = "/Siddhivinayak_Digital/pages/login.html";
-}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dashboard — Siddhivinayak Digital Services</title>
+
+  <link rel="stylesheet" href="/Siddhivinayak_Digital/styles/dashboard.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">Siddhivinayak Digital</div>
+
+      <nav>
+        <a href="/Siddhivinayak_Digital/pages/dashboard.html" class="active">Dashboard</a>
+        <a href="/Siddhivinayak_Digital/pages/user-management.html" id="usersLink">User Management</a>
+        <a href="/Siddhivinayak_Digital/pages/staff.html">Staff</a>
+        <a href="/Siddhivinayak_Digital/pages/jobs.html">Jobs</a>
+        <a href="/Siddhivinayak_Digital/pages/reports.html">Reports</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button id="logoutBtn" class="btn-ghost">Logout</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="welcome">
+          <h1 id="pageTitle">Dashboard</h1>
+          <p id="subtitle">Welcome back — overview of today's activity</p>
+        </div>
+
+        <div class="top-actions">
+          <div id="userInfo" class="user-info"></div>
+        </div>
+      </header>
+
+      <section class="content">
+        <div class="cards">
+          <div class="card">
+            <h3 id="totalUsers">—</h3>
+            <p>Users</p>
+          </div>
+
+          <div class="card">
+            <h3 id="activeJobs">—</h3>
+            <p>Open Jobs</p>
+          </div>
+
+          <div class="card">
+            <h3 id="todayRevenue">—</h3>
+            <p>Today Revenue</p>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>Recent Activity</h3>
+          <div id="activityList" class="activity-list">
+            <!-- filled by JS -->
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="/Siddhivinayak_Digital/pages/dashboard.js"></script>
+</body>
+</html>
