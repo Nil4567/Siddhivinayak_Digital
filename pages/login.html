@@ -1,62 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Siddhivinayak Digital Services - Login</title>
-
-    <!-- CSS -->
-    <link rel="stylesheet" href="../styles/login.css" />
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Siddhivinayak Digital Services — Login</title>
+  <link rel="stylesheet" href="../styles/login.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <!-- supabase-js via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.26.0/dist/supabase.min.js"></script>
 </head>
 <body>
+  <header class="top-header">
+    <div class="brand">Siddhivinayak Digital Services</div>
+  </header>
 
-    <header class="top-header">
-        <div class="brand">Siddhivinayak Digital Services</div>
-    </header>
+  <div class="login-container">
+    <div class="login-card">
+      <h2>Account Login</h2>
+      <p class="subtitle">Please sign in to continue</p>
 
-    <div class="login-container">
+      <form id="loginForm">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="Enter email" required />
 
-        <div class="login-card">
+        <label>Password</label>
+        <input type="password" id="password" placeholder="Enter password" required />
 
-            <h2>Account Login</h2>
-            <p class="subtitle">Please sign in to continue</p>
+        <button type="submit" class="btn-login">Login</button>
+      </form>
 
-            <form id="loginForm">
-                <label>Email</label>
-                <input type="email" id="email" placeholder="Enter email" required />
-
-                <label>Password</label>
-                <input type="password" id="password" placeholder="Enter password" required />
-
-                <button type="submit" class="btn-login">Login</button>
-            </form>
-
-            <p class="footer-text">© 2025 Siddhivinayak Digital Services</p>
-        </div>
-
+      <p class="footer-text">© 2025 Siddhivinayak Digital Services</p>
     </div>
+  </div>
 
-    <script>
-        // SIMPLE LOGIN LOGIC (same as your original)
-        document.getElementById("loginForm").addEventListener("submit", function(e) {
-            e.preventDefault();
-
-            const email = document.getElementById("email").value.trim();
-            const password = document.getElementById("password").value.trim();
-
-            // Demo login check (replace with your Google Apps Script later)
-            if (email === "admin@gmail.com" && password === "admin123") {
-                localStorage.setItem("sd_user", JSON.stringify({ email }));
-                window.location.href = "../index.html";
-            } else {
-                alert("Invalid email or password");
-            }
-        });
-    </script>
-
+  <!-- Login module (ES module so we can import config) -->
+  <script type="module" src="./login.js"></script>
 </body>
 </html>
