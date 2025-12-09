@@ -1,12 +1,14 @@
-import { SCRIPT_URL, SECURITY_TOKEN } from "/Siddhivinayak_Digital/config.js";
+// /pages/user-management.js
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "/supabase-config.js";
+const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-(function init(){
-  const user = JSON.parse(localStorage.getItem("sd_user"));
-  if (!user) {
+(async function init() {
+  const raw = localStorage.getItem("sd_user");
+  if (!raw) {
     window.location.href = "/Siddhivinayak_Digital/pages/login.html";
     return;
   }
-  // Only SuperAdmin allowed
+  const user = JSON.parse(raw);
   if (!(user.role && user.role.toLowerCase() === "superadmin")) {
     alert("Only SuperAdmin can access User Management.");
     window.location.href = "/Siddhivinayak_Digital/pages/dashboard.html";
@@ -19,141 +21,128 @@ import { SCRIPT_URL, SECURITY_TOKEN } from "/Siddhivinayak_Digital/config.js";
   const modal = document.getElementById("modal");
   const modalCancel = document.getElementById("modalCancel");
   const userForm = document.getElementById("userForm");
-  const modalTitle = document.getElementById("modalTitle");
-  const searchInput = document.getElementById("searchUsers");
-
-  let usersCache = [];
   let editing = null;
 
-  btnAdd.addEventListener("click", ()=>openModal());
+  btnAdd.addEventListener("click", () => openModal());
   modalCancel.addEventListener("click", closeModal);
-  userForm.addEventListener("submit", saveUser);
-  searchInput.addEventListener("input", ()=>renderUsers(usersCache.filter(u => (u.username||u.email||'').toLowerCase().includes(searchInput.value.toLowerCase()))));
+  userForm.addEventListener("submit", onSave);
 
-  loadUsers();
+  await loadUsers();
 
-  // Load users from backend
-  async function loadUsers(){
+  async function loadUsers() {
     try {
-      const q = `${SCRIPT_URL}?type=listUsers&securityToken=${SECURITY_TOKEN}`;
-      const res = await fetch(q);
-      const json = await res.json();
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id,email,username,role,created_at")
+        .order("created_at", { ascending: false });
 
-      // backend may respond with {status:"success", data: [...] } or {result:"success", data: [...]}
-      const arr = json.data || json.data || (json.result === "success" ? json.data : null) || [];
-      usersCache = arr.map(u => {
-        // support both shaped responses: rows or objects
-        if (Array.isArray(u)) {
-          return { username: u[0], role: u[2], raw: u };
-        }
-        return { username: u.username || u[0], role: u.role || u[2], email: u.username || u.email };
-      });
-
-      renderUsers(usersCache);
+      if (error) throw error;
+      render(data || []);
     } catch (err) {
-      console.error("Failed to load users:", err);
-      // fallback demo
-      usersCache = [{ username: "superadmin", role: "SuperAdmin" }];
-      renderUsers(usersCache);
+      console.error("loadUsers error", err);
+      render([]);
     }
   }
 
-  function renderUsers(list){
+  function render(list) {
     tbody.innerHTML = "";
-    list.forEach(u=>{
+    list.forEach(u => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${u.username || u.email || ""}</td>
+        <td>${u.email || u.username || ""}</td>
         <td>${u.role || ""}</td>
         <td>
-          <button class="btn-edit" data-username="${u.username}">Edit</button>
-          <button class="btn-del" data-username="${u.username}">Delete</button>
+          <button class="btn-edit" data-id="${u.id}">Edit</button>
+          <button class="btn-del" data-id="${u.id}">Delete</button>
         </td>
       `;
       tbody.appendChild(tr);
     });
   }
 
-  // delegate buttons
   tbody.addEventListener("click", async (ev) => {
-    if (ev.target.matches(".btn-edit")) {
-      const username = ev.target.dataset.username;
-      const u = usersCache.find(x => x.username === username);
-      openModal(u);
-    } else if (ev.target.matches(".btn-del")) {
-      const username = ev.target.dataset.username;
-      if (!confirm("Delete user " + username + " ?")) return;
-      await deleteUser(username);
+    if (ev.target.matches(".btn-del")) {
+      const id = ev.target.dataset.id;
+      if (!confirm("Delete this user?")) return;
+      await deleteUser(id);
+    } else if (ev.target.matches(".btn-edit")) {
+      // simple: no edit for now — could load modal
+      alert("Edit user: feature to be implemented (or create new modal prefilled).");
     }
   });
 
-  function openModal(user){
-    editing = user || null;
-    modalTitle.textContent = editing ? "Edit User" : "Add User";
-    document.getElementById("um_username").value = editing ? (editing.username || "") : "";
+  function openModal() {
+    editing = null;
+    document.getElementById("um_username").value = "";
     document.getElementById("um_password").value = "";
-    document.getElementById("um_role").value = editing ? editing.role : "Staff";
+    document.getElementById("um_role").value = "staff";
     modal.setAttribute("aria-hidden", "false");
   }
 
-  function closeModal(){
+  function closeModal() {
     modal.setAttribute("aria-hidden", "true");
   }
 
-  async function saveUser(e){
+  async function onSave(e) {
     e.preventDefault();
-    const username = document.getElementById("um_username").value.trim();
-    const password = document.getElementById("um_password").value.trim();
+    const email = document.getElementById("um_username").value.trim();
+    const password = document.getElementById("um_password").value;
     const role = document.getElementById("um_role").value;
 
-    if (!username || !role) return alert("Please enter username and role");
+    if (!email || !role) return alert("Provide email and role");
 
     try {
-      // Try GET addUser endpoint (GAS compatibility)
-      const q = `${SCRIPT_URL}?type=addUser&securityToken=${SECURITY_TOKEN}&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&role=${encodeURIComponent(role)}`;
-      const res = await fetch(q);
-      const json = await res.json();
-
-      if (json.status === "success" || json.result === "success") {
-        alert("User saved");
-        closeModal();
-        loadUsers();
-        return;
+      // Create auth user (signup) via supabase admin? Client can sign up users via auth.signUp
+      // We sign up as new user (email+password). After that we insert profiles row
+      const { data: signData, error: signErr } = await supabase.auth.signUp({ email, password });
+      if (signErr && signErr.status !== 400) {
+        // status 400 can mean "existing user" — handle below
+        throw signErr;
       }
 
-      // fallback: check error message
-      if (json.message || json.error) {
-        alert(json.message || json.error);
+      // If signUp returns user, get id, else we must find user id (existing)
+      let userId = signData?.user?.id;
+
+      if (!userId) {
+        // try to get existing user profile by email
+        const { data: p, error: pErr } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("email", email)
+          .single();
+
+        if (pErr) {
+          // we can't create without user id - instruct admin to invite/ask user to sign up
+          alert("Could not create user automatically. If the user already exists, they must sign up first.");
+          closeModal();
+          return;
+        }
+        userId = p.id;
       } else {
-        alert("Save failed");
+        // Insert profile row
+        await supabase.from("profiles").insert([{ id: userId, email, username: email, role }]);
       }
+
+      alert("User created (or invited). If user existed, profile created/checked.");
+      closeModal();
+      await loadUsers();
     } catch (err) {
-      console.error("Save error:", err);
-      alert("Network error while saving user");
+      console.error("create user error", err);
+      alert(err.message || "Failed to create user");
     }
   }
 
-  async function deleteUser(username){
+  async function deleteUser(id) {
     try {
-      const q = `${SCRIPT_URL}?type=deleteUser&securityToken=${SECURITY_TOKEN}&username=${encodeURIComponent(username)}`;
-      const res = await fetch(q);
-      const json = await res.json();
-      if (json.status === "success" || json.result === "success") {
-        alert("Deleted");
-        loadUsers();
-      } else {
-        alert(json.message || json.error || "Delete failed");
-      }
+      // delete profile row (auth user remains unless you want to remove from auth)
+      const { error } = await supabase.from("profiles").delete().eq("id", id);
+      if (error) throw error;
+      alert("Deleted profile row");
+      await loadUsers();
     } catch (err) {
-      console.error("Delete error:", err);
-      alert("Network error while deleting");
+      console.error("deleteUser error", err);
+      alert(err.message || "Delete failed");
     }
   }
-
-  // Logout
-  document.getElementById("logoutBtn").addEventListener("click", () => {
-    localStorage.removeItem("sd_user");
-    window.location.href = "/Siddhivinayak_Digital/pages/login.html";
-  });
 
 })();
