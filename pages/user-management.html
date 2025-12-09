@@ -1,88 +1,61 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>User Management — Siddhivinayak Digital</title>
 
   <link rel="stylesheet" href="../styles/dashboard.css">
-  <link rel="stylesheet" href="../styles/user-management.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-
-  <!-- supabase client is already created globally on other pages (window.supabaseClient) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    // Ensure global client exists (if not created elsewhere — create safely)
-    if (!window.supabaseClient && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
-      window.supabaseClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
-    }
-  </script>
 </head>
+
 <body>
-  <div class="app">
-    <aside class="sidebar">
-      <div class="brand">Siddhivinayak Digital</div>
-      <nav>
-        <a href="./dashboard.html">Dashboard</a>
-        <a href="./user-management.html" class="active">User Management</a>
-      </nav>
 
-      <div class="sidebar-footer">
-        <button id="logoutBtn" class="btn-ghost">Logout</button>
-      </div>
-    </aside>
+  <!-- Top Bar -->
+  <header class="topbar">
+    <div class="title">User Management</div>
+    <button id="logoutBtn" class="logout-btn">Logout</button>
+  </header>
 
-    <main class="main">
-      <header class="topbar">
-        <div class="welcome">
-          <h1>User Management</h1>
-          <p class="subtitle">Add, edit and remove staff (SuperAdmin only)</p>
-        </div>
-      </header>
+  <!-- Main Content -->
+  <div class="container">
+    <h2>All Users</h2>
 
-      <section class="content">
-        <div class="panel">
-          <div class="panel-head">
-            <button id="btnAdd" class="btn-primary">+ Add User</button>
-            <input id="searchUsers" placeholder="Search users..." />
-          </div>
+    <button id="openAddModal" class="btn-add">+ Add User</button>
 
-          <div class="table-wrap">
-            <table id="usersTable" class="users-table">
-              <thead><tr><th>Email</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
-
-          <div id="status" style="margin-top:12px;color:#b00020"></div>
-        </div>
-      </section>
-    </main>
+    <table class="user-table">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Username</th>
+          <th>Role</th>
+        </tr>
+      </thead>
+      <tbody id="userList"></tbody>
+    </table>
   </div>
 
-  <!-- Modal -->
-  <div id="modal" class="um-modal" aria-hidden="true">
-    <div class="um-modal-dialog">
-      <h3 id="modalTitle">Add User</h3>
-      <form id="userForm">
-        <label>Email</label>
-        <input id="um_username" type="email" required />
+  <!-- Add User Modal -->
+  <div id="addUserModal" class="modal hidden">
+    <div class="modal-content">
+      <h3>Add New User</h3>
 
-        <label>Password</label>
-        <input id="um_password" type="password" required />
+      <label>Email</label>
+      <input type="email" id="newEmail">
 
-        <label>Role</label>
-        <select id="um_role">
-          <option value="superadmin">SuperAdmin</option>
-          <option value="admin">Admin</option>
-          <option value="staff" selected>Staff</option>
-        </select>
+      <label>Password</label>
+      <input type="password" id="newPassword">
 
-        <div style="margin-top:12px;text-align:right">
-          <button type="button" id="modalCancel" class="btn-ghost">Cancel</button>
-          <button type="submit" class="btn-primary">Save</button>
-        </div>
-      </form>
+      <label>Role</label>
+      <select id="newRole">
+        <option value="staff">Staff</option>
+        <option value="admin">Admin</option>
+      </select>
+
+      <div class="modal-actions">
+        <button id="createUserBtn" class="btn-primary">Create</button>
+        <button id="closeAddModal" class="btn-secondary">Cancel</button>
+      </div>
     </div>
   </div>
 
