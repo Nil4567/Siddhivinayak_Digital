@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Staff Management</title>
+  <link rel="stylesheet" href="/Siddhivinayak_Digital/css/styles.css">
+</head>
+<body>
+  <div style="max-width:900px;margin:28px auto;padding:16px">
+    <h2>Staff Management</h2>
+
+    <div id="controls" style="margin-bottom:12px">
+      <button id="refreshBtn">Refresh list</button>
+      <button id="showAdd">Add staff</button>
+    </div>
+
+    <div id="addForm" style="display:none;margin:12px 0">
+      <input id="newEmail" placeholder="Email" />
+      <input id="newPassword" placeholder="Password" />
+      <input id="newUsername" placeholder="Username" />
+      <select id="newRole">
+        <option value="staff">staff</option>
+        <option value="admin">admin</option>
+      </select>
+      <button id="createBtn">Create</button>
+    </div>
+
+    <table id="staffTable" border="1" width="100%" style="border-collapse:collapse">
+      <thead><tr><th>Email</th><th>Username</th><th>Role</th><th>Action</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script type="module" src="./staff-supabase.js"></script>
+</body>
+</html>
