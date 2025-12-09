@@ -1,68 +1,69 @@
 // /pages/login.js
-import { SUPABASE_URL, SUPABASE_ANON_KEY, DASHBOARD_PAGE } from "/supabase-config.js";
 
-// create client (cdn exposes supabaseJs global)
-const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Use the global Supabase client created in login.html
+const supabase = window.supabaseClient;
+
+// Dashboard redirect
+const DASHBOARD_PAGE = "../pages/dashboard.html";
 
 const form = document.getElementById("loginForm");
+const errorMessage = document.getElementById("errorMessage");
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
+
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
 
-  // quick client-side validation
+  errorMessage.textContent = ""; // clear old errors
+
   if (!email || !password) {
-    alert("Please enter email and password");
+    errorMessage.textContent = "Please enter email and password.";
     return;
   }
 
   try {
-    // Try sign-in
+    // Attempt login with Supabase Auth
     const { data: signData, error: signErr } = await supabase.auth.signInWithPassword({
       email,
       password
     });
 
     if (signErr) {
-      // show friendly message
-      console.error("Sign-in error:", signErr);
-      alert(signErr.message || "Login failed");
+      errorMessage.textContent = signErr.message || "Invalid email or password.";
       return;
     }
 
     const userId = signData.user?.id;
     if (!userId) {
-      alert("Login succeeded but no user id returned.");
+      errorMessage.textContent = "Login succeeded but user ID missing.";
       return;
     }
 
-    // Fetch profile row (role, username, email)
+    // Fetch role from profiles table
     const { data: profile, error: profileErr } = await supabase
       .from("profiles")
-      .select("role,username,email")
+      .select("role, username, email")
       .eq("id", userId)
       .single();
 
-    let role = "staff";
+    let role = "user";
     let username = email;
-    if (profileErr) {
-      // not fatal: if profile missing, default to staff
-      console.warn("Profile missing:", profileErr);
-    } else {
-      role = profile.role || role;
-      username = profile.username || profile.email || username;
+
+    if (!profileErr && profile) {
+      role = profile.role || "user";
+      username = profile.username || profile.email || email;
     }
 
-    // persist minimal session
+    // Save session locally
     const sdUser = { id: userId, email, username, role };
     localStorage.setItem("sd_user", JSON.stringify(sdUser));
 
-    // redirect to dashboard
+    // Redirect
     window.location.href = DASHBOARD_PAGE;
 
   } catch (err) {
-    console.error("Login exception:", err);
-    alert(err.message || "Login failed");
+    console.error("Login error:", err);
+    errorMessage.textContent = err.message || "Login failed.";
   }
 });
