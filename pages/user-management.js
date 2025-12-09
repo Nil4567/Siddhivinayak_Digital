@@ -1,202 +1,105 @@
-// user-management.js
-// Uses global window.supabaseClient (created in dashboard/login pages)
-const supabase = window.supabaseClient;
+// HARD-CODED Supabase Credentials
+const SUPABASE_URL = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXFqY3h6eXRqdHNpa3pyZHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMzA4NjAsImV4cCI6MjA4MDgwNjg2MH0.q0gkhSgqT_BNfsZBCd2stkgskf2V-CDVIG9p6S5LHdM";
 
-(async function init() {
-  // session guard
-  const raw = localStorage.getItem("sd_user");
-  if (!raw) {
-    window.location.href = "./login.html";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// HARD-CODED Page Redirects
+const LOGIN_PAGE = "/Siddhivinayak_Digital/pages/login.html";
+
+// Guard: Must be logged in
+const sdUser = JSON.parse(localStorage.getItem("sd_user"));
+if (!sdUser) {
+  window.location.href = LOGIN_PAGE;
+}
+
+// Guard: Only superadmin allowed
+if (sdUser.role !== "superadmin") {
+  alert("Access Denied — Superadmin Only");
+  window.location.href = LOGIN_PAGE;
+}
+
+// UI Elements
+const logoutBtn = document.getElementById("logoutBtn");
+const openAddModal = document.getElementById("openAddModal");
+const closeAddModal = document.getElementById("closeAddModal");
+const createUserBtn = document.getElementById("createUserBtn");
+const addUserModal = document.getElementById("addUserModal");
+const userList = document.getElementById("userList");
+
+// Logout
+logoutBtn.onclick = () => {
+  localStorage.removeItem("sd_user");
+  window.location.href = LOGIN_PAGE;
+};
+
+// Show Modal
+openAddModal.onclick = () => {
+  addUserModal.classList.remove("hidden");
+};
+
+// Hide Modal
+closeAddModal.onclick = () => {
+  addUserModal.classList.add("hidden");
+};
+
+// Create User
+createUserBtn.onclick = async () => {
+  const email = document.getElementById("newEmail").value.trim();
+  const password = document.getElementById("newPassword").value.trim();
+  const role = document.getElementById("newRole").value;
+
+  if (!email || !password) {
+    alert("Fill all fields!");
     return;
   }
-  const currentUser = JSON.parse(raw);
-  if (!currentUser.role || currentUser.role.toLowerCase() !== "superadmin") {
-    alert("Only SuperAdmin can access User Management.");
-    window.location.href = "./dashboard.html";
+
+  // 1. Create Auth User
+  const { data: authData, error: authErr } = await supabase.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true
+  });
+
+  if (authErr) {
+    alert("Error: " + authErr.message);
     return;
   }
 
-  // ui refs
-  const tbody = document.querySelector("#usersTable tbody");
-  const btnAdd = document.getElementById("btnAdd");
-  const modal = document.getElementById("modal");
-  const modalCancel = document.getElementById("modalCancel");
-  const userForm = document.getElementById("userForm");
-  const status = document.getElementById("status");
-  const searchInput = document.getElementById("searchUsers");
+  const newId = authData.user.id;
 
-  btnAdd.addEventListener("click", openModal);
-  modalCancel.addEventListener("click", closeModal);
-  userForm.addEventListener("submit", onSave);
-  searchInput.addEventListener("input", onSearch);
-
-  // logout
-  document.getElementById("logoutBtn").addEventListener("click", async () => {
-    await supabase.auth.signOut();
-    localStorage.removeItem("sd_user");
-    window.location.href = "./login.html";
+  // 2. Insert Profile Row
+  await supabase.from("profiles").insert({
+    id: newId,
+    email,
+    username: email.split("@")[0],
+    role
   });
 
-  let usersCache = [];
+  alert("User created!");
+  addUserModal.classList.add("hidden");
+  loadUsers();
+};
 
-  await loadUsers();
+// Load All Users
+async function loadUsers() {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .order("created_at", { ascending: false });
 
-  async function loadUsers() {
-    status.textContent = "";
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, email, role, created_at")
-        .order("created_at", { ascending: false });
+  userList.innerHTML = "";
 
-      if (error) throw error;
-      usersCache = data || [];
-      renderUsers(usersCache);
-    } catch (err) {
-      console.error("loadUsers error", err);
-      status.textContent = "Failed to load users: " + (err.message || err);
-      // keep UI empty
-    }
-  }
-
-  function renderUsers(list) {
-    tbody.innerHTML = "";
-    if (!list || list.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#666;">No users found</td></tr>`;
-      return;
-    }
-    list.forEach(u => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${escapeHtml(u.email || "")}</td>
-        <td>${escapeHtml(u.role || "")}</td>
-        <td>${u.created_at ? new Date(u.created_at).toLocaleString() : "-"}</td>
-        <td>
-          <button class="btn-del" data-id="${u.id}">Delete</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-
-  // simple delegated click handler for delete
-  tbody.addEventListener("click", async (ev) => {
-    if (ev.target.matches(".btn-del")) {
-      const id = ev.target.dataset.id;
-      if (!confirm("Delete this user profile?")) return;
-      await deleteUser(id);
-    }
+  data.forEach((u) => {
+    userList.innerHTML += `
+      <tr>
+        <td>${u.email}</td>
+        <td>${u.username}</td>
+        <td>${u.role}</td>
+      </tr>
+    `;
   });
+}
 
-  async function onSave(e) {
-    e.preventDefault();
-    status.textContent = "";
-    const email = document.getElementById("um_username").value.trim().toLowerCase();
-    const password = document.getElementById("um_password").value;
-    const role = document.getElementById("um_role").value;
-
-    if (!email || !password) {
-      alert("Please provide email and password");
-      return;
-    }
-
-    try {
-      // 1) Try signUp
-      const { data: signData, error: signErr } = await supabase.auth.signUp({
-        email,
-        password
-      });
-
-      // If signUp error and it's not "user already exists", show error
-      if (signErr && signErr.status !== 400) {
-        throw signErr;
-      }
-
-      // Determine user id:
-      // - if signUp returned user, use it
-      // - else try to find user id from profiles table or auth.users (profiles)
-      let userId = signData?.user?.id;
-
-      if (!userId) {
-        // try to find profile row by email
-        const { data: existingProfile, error: pErr } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("email", email)
-          .single();
-        if (pErr || !existingProfile) {
-          // we cannot continue if we don't have a user id
-          status.textContent = "Cannot determine user ID automatically. If the user already exists in Auth, create a profile row manually in DB or enable admin insert policy.";
-          console.warn("No user id and no profile row:", pErr);
-          return;
-        }
-        userId = existingProfile.id;
-      } else {
-        // if we just signed up, insert a profile row
-        const { error: insertErr } = await supabase
-          .from("profiles")
-          .insert([{ id: userId, email, username: email, role }]);
-
-        if (insertErr) {
-          // RLS may block inserts by admin — show helpful message
-          console.error("Profile insert error:", insertErr);
-          status.innerHTML = `Profile insert error: ${escapeHtml(insertErr.message || insertErr)}.<br>
-            If this is an RLS permission error, run the SQL shown below (once) to allow SuperAdmin inserts, or insert the profile row manually in Supabase SQL editor.`;
-          status.style.color = "#b00020";
-          status.innerHTML += `<pre style="margin-top:8px;background:#f7f7f7;padding:8px;border-radius:6px;font-size:12px">-- Run in Supabase SQL editor (replace <your_superadmin_uid> if needed)
-insert into public.profiles (id, email, username, role) values
-('${userId}', '${email}', '${email}', '${role}');
-</pre>`;
-          return;
-        }
-      }
-
-      alert("User added/created (or invited).");
-      closeModal();
-      await loadUsers();
-
-    } catch (err) {
-      console.error("save user error", err);
-      status.textContent = "Add user failed: " + (err.message || JSON.stringify(err));
-    }
-  }
-
-  async function deleteUser(id) {
-    try {
-      const { error } = await supabase.from("profiles").delete().eq("id", id);
-      if (error) throw error;
-      alert("Deleted profile row");
-      await loadUsers();
-    } catch (err) {
-      console.error("delete error", err);
-      status.textContent = "Delete failed: " + (err.message || err);
-    }
-  }
-
-  function openModal() {
-    document.getElementById("um_username").value = "";
-    document.getElementById("um_password").value = "";
-    document.getElementById("um_role").value = "staff";
-    modal.setAttribute("aria-hidden", "false");
-  }
-  function closeModal() {
-    modal.setAttribute("aria-hidden", "true");
-  }
-
-  function onSearch() {
-    const q = searchInput.value.trim().toLowerCase();
-    if (!q) return renderUsers(usersCache);
-    renderUsers(usersCache.filter(u => (u.email || "").toLowerCase().includes(q) || (u.role || "").toLowerCase().includes(q)));
-  }
-
-  // small helper
-  function escapeHtml(s) {
-    if (!s) return "";
-    return String(s).replace(/[&<>"'`=\/]/g, function (ch) {
-      return ({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;'
-      })[ch];
-    });
-  }
-
-})();
+loadUsers();
