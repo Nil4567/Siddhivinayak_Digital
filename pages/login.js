@@ -1,33 +1,68 @@
-import { SCRIPT_URL, SECURITY_TOKEN, DASHBOARD_PAGE } from "/pages/config.js";
+// /pages/login.js
+import { SUPABASE_URL, SUPABASE_ANON_KEY, DASHBOARD_PAGE } from "/supabase-config.js";
 
-document.getElementById("loginForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
+// create client (cdn exposes supabaseJs global)
+const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const username = document.getElementById("username").value.trim();
-    const password = document.getElementById("password").value.trim();
-    const status = document.getElementById("loginMessage");
+const form = document.getElementById("loginForm");
 
-    status.textContent = "Checking...";
-    
-    try {
-        const url = `${SCRIPT_URL}?type=login&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&securityToken=${SECURITY_TOKEN}`;
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
 
-        const res = await fetch(url);
-        const json = await res.json();
+  // quick client-side validation
+  if (!email || !password) {
+    alert("Please enter email and password");
+    return;
+  }
 
-        if (json.status === "success") {
-            const role = json.data.role;
+  try {
+    // Try sign-in
+    const { data: signData, error: signErr } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
 
-            if (role === "SuperAdmin") {
-                alert("Welcome SuperAdmin!");
-            }
-
-            // Redirect to dashboard
-            window.location.href = DASHBOARD_PAGE;
-        } else {
-            status.textContent = "❌ Invalid username or password";
-        }
-    } catch (err) {
-        status.textContent = "❌ Network error";
+    if (signErr) {
+      // show friendly message
+      console.error("Sign-in error:", signErr);
+      alert(signErr.message || "Login failed");
+      return;
     }
+
+    const userId = signData.user?.id;
+    if (!userId) {
+      alert("Login succeeded but no user id returned.");
+      return;
+    }
+
+    // Fetch profile row (role, username, email)
+    const { data: profile, error: profileErr } = await supabase
+      .from("profiles")
+      .select("role,username,email")
+      .eq("id", userId)
+      .single();
+
+    let role = "staff";
+    let username = email;
+    if (profileErr) {
+      // not fatal: if profile missing, default to staff
+      console.warn("Profile missing:", profileErr);
+    } else {
+      role = profile.role || role;
+      username = profile.username || profile.email || username;
+    }
+
+    // persist minimal session
+    const sdUser = { id: userId, email, username, role };
+    localStorage.setItem("sd_user", JSON.stringify(sdUser));
+
+    // redirect to dashboard
+    window.location.href = DASHBOARD_PAGE;
+
+  } catch (err) {
+    console.error("Login exception:", err);
+    alert(err.message || "Login failed");
+  }
 });
