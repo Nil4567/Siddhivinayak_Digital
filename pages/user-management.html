@@ -4,17 +4,29 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>User Management — Siddhivinayak Digital</title>
-  <link rel="stylesheet" href="/Siddhivinayak_Digital/styles/dashboard.css">
-  <link rel="stylesheet" href="/Siddhivinayak_Digital/styles/user-management.css">
+
+  <link rel="stylesheet" href="../styles/dashboard.css">
+  <link rel="stylesheet" href="../styles/user-management.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <!-- supabase client is already created globally on other pages (window.supabaseClient) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // Ensure global client exists (if not created elsewhere — create safely)
+    if (!window.supabaseClient && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
+      window.supabaseClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+    }
+  </script>
 </head>
 <body>
   <div class="app">
     <aside class="sidebar">
       <div class="brand">Siddhivinayak Digital</div>
       <nav>
-        <a href="/Siddhivinayak_Digital/pages/dashboard.html">Dashboard</a>
-        <a href="/Siddhivinayak_Digital/pages/user-management.html" class="active">User Management</a>
+        <a href="./dashboard.html">Dashboard</a>
+        <a href="./user-management.html" class="active">User Management</a>
       </nav>
+
       <div class="sidebar-footer">
         <button id="logoutBtn" class="btn-ghost">Logout</button>
       </div>
@@ -22,41 +34,50 @@
 
     <main class="main">
       <header class="topbar">
-        <div class="welcome"><h1>User Management</h1><p class="subtitle">Add, edit and remove staff</p></div>
-        <div class="top-actions" id="topActions"></div>
+        <div class="welcome">
+          <h1>User Management</h1>
+          <p class="subtitle">Add, edit and remove staff (SuperAdmin only)</p>
+        </div>
       </header>
 
       <section class="content">
         <div class="panel">
           <div class="panel-head">
             <button id="btnAdd" class="btn-primary">+ Add User</button>
-            <input id="searchUsers" placeholder="Search users..." style="margin-left:12px;padding:8px;border-radius:6px;border:1px solid #e6eefc">
+            <input id="searchUsers" placeholder="Search users..." />
           </div>
 
-          <table id="usersTable" class="users-table">
-            <thead><tr><th>Username/Email</th><th>Role</th><th>Actions</th></tr></thead>
-            <tbody></tbody>
-          </table>
+          <div class="table-wrap">
+            <table id="usersTable" class="users-table">
+              <thead><tr><th>Email</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div id="status" style="margin-top:12px;color:#b00020"></div>
         </div>
       </section>
     </main>
   </div>
 
-  <!-- Add/Edit Modal -->
+  <!-- Modal -->
   <div id="modal" class="um-modal" aria-hidden="true">
     <div class="um-modal-dialog">
       <h3 id="modalTitle">Add User</h3>
       <form id="userForm">
-        <label>Username / Email</label>
-        <input id="um_username" required />
+        <label>Email</label>
+        <input id="um_username" type="email" required />
+
         <label>Password</label>
-        <input id="um_password" type="password" />
+        <input id="um_password" type="password" required />
+
         <label>Role</label>
         <select id="um_role">
-          <option value="SuperAdmin">SuperAdmin</option>
-          <option value="Admin">Admin</option>
-          <option value="Staff">Staff</option>
+          <option value="superadmin">SuperAdmin</option>
+          <option value="admin">Admin</option>
+          <option value="staff" selected>Staff</option>
         </select>
+
         <div style="margin-top:12px;text-align:right">
           <button type="button" id="modalCancel" class="btn-ghost">Cancel</button>
           <button type="submit" class="btn-primary">Save</button>
@@ -65,6 +86,6 @@
     </div>
   </div>
 
-  <script type="module" src="/Siddhivinayak_Digital/pages/user-management.js"></script>
+  <script type="module" src="./user-management.js"></script>
 </body>
 </html>
