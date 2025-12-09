@@ -3,17 +3,17 @@
  *******************************************************/
 
 /**
- * ✅ Your Google Apps Script Web App URL
+ * Your Google Apps Script URL
  */
 export const SCRIPT_URL =
     "https://script.google.com/macros/s/AKfycbzvsxBRxAHMshglml3oFArYKm4Ag1-REw_R15t6WctODXk-etN_CLCp7b4qV2-4NmV7/exec";
 
 /**
- * ✅ Security Token (must match Apps Script)
+ * Security Token
  */
 export const SECURITY_TOKEN = "SIDDHIVINAYAK123";
 
 /**
- * ✅ Redirect after login
+ * Redirect after login (GitHub Pages FIX)
  */
-export const DASHBOARD_PAGE = "/Siddhivinayak_Digital/pages/dashboard.html";
+export const DASHBOARD_PAGE = "/pages/dashboard.html";
