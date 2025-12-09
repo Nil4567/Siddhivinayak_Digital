@@ -1,107 +1,114 @@
-// HARD-CODED Supabase Credentials
-const SUPABASE_URL = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
-const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXFqY3h6eXRqdHNpa3pyZHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMzA4NjAsImV4cCI6MjA4MDgwNjg2MH0.q0gkhSgqT_BNfsZBCd2stkgskf2V-CDVIG9p6S5LHdM";
+// user-management.js
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "/supabase-config.js";
 
-// 🚀 CORRECT Supabase client (CDN)
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-
-// HARD-CODED Page Redirects
-const LOGIN_PAGE = "/Siddhivinayak_Digital/pages/login.html";
-
-// Guard: Must be logged in
+// ==============================
+// AUTH CHECK (superadmin only)
+// ==============================
 const sdUser = JSON.parse(localStorage.getItem("sd_user"));
+
 if (!sdUser) {
-  window.location.href = LOGIN_PAGE;
+  alert("Not logged in");
+  window.location.href = "/Siddhivinayak_Digital/pages/login.html";
 }
 
-// Guard: Only superadmin allowed
 if (sdUser.role !== "superadmin") {
-  alert("Access Denied — Superadmin Only");
-  window.location.href = LOGIN_PAGE;
+  alert("Access denied — superadmin only");
+  window.location.href = "/Siddhivinayak_Digital/pages/dashboard.html";
 }
 
-// UI Elements
-const logoutBtn = document.getElementById("logoutBtn");
-const openAddModal = document.getElementById("openAddModal");
-const closeAddModal = document.getElementById("closeAddModal");
-const createUserBtn = document.getElementById("createUserBtn");
-const addUserModal = document.getElementById("addUserModal");
-const userList = document.getElementById("userList");
+// ==============================
+// ADD USER
+// ==============================
+document.getElementById("addUserForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-// Logout
-logoutBtn.onclick = () => {
-  localStorage.removeItem("sd_user");
-  window.location.href = LOGIN_PAGE;
-};
-
-// Show Modal
-openAddModal.onclick = () => {
-  addUserModal.classList.remove("hidden");
-};
-
-// Hide Modal
-closeAddModal.onclick = () => {
-  addUserModal.classList.add("hidden");
-};
-
-// Create User
-createUserBtn.onclick = async () => {
   const email = document.getElementById("newEmail").value.trim();
   const password = document.getElementById("newPassword").value.trim();
+  const username = document.getElementById("newUsername").value.trim();
   const role = document.getElementById("newRole").value;
 
-  if (!email || !password) {
-    alert("Fill all fields!");
+  if (!email || !password || !username) {
+    alert("Fill all fields");
     return;
   }
 
-  // 1. Create Auth User
-  const { data: authData, error: authErr } = await supabase.auth.admin.createUser({
+  // 1) Create user in Auth
+  const { data: authData, error: authErr } = await supabase.auth.signUp({
     email,
-    password,
-    email_confirm: true
+    password
   });
 
   if (authErr) {
-    alert("Error: " + authErr.message);
+    console.error(authErr);
+    alert("Add user failed: " + authErr.message);
     return;
   }
 
-  const newId = authData.user.id;
+  const newUserId = authData.user?.id;
 
-  // 2. Insert Profile Row
-  await supabase.from("profiles").insert({
-    id: newId,
-    email,
-    username: email.split("@")[0],
-    role
-  });
+  if (!newUserId) {
+    alert("Signup ok but no user id");
+    return;
+  }
 
-  alert("User created!");
-  addUserModal.classList.add("hidden");
+  // 2) Insert profile
+  const { error: profileErr } = await supabase
+    .from("profiles")
+    .insert({
+      id: newUserId,
+      email,
+      username,
+      role
+    });
+
+  if (profileErr) {
+    console.error(profileErr);
+    alert("Failed saving profile: " + profileErr.message);
+    return;
+  }
+
+  alert("User added successfully!");
   loadUsers();
-};
+});
 
-// Load All Users
+// ==============================
+// LOAD USER LIST
+// ==============================
 async function loadUsers() {
   const { data, error } = await supabase
     .from("profiles")
-    .select("*")
-    .order("created_at", { ascending: false });
+    .select("email,username,role")
+    .order("email");
 
-  userList.innerHTML = "";
+  if (error) {
+    console.error(error);
+    alert("Failed loading users");
+    return;
+  }
+
+  const tbody = document.getElementById("userTableBody");
+  tbody.innerHTML = "";
 
   data.forEach((u) => {
-    userList.innerHTML += `
+    const row = `
       <tr>
         <td>${u.email}</td>
         <td>${u.username}</td>
         <td>${u.role}</td>
-      </tr>
-    `;
+      </tr>`;
+    tbody.innerHTML += row;
   });
 }
 
 loadUsers();
+
+// ==============================
+// LOGOUT
+// ==============================
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+  await supabase.auth.signOut();
+  localStorage.removeItem("sd_user");
+  window.location.href = "/Siddhivinayak_Digital/pages/login.html";
+});
