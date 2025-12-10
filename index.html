@@ -5,7 +5,7 @@
   <title>Retail Counter - Central Hub</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    /* Simple tab styling */
+    /* Tab styling */
     .tab {
       display: inline-block;
       padding: 10px 20px;
@@ -58,8 +58,10 @@
       <label>Advance Received (₹):</label>
       <input type="number" id="advance_amount" value="0"><br>
 
-      <label>Assign Job To (User ID):</label>
-      <input type="text" id="assigned_to" required><br>
+      <label>Assign Job To:</label>
+      <select id="assigned_to" required>
+        <option value="">-- Select User --</option>
+      </select><br>
 
       <button type="submit">Save Order</button>
     </form>
@@ -103,6 +105,21 @@
       document.getElementById(tabId).classList.add('active');
     }
 
+    // Load users into dropdown
+    async function loadUsersDropdown() {
+      const { data, error } = await supabaseClient.from("profiles").select("id,email,role");
+      if (error) { console.error(error); return; }
+
+      const dropdown = document.getElementById("assigned_to");
+      dropdown.innerHTML = '<option value="">-- Select User --</option>';
+      data.forEach(user => {
+        const option = document.createElement("option");
+        option.value = user.id;
+        option.textContent = `${user.email} (${user.role})`;
+        dropdown.appendChild(option);
+      });
+    }
+
     // Save new order
     document.getElementById("order-form").addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -115,7 +132,7 @@
       const advance_amount = parseFloat(document.getElementById("advance_amount").value);
       const assigned_to = document.getElementById("assigned_to").value;
 
-      const { data, error } = await supabaseClient.from("orders").insert([
+      const { error } = await supabaseClient.from("orders").insert([
         {
           cust_name,
           cust_email,
@@ -162,6 +179,7 @@
     }
 
     document.addEventListener("DOMContentLoaded", () => {
+      loadUsersDropdown();
       loadOrders();
     });
   </script>
