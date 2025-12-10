@@ -5,31 +5,141 @@
   <title>Welcome to Sidhivinayak Digital</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; color: #333; }
-    h2 { text-align: center; color: #2c3e50; margin-bottom: 10px; }
-    #user-info { text-align: center; margin-bottom: 20px; font-size: 14px; color: #555; }
-    nav { text-align: center; margin-bottom: 20px; }
-    nav button { margin: 0 5px; padding: 8px 14px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    /* Vertical layout styling */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f9f9f9;
+      color: #333;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 12px;
+    }
+    h2 {
+      margin: 0;
+      color: #2c3e50;
+    }
+    .meta {
+      text-align: right;
+      font-size: 14px;
+      color: #555;
+    }
+    nav {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    nav button {
+      margin: 0 5px;
+      padding: 8px 14px;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
     nav button:hover { background: #2980b9; }
-    .tab-container { display: flex; flex-direction: column; align-items: center; }
-    .tab { width: 200px; text-align: center; padding: 10px; margin: 5px 0; background: #3498db; color: white; cursor: pointer; border-radius: 4px; }
+
+    /* Tabs vertically stacked */
+    .tab-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .tab {
+      width: 220px;
+      text-align: center;
+      padding: 10px;
+      margin: 6px 0;
+      background: #3498db;
+      color: white;
+      cursor: pointer;
+      border-radius: 4px;
+    }
     .tab.active { background: #2980b9; }
     .tab-content { display: none; margin-top: 20px; }
     .tab-content.active { display: block; }
-    form { display: flex; flex-direction: column; max-width: 400px; margin: auto; background: #fff; padding: 20px; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+
+    /* Form styling */
+    form {
+      display: flex;
+      flex-direction: column;
+      max-width: 480px;
+      margin: auto;
+      background: #fff;
+      padding: 18px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
     form label { margin-top: 10px; font-weight: bold; }
-    form input, form textarea { padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; }
-    form button { margin-top: 20px; padding: 10px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    form input, form textarea, form select {
+      padding: 8px;
+      margin-top: 6px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    form button {
+      margin-top: 18px;
+      padding: 10px;
+      background: #27ae60;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
     form button:hover { background: #1e8449; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    table th, table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-    table th { background: #34495e; color: white; }
-    table tr:nth-child(even) { background: #f2f2f2; }
+
+    /* Orders table */
+    .queue-wrapper {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    table th, table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    table th {
+      background: #34495e;
+      color: white;
+      font-size: 13px;
+    }
+    table tr:nth-child(even) { background: #f7f9fb; }
+    .small-muted { font-size: 12px; color: #666; }
+    .assigned-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      background: #ecf0f1;
+      border-radius: 12px;
+      font-size: 12px;
+      color: #2c3e50;
+    }
   </style>
 </head>
 <body>
-  <h2>Welcome to Sidhivinayak Digital</h2>
-  <div id="user-info">Loading user info...</div>
+  <header>
+    <div>
+      <h2>Welcome to Sidhivinayak Digital</h2>
+      <div class="small-muted">Retail Counter Central Hub</div>
+    </div>
+
+    <div class="meta">
+      <div id="user-info">Not signed in</div>
+      <div id="datetime">--:--:--</div>
+    </div>
+  </header>
 
   <!-- Navigation -->
   <nav>
@@ -41,31 +151,33 @@
   <div class="tab-container">
     <div class="tab active" onclick="showTab('new-order')">New Order</div>
     <div class="tab" onclick="showTab('orders-queue')">Orders in Queue</div>
+    <!-- Future tabs can be added here -->
   </div>
 
   <!-- New Order Entry -->
   <div id="new-order" class="tab-content active">
     <form id="order-form">
-      <label>Customer Name:</label>
+      <label>Customer Name</label>
       <input type="text" id="cust_name" required>
 
-      <label>Email:</label>
+      <label>Email</label>
       <input type="email" id="cust_email">
 
-      <label>Mobile No:</label>
+      <label>Mobile No</label>
       <input type="text" id="cust_mobile">
 
-      <label>Job Description:</label>
+      <label>Job Description</label>
       <textarea id="job_description" required></textarea>
 
-      <label>Total Amount (₹):</label>
-      <input type="number" id="total_amount" required>
+      <label>Total Amount (₹)</label>
+      <input type="number" id="total_amount" required step="0.01" min="0">
 
-      <label>Advance Received (₹):</label>
-      <input type="number" id="advance_amount" value="0">
+      <label>Advance Received (₹)</label>
+      <input type="number" id="advance_amount" value="0" step="0.01" min="0">
 
-      <!-- Assign Job To is auto-filled -->
+      <!-- Assigned to is captured from login; hidden input stores the id -->
       <input type="hidden" id="assigned_to">
+      <div class="small-muted" id="assigned-display">Assigned to: <span class="assigned-badge">Not set</span></div>
 
       <button type="submit">Save Order</button>
     </form>
@@ -73,23 +185,25 @@
 
   <!-- Orders in Queue -->
   <div id="orders-queue" class="tab-content">
-    <table id="orders-table">
-      <thead>
-        <tr>
-          <th>Order ID</th>
-          <th>Customer Name</th>
-          <th>Email</th>
-          <th>Mobile</th>
-          <th>Job Description</th>
-          <th>Total (₹)</th>
-          <th>Advance (₹)</th>
-          <th>Pending (₹)</th>
-          <th>Assigned To</th>
-          <th>Order Date</th>
-        </tr>
-      </thead>
-      <tbody id="orders-body"></tbody>
-    </table>
+    <div class="queue-wrapper">
+      <table id="orders-table">
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Customer Name</th>
+            <th>Email</th>
+            <th>Mobile</th>
+            <th>Job Description</th>
+            <th>Total (₹)</th>
+            <th>Advance (₹)</th>
+            <th>Pending (₹)</th>
+            <th>Assigned To</th>
+            <th>Order Date</th>
+          </tr>
+        </thead>
+        <tbody id="orders-body"></tbody>
+      </table>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -108,31 +222,70 @@
       document.getElementById(tabId).classList.add('active');
     }
 
-    // Show user info + current date/time
-    async function showUserInfo() {
-      const { data: { user }, error } = await supabaseClient.auth.getUser();
-      if (error || !user) {
-        document.getElementById("user-info").textContent = "Not logged in";
-        return;
+    // Live date/time
+    function startClock() {
+      const el = document.getElementById('datetime');
+      function update() {
+        const now = new Date();
+        const opts = { year: 'numeric', month: 'short', day: 'numeric' };
+        const date = now.toLocaleDateString('en-IN', opts);
+        const time = now.toLocaleTimeString('en-IN');
+        el.textContent = `${date} ${time}`;
       }
-      const now = new Date();
-      document.getElementById("user-info").textContent =
-        `Logged in as: ${user.email} | Role: (check profiles table) | ${now.toLocaleString()}`;
-      // Auto-fill assigned_to hidden field
-      document.getElementById("assigned_to").value = user.id;
+      update();
+      setInterval(update, 1000);
     }
 
-    // Save new order
+    // Display logged-in user info and set assigned_to automatically
+    async function setLoggedInUserInfo() {
+      try {
+        const { data: userData, error: userErr } = await supabaseClient.auth.getUser();
+        if (userErr) { console.error(userErr); return; }
+        const user = userData?.user;
+        if (!user) {
+          document.getElementById('user-info').textContent = 'Not signed in';
+          document.getElementById('assigned-display').querySelector('.assigned-badge').textContent = 'Not set';
+          return;
+        }
+
+        // Fetch profile to get role and stored email (if you keep role in profiles)
+        const { data: profile, error: profileErr } = await supabaseClient
+          .from('profiles')
+          .select('role,email')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        const displayEmail = profile?.email || user.email || 'unknown';
+        const role = profile?.role || 'user';
+
+        // Show login credentials
+        document.getElementById('user-info').innerHTML =
+          `<div><strong>${displayEmail}</strong></div><div class="small-muted">ID: ${user.id} • Role: ${role}</div>`;
+
+        // Set assigned_to hidden input to current user id
+        document.getElementById('assigned_to').value = user.id;
+        document.getElementById('assigned-display').querySelector('.assigned-badge').textContent = `${displayEmail} (${role})`;
+      } catch (err) {
+        console.error('Error getting user info', err);
+      }
+    }
+
+    // Save new order (assigned_to taken from logged-in user)
     document.getElementById("order-form").addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const cust_name = document.getElementById("cust_name").value;
-      const cust_email = document.getElementById("cust_email").value;
-      const cust_mobile = document.getElementById("cust_mobile").value;
-      const job_description = document.getElementById("job_description").value;
-      const total_amount = parseFloat(document.getElementById("total_amount").value);
-      const advance_amount = parseFloat(document.getElementById("advance_amount").value);
-      const assigned_to = document.getElementById("assigned_to").value;
+      const cust_name = document.getElementById("cust_name").value.trim();
+      const cust_email = document.getElementById("cust_email").value.trim();
+      const cust_mobile = document.getElementById("cust_mobile").value.trim();
+      const job_description = document.getElementById("job_description").value.trim();
+      const total_amount = parseFloat(document.getElementById("total_amount").value) || 0;
+      const advance_amount = parseFloat(document.getElementById("advance_amount").value) || 0;
+      const assigned_to = document.getElementById("assigned_to").value || null;
+
+      if (!cust_name || !job_description || total_amount <= 0) {
+        alert('Please fill required fields and ensure Total Amount is greater than 0.');
+        return;
+      }
 
       const { error } = await supabaseClient.from("orders").insert([
         {
@@ -148,30 +301,52 @@
 
       if (error) {
         alert("Error saving order: " + error.message);
+        console.error(error);
       } else {
         alert("Order saved successfully!");
         e.target.reset();
+        // re-set assigned display and hidden input after reset
+        await setLoggedInUserInfo();
         loadOrders(); // refresh queue after saving
       }
     });
 
     // Load orders into queue
     async function loadOrders() {
-      const { data, error } = await supabaseClient.from("orders").select("*").order("order_id", { ascending: true });
+      const { data, error } = await supabaseClient
+        .from("orders")
+        .select("order_id,cust_name,cust_email,cust_mobile,job_description,total_amount,advance_amount,pending_amount,assigned_to,order_date")
+        .order("order_id", { ascending: true });
+
       if (error) { console.error(error); return; }
 
       const tbody = document.getElementById("orders-body");
       tbody.innerHTML = "";
       data.forEach(order => {
         const tr = document.createElement("tr");
+        const pending = order.pending_amount ?? (order.total_amount - (order.advance_amount || 0));
         tr.innerHTML = `
           <td>${order.order_id}</td>
           <td>${order.cust_name}</td>
           <td>${order.cust_email || ""}</td>
           <td>${order.cust_mobile || ""}</td>
           <td>${order.job_description}</td>
-          <td>₹${order.total_amount}</td>
-          <td>₹${order.advance_amount}</td>
-          <td style="color:${order.pending_amount > 0 ? 'red' : 'green'}">₹${order.pending_amount}</td>
+          <td>₹${Number(order.total_amount).toFixed(2)}</td>
+          <td>₹${Number(order.advance_amount || 0).toFixed(2)}</td>
+          <td style="color:${pending > 0 ? 'red' : 'green'}">₹${Number(pending).toFixed(2)}</td>
           <td>${order.assigned_to || ""}</td>
-          <td>${order.order_date}</td>
+          <td>${order.order_date || ""}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Initialize on load
+    document.addEventListener("DOMContentLoaded", async () => {
+      startClock();
+      await setLoggedInUserInfo();
+      await loadOrders();
+    });
+  </script>
+</body>
+</html>
