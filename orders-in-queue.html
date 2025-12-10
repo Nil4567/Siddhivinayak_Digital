@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Orders in Queue</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <h2>Orders in Queue</h2>
+
+  <!-- Navigation -->
+  <nav>
+    <button onclick="window.location.href='index.html'">Home</button>
+    <button onclick="history.back()">Back</button>
+    <button id="logout-btn">Logout</button>
+  </nav>
+
+  <!-- Orders Table -->
+  <section>
+    <table border="1" id="orders-table">
+      <thead>
+        <tr>
+          <th>Order ID</th>
+          <th>Customer Name</th>
+          <th>Email</th>
+          <th>Mobile</th>
+          <th>Job Description</th>
+          <th>Total (₹)</th>
+          <th>Advance (₹)</th>
+          <th>Pending (₹)</th>
+          <th>Assigned To</th>
+          <th>Order Date</th>
+        </tr>
+      </thead>
+      <tbody id="orders-body">
+        <!-- Filled dynamically -->
+      </tbody>
+    </table>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    const { createClient } = supabase;
+    const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
+    const supabaseKey = "YOUR_ANON_KEY"; // replace with your anon key
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    async function loadOrders() {
+      const { data, error } = await supabaseClient.from("orders").select("*").order("order_id", { ascending: true });
+      if (error) { console.error(error); return; }
+
+      const tbody = document.getElementById("orders-body");
+      tbody.innerHTML = "";
+      data.forEach(order => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${order.order_id}</td>
+          <td>${order.cust_name}</td>
+          <td>${order.cust_email || ""}</td>
+          <td>${order.cust_mobile || ""}</td>
+          <td>${order.job_description}</td>
+          <td>₹${order.total_amount}</td>
+          <td>₹${order.advance_amount}</td>
+          <td style="color:${order.pending_amount > 0 ? 'red' : 'green'}">₹${order.pending_amount}</td>
+          <td>${order.assigned_to || ""}</td>
+          <td>${order.order_date}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadOrders();
+    });
+  </script>
+</body>
+</html>
