@@ -6,20 +6,94 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <h2>Welcome, Admin</h2>
+  <h2>Admin Dashboard</h2>
 
+  <!-- Navigation -->
   <nav>
-    <ul>
-      <li><a href="settings.html">Manage Users</a></li>
-      <li><button id="logout-btn">Logout</button></li>
-    </ul>
+    <button onclick="window.location.href='index.html'">Home</button>
+    <button onclick="history.back()">Back</button>
+    <button id="logout-btn">Logout</button>
   </nav>
 
+  <!-- User Management Table -->
   <section>
-    <p>You are logged in with admin privileges. Use the settings page to manage user roles.</p>
+    <h3>Manage Users</h3>
+    <table border="1" id="users-table">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="users-body">
+        <!-- Filled dynamically -->
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Activity Logs -->
+  <section>
+    <h3>Activity Logs</h3>
+    <ul id="activity-log">
+      <!-- Logs will appear here -->
+    </ul>
+  </section>
+
+  <!-- Admin Tools -->
+  <section>
+    <h3>Admin Tools</h3>
+    <ul>
+      <li><a href="settings.html">Content Manager</a></li>
+      <li><a href="#">Analytics (coming soon)</a></li>
+    </ul>
   </section>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/auth.js"></script>
+  <script>
+    const { createClient } = supabase;
+    const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
+    const supabaseKey = "YOUR_ANON_KEY"; // replace with your anon key
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    async function loadUsers() {
+      const { data, error } = await supabaseClient.from("profiles").select("id,email,role");
+      if (error) { console.error(error); return; }
+
+      const tbody = document.getElementById("users-body");
+      tbody.innerHTML = "";
+      data.forEach(user => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${user.email}</td>
+          <td>${user.role}</td>
+          <td>
+            <button onclick="updateRole('${user.id}','admin')">Promote</button>
+            <button onclick="updateRole('${user.id}','user')">Demote</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function updateRole(id, role) {
+      const { error } = await supabaseClient.from("profiles").update({ role }).eq("id", id);
+      if (error) { console.error(error); return; }
+      logActivity(`User ${id} role changed to ${role}`);
+      loadUsers();
+    }
+
+    function logActivity(message) {
+      const log = document.getElementById("activity-log");
+      const li = document.createElement("li");
+      li.textContent = new Date().toLocaleString() + " - " + message;
+      log.appendChild(li);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadUsers();
+    });
+  </script>
 </body>
 </html>
