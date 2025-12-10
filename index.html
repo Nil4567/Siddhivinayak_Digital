@@ -2,26 +2,34 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Retail Counter - Central Hub</title>
+  <title>Welcome to Sidhivinayak Digital</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    /* Tab styling */
-    .tab {
-      display: inline-block;
-      padding: 10px 20px;
-      background: #3498db;
-      color: white;
-      cursor: pointer;
-      margin-right: 5px;
-      border-radius: 4px;
-    }
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; color: #333; }
+    h2 { text-align: center; color: #2c3e50; margin-bottom: 10px; }
+    #user-info { text-align: center; margin-bottom: 20px; font-size: 14px; color: #555; }
+    nav { text-align: center; margin-bottom: 20px; }
+    nav button { margin: 0 5px; padding: 8px 14px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    nav button:hover { background: #2980b9; }
+    .tab-container { display: flex; flex-direction: column; align-items: center; }
+    .tab { width: 200px; text-align: center; padding: 10px; margin: 5px 0; background: #3498db; color: white; cursor: pointer; border-radius: 4px; }
     .tab.active { background: #2980b9; }
     .tab-content { display: none; margin-top: 20px; }
     .tab-content.active { display: block; }
+    form { display: flex; flex-direction: column; max-width: 400px; margin: auto; background: #fff; padding: 20px; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    form label { margin-top: 10px; font-weight: bold; }
+    form input, form textarea { padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; }
+    form button { margin-top: 20px; padding: 10px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    form button:hover { background: #1e8449; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    table th, table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+    table th { background: #34495e; color: white; }
+    table tr:nth-child(even) { background: #f2f2f2; }
   </style>
 </head>
 <body>
-  <h2>Retail Counter - Central Hub</h2>
+  <h2>Welcome to Sidhivinayak Digital</h2>
+  <div id="user-info">Loading user info...</div>
 
   <!-- Navigation -->
   <nav>
@@ -29,39 +37,35 @@
     <button id="logout-btn">Logout</button>
   </nav>
 
-  <!-- Tabs -->
-  <div>
+  <!-- Vertical Tabs -->
+  <div class="tab-container">
     <div class="tab active" onclick="showTab('new-order')">New Order</div>
     <div class="tab" onclick="showTab('orders-queue')">Orders in Queue</div>
-    <!-- Future tabs can be added here -->
   </div>
 
   <!-- New Order Entry -->
   <div id="new-order" class="tab-content active">
-    <h3>New Order Entry</h3>
     <form id="order-form">
       <label>Customer Name:</label>
-      <input type="text" id="cust_name" required><br>
+      <input type="text" id="cust_name" required>
 
       <label>Email:</label>
-      <input type="email" id="cust_email"><br>
+      <input type="email" id="cust_email">
 
       <label>Mobile No:</label>
-      <input type="text" id="cust_mobile"><br>
+      <input type="text" id="cust_mobile">
 
       <label>Job Description:</label>
-      <textarea id="job_description" required></textarea><br>
+      <textarea id="job_description" required></textarea>
 
       <label>Total Amount (₹):</label>
-      <input type="number" id="total_amount" required><br>
+      <input type="number" id="total_amount" required>
 
       <label>Advance Received (₹):</label>
-      <input type="number" id="advance_amount" value="0"><br>
+      <input type="number" id="advance_amount" value="0">
 
-      <label>Assign Job To:</label>
-      <select id="assigned_to" required>
-        <option value="">-- Select User --</option>
-      </select><br>
+      <!-- Assign Job To is auto-filled -->
+      <input type="hidden" id="assigned_to">
 
       <button type="submit">Save Order</button>
     </form>
@@ -69,8 +73,7 @@
 
   <!-- Orders in Queue -->
   <div id="orders-queue" class="tab-content">
-    <h3>Orders in Queue</h3>
-    <table border="1" id="orders-table">
+    <table id="orders-table">
       <thead>
         <tr>
           <th>Order ID</th>
@@ -105,19 +108,18 @@
       document.getElementById(tabId).classList.add('active');
     }
 
-    // Load users into dropdown
-    async function loadUsersDropdown() {
-      const { data, error } = await supabaseClient.from("profiles").select("id,email,role");
-      if (error) { console.error(error); return; }
-
-      const dropdown = document.getElementById("assigned_to");
-      dropdown.innerHTML = '<option value="">-- Select User --</option>';
-      data.forEach(user => {
-        const option = document.createElement("option");
-        option.value = user.id;
-        option.textContent = `${user.email} (${user.role})`;
-        dropdown.appendChild(option);
-      });
+    // Show user info + current date/time
+    async function showUserInfo() {
+      const { data: { user }, error } = await supabaseClient.auth.getUser();
+      if (error || !user) {
+        document.getElementById("user-info").textContent = "Not logged in";
+        return;
+      }
+      const now = new Date();
+      document.getElementById("user-info").textContent =
+        `Logged in as: ${user.email} | Role: (check profiles table) | ${now.toLocaleString()}`;
+      // Auto-fill assigned_to hidden field
+      document.getElementById("assigned_to").value = user.id;
     }
 
     // Save new order
@@ -173,15 +175,3 @@
           <td style="color:${order.pending_amount > 0 ? 'red' : 'green'}">₹${order.pending_amount}</td>
           <td>${order.assigned_to || ""}</td>
           <td>${order.order_date}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      loadUsersDropdown();
-      loadOrders();
-    });
-  </script>
-</body>
-</html>
