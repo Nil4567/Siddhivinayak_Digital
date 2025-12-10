@@ -97,6 +97,15 @@
 
     document.addEventListener("DOMContentLoaded", () => {
       loadOrders();
+
+      // Real-time subscription: auto-refresh when new orders are inserted
+      supabaseClient
+        .channel('orders-changes')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, payload => {
+          showToast("New order received", "success");
+          loadOrders();
+        })
+        .subscribe();
     });
   </script>
 </body>
