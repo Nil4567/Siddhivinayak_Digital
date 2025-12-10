@@ -9,16 +9,14 @@
     table { width: 100%; border-collapse: collapse; margin-top: 12px; }
     th, td { padding: 8px 10px; border: 1px solid #ddd; text-align: left; }
     thead { background: #f4f4f4; }
-    .small { font-size: 0.9rem; color: #666; }
+    input { margin-right: 8px; padding: 6px; }
+    button { padding: 6px 10px; }
   </style>
 </head>
 <body>
   <h2>Welcome to Sidhivinayak Digital</h2>
 
-  <div id="user-info" class="small">Loading user...</div>
-  <div id="datetime" class="small" style="margin-bottom:12px;"></div>
-
-  <!-- Existing form (unchanged layout) -->
+  <!-- Order form -->
   <form id="order-form">
     <input type="text" id="cust_name" placeholder="Customer Name" required>
     <input type="text" id="job_description" placeholder="Job Description" required>
@@ -39,11 +37,11 @@
   <!-- Supabase client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // ---------- CONFIG: Replace these values ----------
+    // ---------- CONFIG: values inserted as requested ----------
     const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXFqY3h6eXRqdHNpa3pyZHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMzA4NjAsImV4cCI6MjA4MDgwNjg2MH0.q0gkhSgqT_BNfsZBCd2stkgskf2V-CDVIG9p6S5LHdM"; // <-- paste your anon public key here
-    const HARD_CODED_ADMIN_UUID = "859b41e0-6026-4e96-8025-3a9195e73416"; // <-- paste the profiles.id to use for assigned_to/created_by
-    // --------------------------------------------------
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXFqY3h6eXRqdHNpa3pyZHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMzA4NjAsImV4cCI6MjA4MDgwNjg2MH0.q0gkhSgqT_BNfsZBCd2stkgskf2V-CDVIG9p6S5LHdM";
+    const HARD_CODED_ADMIN_UUID = "859b41e0-6026-4e96-8025-3a9195e73416";
+    // ----------------------------------------------------------
 
     const { createClient } = supabase;
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
@@ -59,15 +57,6 @@
       toast.style.borderRadius = "6px";
       setTimeout(() => { toast.style.display = "none"; }, 2500);
     }
-
-    // Render current date/time
-    function updateDateTime() {
-      const el = document.getElementById("datetime");
-      const now = new Date();
-      el.textContent = now.toLocaleString();
-    }
-    setInterval(updateDateTime, 1000);
-    updateDateTime();
 
     // Load orders from Supabase
     async function loadOrders() {
@@ -112,22 +101,6 @@
     document.addEventListener("DOMContentLoaded", () => {
       const form = document.getElementById("order-form");
 
-      // Show basic user info if available (non-blocking)
-      (async function showUserInfo() {
-        try {
-          const { data: userData } = await supabaseClient.auth.getUser();
-          const user = userData?.user;
-          const ui = document.getElementById("user-info");
-          if (user) {
-            ui.textContent = `Signed in as ${user.email || user.id}`;
-          } else {
-            ui.textContent = "Not signed in (using hard-coded admin for created_by/assigned_to)";
-          }
-        } catch (e) {
-          // ignore
-        }
-      })();
-
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
 
@@ -141,7 +114,6 @@
         }
 
         // ======= Hard-coded values (minimal change) =======
-        // Replace HARD_CODED_ADMIN_UUID above with the actual profiles.id you want to use.
         const payload = {
           cust_name,
           job_description,
@@ -161,7 +133,6 @@
 
           if (error) {
             console.error("Insert error:", error);
-            // If RLS blocks it, the error will show here
             showToast("Error saving order", "error");
             return;
           }
