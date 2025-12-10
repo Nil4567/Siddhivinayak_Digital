@@ -3,102 +3,179 @@
 <head>
   <meta charset="UTF-8">
   <title>Welcome to Sidhivinayak Digital</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    #toast { display:none; position: fixed; right: 20px; bottom: 20px; z-index: 9999; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { padding: 8px 10px; border: 1px solid #ddd; text-align: left; }
+    thead { background: #f4f4f4; }
+    .small { font-size: 0.9rem; color: #666; }
+  </style>
 </head>
 <body>
   <h2>Welcome to Sidhivinayak Digital</h2>
-  <div id="user-info">Loading user...</div>
-  <div id="datetime"></div>
 
-  <!-- ✅ Extended form with hardcoded extra fields -->
+  <div id="user-info" class="small">Loading user...</div>
+  <div id="datetime" class="small" style="margin-bottom:12px;"></div>
+
+  <!-- Existing form (unchanged layout) -->
   <form id="order-form">
     <input type="text" id="cust_name" placeholder="Customer Name" required>
-    <input type="text" id="cust_email" placeholder="Customer Email">
-    <input type="text" id="cust_mobile" placeholder="Customer Mobile">
     <input type="text" id="job_description" placeholder="Job Description" required>
     <input type="number" id="total_amount" placeholder="Total Amount" required>
-    <input type="number" id="advance_amount" placeholder="Advance Amount" value="0">
     <button type="submit">Save Order</button>
   </form>
 
   <h3>Orders in Queue</h3>
-  <table border="1">
+  <table>
     <thead>
-      <tr>
-        <th>ID</th><th>Name</th><th>Email</th><th>Mobile</th>
-        <th>Job</th><th>Total</th><th>Advance</th><th>Pending</th>
-      </tr>
+      <tr><th>ID</th><th>Name</th><th>Job</th><th>Total</th></tr>
     </thead>
     <tbody id="orders-body"></tbody>
   </table>
 
   <div id="toast"></div>
 
-  <!-- ✅ Script at bottom -->
+  <!-- Supabase client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    const { createClient } = supabase;
+    // ---------- CONFIG: Replace these values ----------
     const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
-    const supabaseKey = "YOUR_REAL_ANON_KEY"; // replace with your actual anon key
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXFqY3h6eXRqdHNpa3pyZHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMzA4NjAsImV4cCI6MjA4MDgwNjg2MH0.q0gkhSgqT_BNfsZBCd2stkgskf2V-CDVIG9p6S5LHdM"; // <-- paste your anon public key here
+    const HARD_CODED_ADMIN_UUID = "REPLACE_WITH_ADMIN_UUID"; // <-- paste the profiles.id to use for assigned_to/created_by
+    // --------------------------------------------------
+
+    const { createClient } = supabase;
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-    function showToast(msg) {
+    // Simple toast helper
+    function showToast(msg, type = "success") {
       const toast = document.getElementById("toast");
       toast.textContent = msg;
       toast.style.display = "block";
-      setTimeout(() => toast.style.display = "none", 2000);
+      toast.style.background = type === "error" ? "#e74c3c" : "#27ae60";
+      toast.style.color = "#fff";
+      toast.style.padding = "8px 12px";
+      toast.style.borderRadius = "6px";
+      setTimeout(() => { toast.style.display = "none"; }, 2500);
     }
 
+    // Render current date/time
+    function updateDateTime() {
+      const el = document.getElementById("datetime");
+      const now = new Date();
+      el.textContent = now.toLocaleString();
+    }
+    setInterval(updateDateTime, 1000);
+    updateDateTime();
+
+    // Load orders from Supabase
     async function loadOrders() {
-      const { data, error } = await supabaseClient.from("orders").select("*").order("order_id");
-      if (error) { console.error(error); return; }
-      const tbody = document.getElementById("orders-body");
-      tbody.innerHTML = "";
-      data.forEach(o => {
-        const pending = o.pending_amount ?? (o.total_amount - (o.advance_amount || 0));
-        tbody.innerHTML += `
-          <tr>
-            <td>${o.order_id}</td>
-            <td>${o.cust_name}</td>
-            <td>${o.cust_email || ''}</td>
-            <td>${o.cust_mobile || ''}</td>
-            <td>${o.job_description}</td>
-            <td>₹${o.total_amount}</td>
-            <td>₹${o.advance_amount || 0}</td>
-            <td style="color:${pending > 0 ? 'red' : 'green'}">₹${pending}</td>
-          </tr>`;
-      });
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      const form = document.getElementById("order-form");
-      form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const cust_name = document.getElementById("cust_name").value.trim();
-        const cust_email = document.getElementById("cust_email").value.trim();
-        const cust_mobile = document.getElementById("cust_mobile").value.trim();
-        const job_description = document.getElementById("job_description").value.trim();
-        const total_amount = parseFloat(document.getElementById("total_amount").value) || 0;
-        const advance_amount = parseFloat(document.getElementById("advance_amount").value) || 0;
-
-        const { error } = await supabaseClient.from("orders").insert([{
-          cust_name,
-          cust_email,
-          cust_mobile,
-          job_description,
-          total_amount,
-          advance_amount
-        }]);
+      try {
+        const { data, error } = await supabaseClient
+          .from("orders")
+          .select("*")
+          .order("order_id", { ascending: true })
+          .limit(100);
 
         if (error) {
-          console.error("Insert error:", error);
-          showToast("Error saving order");
-        } else {
-          showToast("Order submitted");
+          console.error("Load orders error:", error);
+          document.getElementById("orders-body").innerHTML =
+            "<tr><td colspan='4'>Error loading orders</td></tr>";
+          return;
+        }
+
+        const tbody = document.getElementById("orders-body");
+        tbody.innerHTML = "";
+        if (!data || data.length === 0) {
+          tbody.innerHTML = "<tr><td colspan='4'>No orders found</td></tr>";
+          return;
+        }
+
+        data.forEach(o => {
+          tbody.innerHTML += `
+            <tr>
+              <td>${o.order_id}</td>
+              <td>${o.cust_name || ""}</td>
+              <td>${o.job_description || ""}</td>
+              <td>₹${Number(o.total_amount || 0).toFixed(2)}</td>
+            </tr>`;
+        });
+      } catch (err) {
+        console.error("Unexpected error loading orders:", err);
+        document.getElementById("orders-body").innerHTML =
+          "<tr><td colspan='4'>Unexpected error</td></tr>";
+      }
+    }
+
+    // Keep existing logic but add hard-coded fields so inserts succeed
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById("order-form");
+
+      // Show basic user info if available (non-blocking)
+      (async function showUserInfo() {
+        try {
+          const { data: userData } = await supabaseClient.auth.getUser();
+          const user = userData?.user;
+          const ui = document.getElementById("user-info");
+          if (user) {
+            ui.textContent = `Signed in as ${user.email || user.id}`;
+          } else {
+            ui.textContent = "Not signed in (using hard-coded admin for created_by/assigned_to)";
+          }
+        } catch (e) {
+          // ignore
+        }
+      })();
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const cust_name = document.getElementById("cust_name").value.trim();
+        const job_description = document.getElementById("job_description").value.trim();
+        const total_amount = parseFloat(document.getElementById("total_amount").value) || 0;
+
+        if (!cust_name || !job_description || total_amount <= 0) {
+          showToast("Please fill required fields", "error");
+          return;
+        }
+
+        // ======= Hard-coded values (minimal change) =======
+        // Replace HARD_CODED_ADMIN_UUID above with the actual profiles.id you want to use.
+        const payload = {
+          cust_name,
+          job_description,
+          total_amount,
+          advance_amount: 0.00,
+          cust_email: "walkin@sidhi.com",
+          cust_mobile: "9999999999",
+          assigned_to: HARD_CODED_ADMIN_UUID,
+          created_by: HARD_CODED_ADMIN_UUID
+        };
+        // =================================================
+
+        try {
+          const { data, error } = await supabaseClient
+            .from("orders")
+            .insert([payload]);
+
+          if (error) {
+            console.error("Insert error:", error);
+            // If RLS blocks it, the error will show here
+            showToast("Error saving order", "error");
+            return;
+          }
+
+          showToast("Order submitted", "success");
+          form.reset();
           loadOrders();
-          e.target.reset();
+        } catch (err) {
+          console.error("Unexpected insert error:", err);
+          showToast("Unexpected error", "error");
         }
       });
 
+      // initial load
       loadOrders();
     });
   </script>
