@@ -28,7 +28,12 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
 });
 
 // Handle logout
-document.getElementById("logout-btn")?.addEventListener("click", async () => {
-  await supabaseClient.auth.signOut();
-  window.location.href = "index.html";
+document.addEventListener("DOMContentLoaded", () => {
+  const logoutBtn = document.getElementById("logout-btn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async () => {
+      await supabaseClient.auth.signOut();
+      window.location.href = "index.html";
+    });
+  }
 });
