@@ -1,470 +1,166 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Welcome to Sidhivinayak Digital</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <style>
-    /* Vertical layout styling */
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background: #f9f9f9;
-      color: #333;
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/auth.js"></script>
+<script>
+  const { createClient } = supabase;
+  const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
+  const supabaseKey = "YOUR_ANON_KEY"; // replace with your anon key
+  const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+  // Tab switching
+  function showTab(tabId) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelector(`.tab[onclick="showTab('${tabId}')"]`).classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+  }
+
+  // Live date/time
+  function startClock() {
+    const el = document.getElementById('datetime');
+    function update() {
+      const now = new Date();
+      const opts = { year: 'numeric', month: 'short', day: 'numeric' };
+      const date = now.toLocaleDateString('en-IN', opts);
+      const time = now.toLocaleTimeString('en-IN');
+      el.textContent = `${date} ${time}`;
     }
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 20px;
-      margin-bottom: 12px;
-    }
-    h2 {
-      margin: 0;
-      color: #2c3e50;
-    }
-    .meta {
-      text-align: right;
-      font-size: 14px;
-      color: #555;
-    }
-    nav {
-      text-align: center;
-      margin-bottom: 12px;
-    }
-    nav button {
-      margin: 0 5px;
-      padding: 8px 14px;
-      background: #3498db;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    nav button:hover {
-      background: #2980b9;
+    update();
+    setInterval(update, 1000);
+  }
+
+  // Toast helper
+  function showToast(message, type = 'success', duration = 3000) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = ''; // reset
+    toast.classList.add(type);
+    toast.style.display = 'block';
+    setTimeout(() => {
+      toast.style.display = 'none';
+    }, duration);
+  }
+
+  // Display logged-in user info and set assigned_to automatically
+  async function setLoggedInUserInfo() {
+    const { data: userData } = await supabaseClient.auth.getUser();
+    const user = userData?.user;
+    if (!user) {
+      document.getElementById('user-info').textContent = 'Not signed in';
+      document.getElementById('assigned-display').querySelector('.assigned-badge').textContent = 'Not set';
+      return;
     }
 
-    /* Tabs vertically stacked */
-    .tab-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-    .tab {
-      width: 220px;
-      text-align: center;
-      padding: 10px;
-      margin: 6px 0;
-      background: #3498db;
-      color: white;
-      cursor: pointer;
-      border-radius: 4px;
-    }
-    .tab.active {
-      background: #2980b9;
-    }
-    .tab-content {
-      display: none;
-      margin-top: 20px;
-    }
-    .tab-content.active {
-      display: block;
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('role,email')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const role = profile?.role || 'user';
+    const displayEmail = profile?.email || user.email;
+
+    if (role === 'admin') {
+      document.getElementById('user-info').innerHTML =
+        `<strong>Admin:</strong> ${displayEmail}`;
+    } else {
+      document.getElementById('user-info').textContent = displayEmail;
     }
 
-    /* Form styling */
-    form {
-      display: flex;
-      flex-direction: column;
-      max-width: 480px;
-      margin: auto;
-      background: #fff;
-      padding: 18px;
-      border-radius: 6px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-    }
-    form label {
-      margin-top: 10px;
-      font-weight: bold;
-    }
-    form input,
-    form textarea,
-    form select {
-      padding: 8px;
-      margin-top: 6px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 14px;
-    }
-    form button {
-      margin-top: 18px;
-      padding: 10px;
-      background: #27ae60;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    form button:hover {
-      background: #1e8449;
+    document.getElementById('assigned_to').value = user.id;
+    document.getElementById('assigned-display').querySelector('.assigned-badge').textContent =
+      `${displayEmail} (${role})`;
+  }
+
+  // Save new order
+  document.getElementById('order-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const cust_name = document.getElementById('cust_name').value.trim();
+    const cust_email = document.getElementById('cust_email').value.trim();
+    const cust_mobile = document.getElementById('cust_mobile').value.trim();
+    const job_description = document.getElementById('job_description').value.trim();
+    const total_amount = parseFloat(document.getElementById('total_amount').value) || 0;
+    const advance_amount = parseFloat(document.getElementById('advance_amount').value) || 0;
+    const assigned_to = document.getElementById('assigned_to').value || null;
+
+    if (!cust_name || !job_description || total_amount <= 0) {
+      showToast('Please fill required fields and ensure Total Amount > 0', 'error', 3500);
+      return;
     }
 
-    /* Orders table */
-    .queue-wrapper {
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-      font-size: 14px;
-    }
-    table th,
-    table td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: left;
-    }
-    table th {
-      background: #34495e;
-      color: white;
-      font-size: 13px;
-    }
-    table tr:nth-child(even) {
-      background: #f7f9fb;
-    }
-    .small-muted {
-      font-size: 12px;
-      color: #666;
-    }
-    .assigned-badge {
-      display: inline-block;
-      padding: 4px 8px;
-      background: #ecf0f1;
-      border-radius: 12px;
-      font-size: 12px;
-      color: #2c3e50;
-    }
-
-    /* Toast notification */
-    #toast {
-      position: fixed;
-      right: 20px;
-      bottom: 20px;
-      background: rgba(0, 0, 0, 0.85);
-      color: #fff;
-      padding: 12px 18px;
-      border-radius: 6px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      display: none;
-      z-index: 9999;
-      font-weight: 600;
-    }
-    #toast.success {
-      background: #27ae60;
-    }
-    #toast.error {
-      background: #e74c3c;
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <div>
-      <h2>Welcome to Sidhivinayak Digital</h2>
-      <div class="small-muted">Retail Counter Central Hub</div>
-    </div>
-
-    <div class="meta">
-      <div id="user-info">Not signed in</div>
-      <div id="datetime">--:--:--</div>
-    </div>
-  </header>
-
-  <!-- Navigation -->
-  <nav>
-    <button onclick="history.back()">Back</button>
-    <button id="logout-btn">Logout</button>
-  </nav>
-
-  <!-- Vertical Tabs -->
-  <div class="tab-container">
-    <div class="tab active" onclick="showTab('new-order')">New Order</div>
-    <div class="tab" onclick="showTab('orders-queue')">Orders in Queue</div>
-    <!-- Future tabs can be added here -->
-  </div>
-
-  <!-- New Order Entry -->
-  <div id="new-order" class="tab-content active">
-    <form id="order-form">
-      <label>Customer Name</label>
-      <input type="text" id="cust_name" required />
-
-      <label>Email</label>
-      <input type="email" id="cust_email" />
-
-      <label>Mobile No</label>
-      <input type="text" id="cust_mobile" />
-
-      <label>Job Description</label>
-      <textarea id="job_description" required></textarea>
-
-      <label>Total Amount (₹)</label>
-      <input type="number" id="total_amount" required step="0.01" min="0" />
-
-      <label>Advance Received (₹)</label>
-      <input type="number" id="advance_amount" value="0" step="0.01" min="0" />
-
-      <!-- Assigned to is captured from login; hidden input stores the id -->
-      <input type="hidden" id="assigned_to" />
-      <div class="small-muted" id="assigned-display">Assigned to: <span class="assigned-badge">Not set</span></div>
-
-      <button type="submit">Save Order</button>
-    </form>
-  </div>
-
-  <!-- Orders in Queue -->
-  <div id="orders-queue" class="tab-content">
-    <div class="queue-wrapper">
-      <table id="orders-table">
-        <thead>
-          <tr>
-            <th>Order ID</th>
-            <th>Customer Name</th>
-            <th>Email</th>
-            <th>Mobile</th>
-            <th>Job Description</th>
-            <th>Total (₹)</th>
-            <th>Advance (₹)</th>
-            <th>Pending (₹)</th>
-            <th>Assigned To</th>
-            <th>Order Date</th>
-          </tr>
-        </thead>
-        <tbody id="orders-body"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div id="toast"></div>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/auth.js"></script>
-  <script>
-    const { createClient } = supabase;
-    const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
-    const supabaseKey = "YOUR_ANON_KEY"; // replace with your anon key
-    const supabaseClient = createClient(supabaseUrl, supabaseKey);
-
-    // Tab switching
-    function showTab(tabId) {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      document.querySelector(`.tab[onclick="showTab('${tabId}')"]`).classList.add('active');
-      document.getElementById(tabId).classList.add('active');
-    }
-
-    // Live date/time
-    function startClock() {
-      const el = document.getElementById('datetime');
-      function update() {
-        const now = new Date();
-        const opts = { year: 'numeric', month: 'short', day: 'numeric' };
-        const date = now.toLocaleDateString('en-IN', opts);
-        const time = now.toLocaleTimeString('en-IN');
-        el.textContent = `${date} ${time}`;
+    const { error } = await supabaseClient.from('orders').insert([
+      {
+        cust_name,
+        cust_email,
+        cust_mobile,
+        job_description,
+        total_amount,
+        advance_amount,
+        assigned_to
       }
-      update();
-      setInterval(update, 1000);
-    }
+    ]);
 
-    // Toast helper
-    function showToast(message, type = 'success', duration = 3000) {
-      const toast = document.getElementById('toast');
-      toast.textContent = message;
-      toast.className = type;
-      toast.style.display = 'block';
-      setTimeout(() => {
-        toast.style.display = 'none';
-        toast.className = '';
-      }, duration);
-    }
-
-    // Display logged-in user info and set assigned_to automatically
-    async function setLoggedInUserInfo() {
-      try {
-        const { data: userData, error: userErr } = await supabaseClient.auth.getUser();
-        if (userErr) { console.error(userErr); return; }
-        const user = userData?.user;
-        if (!user) {
-          document.getElementById('user-info').textContent = 'Not signed in';
-          document.getElementById('assigned-display').querySelector('.assigned-badge').textContent = 'Not set';
-          return;
-        }
-
-        // Fetch profile to get role and stored name/email
-        const { data: profile, error: profileErr } = await supabaseClient
-          .from('profiles')
-          .select('role,email,name')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        const displayEmail = profile?.email || user.email || 'unknown';
-        const role = profile?.role || 'user';
-        const displayName = profile?.name || displayEmail.split('@')[0];
-
-        // Show login credentials and admin name if role is admin
-        let infoHtml = `<div><strong>${displayEmail}</strong></div><div class="small-muted">ID: ${user.id} • Role: ${role}</div>`;
-        if (role === 'admin') {
-          infoHtml = `<div><strong>${displayName}</strong></div><div class="small-muted">Admin • ${displayEmail}</div>`;
-        }
-        document.getElementById('user-info').innerHTML = infoHtml;
-
-        // Set assigned_to hidden input to current user id and show assigned display
-        document.getElementById('assigned_to').value = user.id;
-        document.getElementById('assigned-display').querySelector('.assigned-badge').textContent = `${displayName} (${role})`;
-      } catch (err) {
-        console.error('Error getting user info', err);
-      }
-    }
-
-    // Save new order (assigned_to taken from logged-in user)
-    document.getElementById('order-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const cust_name = document.getElementById('cust_name').value.trim();
-      const cust_email = document.getElementById('cust_email').value.trim();
-      const cust_mobile = document.getElementById('cust_mobile').value.trim();
-      const job_description = document.getElementById('job_description').value.trim();
-      const total_amount = parseFloat(document.getElementById('total_amount').value) || 0;
-      const advance_amount = parseFloat(document.getElementById('advance_amount').value) || 0;
-      const assigned_to = document.getElementById('assigned_to').value || null;
-
-      if (!cust_name || !job_description || total_amount <= 0) {
-        showToast('Please fill required fields and ensure Total Amount > 0', 'error', 3500);
-        return;
-      }
-
-      try {
-        const { data, error } = await supabaseClient.from('orders').insert([
-          {
-            cust_name,
-            cust_email,
-            cust_mobile,
-            job_description,
-            total_amount,
-            advance_amount,
-            assigned_to
-          }
-        ]);
-
-        if (error) {
-          console.error(error);
-          showToast('Error saving order', 'error', 3500);
-        } else {
-          showToast('Order submitted', 'success', 2500);
-          e.target.reset();
-          // re-set assigned display and hidden input after reset
-          await setLoggedInUserInfo();
-          // loadOrders will be triggered by realtime subscription as well,
-          // but call it once to ensure immediate local refresh
-          loadOrders();
-        }
-      } catch (err) {
-        console.error(err);
-        showToast('Unexpected error', 'error', 3500);
-      }
-    });
-
-    // Load orders into queue
-    async function loadOrders() {
-      try {
-        const { data, error } = await supabaseClient
-          .from('orders')
-          .select('order_id,cust_name,cust_email,cust_mobile,job_description,total_amount,advance_amount,pending_amount,assigned_to,order_date')
-          .order('order_id', { ascending: true });
-
-        if (error) {
-          console.error(error);
-          return;
-        }
-
-        const tbody = document.getElementById('orders-body');
-        tbody.innerHTML = '';
-        data.forEach(order => {
-          const tr = document.createElement('tr');
-          const pending = order.pending_amount ?? (order.total_amount - (order.advance_amount || 0));
-          tr.innerHTML = `
-            <td>${order.order_id}</td>
-            <td>${order.cust_name}</td>
-            <td>${order.cust_email || ''}</td>
-            <td>${order.cust_mobile || ''}</td>
-            <td>${order.job_description}</td>
-            <td>₹${Number(order.total_amount).toFixed(2)}</td>
-            <td>₹${Number(order.advance_amount || 0).toFixed(2)}</td>
-            <td style="color:${pending > 0 ? 'red' : 'green'}">₹${Number(pending).toFixed(2)}</td>
-            <td>${order.assigned_to || ''}</td>
-            <td>${order.order_date || ''}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-      } catch (err) {
-        console.error('Error loading orders', err);
-      }
-    }
-
-    // Realtime subscription to orders table to auto-refresh queue and show notification
-    function subscribeToOrdersRealtime() {
-      try {
-        const channel = supabaseClient.channel('public:orders')
-          .on(
-            'postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'orders' },
-            (payload) => {
-              // New order inserted by anyone — refresh queue and show subtle toast
-              loadOrders();
-              // If the inserted order was created by current user, show confirmation toast
-              // payload.record contains the inserted row
-              const rec = payload?.record;
-              if (rec) {
-                showToast(`New order #${rec.order_id} added`, 'success', 2200);
-              }
-            }
-          )
-          .subscribe((status) => {
-            // subscription status available if needed
-            // console.log('realtime status', status);
-          });
-
-        // Keep reference if you want to unsubscribe later: window.ordersChannel = channel;
-        window.ordersChannel = channel;
-      } catch (err) {
-        console.error('Realtime subscription error', err);
-      }
-    }
-
-    // Initialize on load
-    document.addEventListener('DOMContentLoaded', async () => {
-      startClock();
+    if (error) {
+      showToast('Error saving order', 'error', 3500);
+    } else {
+      showToast('Order submitted', 'success', 2500);
+      e.target.reset();
       await setLoggedInUserInfo();
-      await loadOrders();
-      subscribeToOrdersRealtime();
-    });
+      loadOrders(); // refresh queue immediately
+    }
+  });
 
-    // Optional: logout button wiring (depends on your auth.js implementation)
-    document.getElementById('logout-btn').addEventListener('click', async () => {
-      try {
-        await supabaseClient.auth.signOut();
-        // redirect to login page or reload
-        window.location.href = 'login.html';
-      } catch (err) {
-        console.error('Logout error', err);
-        showToast('Logout failed', 'error', 2000);
-      }
+  // Load orders into queue
+  async function loadOrders() {
+    const { data, error } = await supabaseClient
+      .from('orders')
+      .select('*')
+      .order('order_id', { ascending: true });
+
+    if (error) { console.error(error); return; }
+
+    const tbody = document.getElementById('orders-body');
+    tbody.innerHTML = '';
+    data.forEach(order => {
+      const pending = order.pending_amount ?? (order.total_amount - (order.advance_amount || 0));
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${order.order_id}</td>
+        <td>${order.cust_name}</td>
+        <td>${order.cust_email || ''}</td>
+        <td>${order.cust_mobile || ''}</td>
+        <td>${order.job_description}</td>
+        <td>₹${Number(order.total_amount).toFixed(2)}</td>
+        <td>₹${Number(order.advance_amount || 0).toFixed(2)}</td>
+        <td style="color:${pending > 0 ? 'red' : 'green'}">₹${Number(pending).toFixed(2)}</td>
+        <td>${order.assigned_to || ''}</td>
+        <td>${order.order_date || ''}</td>
+      `;
+      tbody.appendChild(tr);
     });
-  </script>
-</body>
-</html>
+  }
+
+  // Realtime subscription
+  function subscribeToOrdersRealtime() {
+    supabaseClient.channel('orders-channel')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
+        loadOrders();
+        showToast(`New order #${payload.new.order_id} added`, 'success', 2200);
+      })
+      .subscribe();
+  }
+
+  // Initialize
+  document.addEventListener('DOMContentLoaded', async () => {
+    startClock();
+    await setLoggedInUserInfo();
+    await loadOrders();
+    subscribeToOrdersRealtime();
+  });
+
+  // Logout
+  document.getElementById('logout-btn').addEventListener('click', async () => {
+    await supabaseClient.auth.signOut();
+    window.location.href = 'login.html';
+  });
+</script>
