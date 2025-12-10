@@ -1,65 +1,34 @@
-// auth.js
-// Supabase authentication + role-based redirect
-
-// 1. Initialize Supabase client
+// js/auth.js
 const { createClient } = supabase;
 
-// Replace with your actual project values
-const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co"; 
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."; // <-- full anon key from Supabase Settings → API
+const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXFqY3h6eXRqdHNpa3pyZHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMzA4NjAsImV4cCI6MjA4MDgwNjg2MH0.q0gkhSgqT_BNfsZBCd2stkgskf2V-CDVIG9p6S5LHdM";
+
 const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-// 2. Handle login form submission
-document.getElementById("login-form").addEventListener("submit", async (event) => {
-  event.preventDefault();
-
+// Handle login
+document.getElementById("login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
-  // Sign in user
-  const { data, error } = await supabaseClient.auth.signInWithPassword({
-    email: email,
-    password: password,
-  });
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) { alert("Login failed: " + error.message); return; }
 
-  if (error) {
-    alert("Login failed: " + error.message);
-    return;
-  }
-
-  // 3. Get logged-in user info
   const { data: { user } } = await supabaseClient.auth.getUser();
-  if (!user) {
-    alert("No user found after login.");
-    return;
-  }
+  if (!user) { alert("No user found after login."); return; }
 
-  const userId = user.id;
-
-  // 4. Fetch role from profiles table
   const { data: profile, error: profileError } = await supabaseClient
-    .from("profiles")
-    .select("role")
-    .eq("id", userId)
-    .single();
+    .from("profiles").select("role").eq("id", user.id).single();
 
-  if (profileError) {
-    alert("Error fetching role: " + profileError.message);
-    return;
-  }
+  if (profileError) { alert("Error fetching role: " + profileError.message); return; }
 
-  const role = profile?.role;
-
-  // 5. Redirect based on role
-  if (role === "admin") {
-    window.location.href = "admin-dashboard.html";
-  } else {
-    window.location.href = "user-home.html";
-  }
+  if (profile?.role === "admin") window.location.href = "admin-dashboard.html";
+  else window.location.href = "user-home.html";
 });
 
-// 6. Handle logout
+// Handle logout
 document.getElementById("logout-btn")?.addEventListener("click", async () => {
   await supabaseClient.auth.signOut();
-  window.location.href = "login.html";
+  window.location.href = "index.html";
 });
