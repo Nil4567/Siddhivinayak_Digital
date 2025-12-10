@@ -126,6 +126,34 @@
       font-size: 12px;
       color: #2c3e50;
     }
+
+    /* Toast notification */
+    #toast {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      background: #2ecc71;
+      color: white;
+      padding: 12px 18px;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      display: none;
+      z-index: 9999;
+      font-weight: bold;
+    }
+    #toast.error { background: #e74c3c; }
+
+    /* Admin name badge */
+    .admin-badge {
+      display: inline-block;
+      padding: 6px 10px;
+      background: #f1c40f;
+      color: #2c3e50;
+      border-radius: 6px;
+      font-weight: bold;
+      margin-left: 8px;
+      font-size: 13px;
+    }
   </style>
 </head>
 <body>
@@ -206,6 +234,8 @@
     </div>
   </div>
 
+  <div id="toast"></div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/auth.js"></script>
   <script>
@@ -214,12 +244,24 @@
     const supabaseKey = "YOUR_ANON_KEY"; // replace with your anon key
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
+    let currentUser = null;
+    let currentProfile = null;
+
     // Tab switching
     function showTab(tabId) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       document.querySelector(`.tab[onclick="showTab('${tabId}')"]`).classList.add('active');
       document.getElementById(tabId).classList.add('active');
+    }
+
+    // Toast helper
+    function showToast(message, isError = false, timeout = 3000) {
+      const t = document.getElementById('toast');
+      t.textContent = message;
+      t.className = isError ? 'error' : '';
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, timeout);
     }
 
     // Live date/time
@@ -242,29 +284,38 @@
         const { data: userData, error: userErr } = await supabaseClient.auth.getUser();
         if (userErr) { console.error(userErr); return; }
         const user = userData?.user;
+        currentUser = user || null;
+
         if (!user) {
           document.getElementById('user-info').textContent = 'Not signed in';
           document.getElementById('assigned-display').querySelector('.assigned-badge').textContent = 'Not set';
           return;
         }
 
-        // Fetch profile to get role and stored email (if you keep role in profiles)
+        // Fetch profile to get role and stored email/name
         const { data: profile, error: profileErr } = await supabaseClient
           .from('profiles')
-          .select('role,email')
+          .select('role,email,full_name')
           .eq('id', user.id)
           .maybeSingle();
 
+        if (profileErr) { console.error(profileErr); }
+
+        currentProfile = profile || null;
         const displayEmail = profile?.email || user.email || 'unknown';
         const role = profile?.role || 'user';
+        const fullName = profile?.full_name || displayEmail.split('@')[0];
 
-        // Show login credentials
-        document.getElementById('user-info').innerHTML =
-          `<div><strong>${displayEmail}</strong></div><div class="small-muted">ID: ${user.id} • Role: ${role}</div>`;
+        // Show login credentials and admin name if admin
+        let infoHtml = `<div><strong>${displayEmail}</strong></div><div class="small-muted">ID: ${user.id} • Role: ${role}</div>`;
+        if (role === 'admin') {
+          infoHtml += `<div class="small-muted">Admin: <span class="admin-badge">${fullName}</span></div>`;
+        }
+        document.getElementById('user-info').innerHTML = infoHtml;
 
-        // Set assigned_to hidden input to current user id
+        // Set assigned_to hidden input to current user id and show assigned display
         document.getElementById('assigned_to').value = user.id;
-        document.getElementById('assigned-display').querySelector('.assigned-badge').textContent = `${displayEmail} (${role})`;
+        document.getElementById('assigned-display').querySelector('.assigned-badge').textContent = `${fullName} (${role})`;
       } catch (err) {
         console.error('Error getting user info', err);
       }
@@ -283,11 +334,12 @@
       const assigned_to = document.getElementById("assigned_to").value || null;
 
       if (!cust_name || !job_description || total_amount <= 0) {
-        alert('Please fill required fields and ensure Total Amount is greater than 0.');
+        showToast('Please fill required fields and ensure Total Amount > 0', true);
         return;
       }
 
-      const { error } = await supabaseClient.from("orders").insert([
+      // Insert order
+      const { data, error } = await supabaseClient.from("orders").insert([
         {
           cust_name,
           cust_email,
@@ -297,26 +349,56 @@
           advance_amount,
           assigned_to
         }
-      ]);
+      ]).select().single();
 
       if (error) {
-        alert("Error saving order: " + error.message);
         console.error(error);
+        showToast("Error saving order: " + (error.message || 'Unknown'), true);
       } else {
-        alert("Order saved successfully!");
+        // Show success notification
+        showToast('Order submitted');
+
+        // Reset form and re-set assigned info
         e.target.reset();
-        // re-set assigned display and hidden input after reset
         await setLoggedInUserInfo();
-        loadOrders(); // refresh queue after saving
+
+        // If insert returned the new row, update queue immediately
+        if (data) {
+          appendOrderRow(data);
+        } else {
+          // fallback: reload full list
+          loadOrders();
+        }
       }
     });
 
-    // Load orders into queue
+    // Append a single order row (used for realtime/after-insert)
+    function appendOrderRow(order) {
+      const tbody = document.getElementById("orders-body");
+      const tr = document.createElement("tr");
+      const pending = order.pending_amount ?? (order.total_amount - (order.advance_amount || 0));
+      tr.innerHTML = `
+        <td>${order.order_id}</td>
+        <td>${order.cust_name}</td>
+        <td>${order.cust_email || ""}</td>
+        <td>${order.cust_mobile || ""}</td>
+        <td>${order.job_description}</td>
+        <td>₹${Number(order.total_amount).toFixed(2)}</td>
+        <td>₹${Number(order.advance_amount || 0).toFixed(2)}</td>
+        <td style="color:${pending > 0 ? 'red' : 'green'}">₹${Number(pending).toFixed(2)}</td>
+        <td>${order.assigned_to || ""}</td>
+        <td>${order.order_date || ""}</td>
+      `;
+      // Insert at top so newest appears first
+      tbody.insertBefore(tr, tbody.firstChild);
+    }
+
+    // Load orders into queue (full refresh)
     async function loadOrders() {
       const { data, error } = await supabaseClient
         .from("orders")
         .select("order_id,cust_name,cust_email,cust_mobile,job_description,total_amount,advance_amount,pending_amount,assigned_to,order_date")
-        .order("order_id", { ascending: true });
+        .order("order_id", { ascending: false });
 
       if (error) { console.error(error); return; }
 
@@ -341,11 +423,37 @@
       });
     }
 
+    // Realtime subscription to orders table to auto-update queue
+    function subscribeToOrdersRealtime() {
+      try {
+        const channel = supabaseClient.channel('public:orders')
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, payload => {
+            // payload.new contains the inserted row
+            if (payload?.new) {
+              // If Orders tab is visible, prepend; otherwise still refresh list in background
+              appendOrderRow(payload.new);
+              // show a subtle notification for new order (if not submitted by current user)
+              const newAssigned = payload.new.assigned_to;
+              const isOwn = currentUser && currentUser.id === newAssigned;
+              if (!isOwn) showToast('New order added to queue');
+            }
+          })
+          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, payload => {
+            // For updates, refresh full list to keep UI consistent
+            loadOrders();
+          })
+          .subscribe();
+      } catch (err) {
+        console.error('Realtime subscribe error', err);
+      }
+    }
+
     // Initialize on load
     document.addEventListener("DOMContentLoaded", async () => {
       startClock();
       await setLoggedInUserInfo();
       await loadOrders();
+      subscribeToOrdersRealtime();
     });
   </script>
 </body>
