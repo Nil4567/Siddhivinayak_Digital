@@ -1,12 +1,13 @@
 // auth.js
+// Supabase authentication + role-based redirect
 
+// 1. Initialize Supabase client
 const { createClient } = supabase;
 
-// Use your actual project values here:
+// Replace with your actual project values
 const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co"; 
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."; // <-- full anon key from Supabase Settings → API
 const supabaseClient = createClient(supabaseUrl, supabaseKey);
-
 
 // 2. Handle login form submission
 document.getElementById("login-form").addEventListener("submit", async (event) => {
