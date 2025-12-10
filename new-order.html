@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>New Order Entry</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <h2>New Order Entry</h2>
+
+  <!-- Navigation -->
+  <nav>
+    <button onclick="window.location.href='index.html'">Home</button>
+    <button onclick="history.back()">Back</button>
+    <button id="logout-btn">Logout</button>
+  </nav>
+
+  <form id="order-form">
+    <label>Customer Name:</label>
+    <input type="text" id="cust_name" required><br>
+
+    <label>Email:</label>
+    <input type="email" id="cust_email"><br>
+
+    <label>Mobile No:</label>
+    <input type="text" id="cust_mobile"><br>
+
+    <label>Job Description:</label>
+    <textarea id="job_description" required></textarea><br>
+
+    <label>Total Amount (₹):</label>
+    <input type="number" id="total_amount" required><br>
+
+    <label>Advance Received (₹):</label>
+    <input type="number" id="advance_amount" value="0"><br>
+
+    <label>Assign Job To (User ID):</label>
+    <input type="text" id="assigned_to" required><br>
+
+    <button type="submit">Save Order</button>
+  </form>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    const { createClient } = supabase;
+    const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
+    const supabaseKey = "YOUR_ANON_KEY"; // replace with your anon key
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    document.getElementById("order-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const cust_name = document.getElementById("cust_name").value;
+      const cust_email = document.getElementById("cust_email").value;
+      const cust_mobile = document.getElementById("cust_mobile").value;
+      const job_description = document.getElementById("job_description").value;
+      const total_amount = parseFloat(document.getElementById("total_amount").value);
+      const advance_amount = parseFloat(document.getElementById("advance_amount").value);
+      const assigned_to = document.getElementById("assigned_to").value;
+
+      const { data, error } = await supabaseClient.from("orders").insert([
+        {
+          cust_name,
+          cust_email,
+          cust_mobile,
+          job_description,
+          total_amount,
+          advance_amount,
+          assigned_to
+        }
+      ]);
+
+      if (error) {
+        alert("Error saving order: " + error.message);
+      } else {
+        alert("Order saved successfully!");
+        e.target.reset();
+      }
+    });
+  </script>
+</body>
+</html>
