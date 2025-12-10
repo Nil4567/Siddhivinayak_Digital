@@ -2,17 +2,83 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Siddhivinayak Digital - Login</title>
+  <title>Retail Counter - Home</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <h2>Login</h2>
-  <form id="login-form">
-    <input type="email" id="email" placeholder="Email" required>
-    <input type="password" id="password" placeholder="Password" required>
-    <button type="submit">Login</button>
-  </form>
+  <h2>Retail Counter - Home</h2>
+
+  <!-- Navigation -->
+  <nav>
+    <button onclick="history.back()">Back</button>
+    <button id="logout-btn">Logout</button>
+  </nav>
+
+  <!-- New Order Entry Form -->
+  <section>
+    <h3>New Order Entry</h3>
+    <form id="order-form">
+      <label>Customer Name:</label>
+      <input type="text" id="cust_name" required><br>
+
+      <label>Email:</label>
+      <input type="email" id="cust_email"><br>
+
+      <label>Mobile No:</label>
+      <input type="text" id="cust_mobile"><br>
+
+      <label>Job Description:</label>
+      <textarea id="job_description" required></textarea><br>
+
+      <label>Total Amount (₹):</label>
+      <input type="number" id="total_amount" required><br>
+
+      <label>Advance Received (₹):</label>
+      <input type="number" id="advance_amount" value="0"><br>
+
+      <label>Assign Job To (User ID):</label>
+      <input type="text" id="assigned_to" required><br>
+
+      <button type="submit">Save Order</button>
+    </form>
+  </section>
+
+  <!-- Orders in Queue -->
+  <section>
+    <h3>Orders in Queue</h3>
+    <table border="1" id="orders-table">
+      <thead>
+        <tr>
+          <th>Order ID</th>
+          <th>Customer Name</th>
+          <th>Email</th>
+          <th>Mobile</th>
+          <th>Job Description</th>
+          <th>Total (₹)</th>
+          <th>Advance (₹)</th>
+          <th>Pending (₹)</th>
+          <th>Assigned To</th>
+          <th>Order Date</th>
+        </tr>
+      </thead>
+      <tbody id="orders-body">
+        <!-- Filled dynamically -->
+      </tbody>
+    </table>
+  </section>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/auth.js"></script>
-</body>
-</html>
+  <script>
+    const { createClient } = supabase;
+    const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
+    const supabaseKey = "YOUR_ANON_KEY"; // replace with your anon key
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    // Save new order
+    document.getElementById("order-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const cust_name = document.getElementById("cust_name").value;
+      const cust_email = document.getElementById("cust_email").value;
+      const cust_mobile = document.getElementById("cust_mobile").value
