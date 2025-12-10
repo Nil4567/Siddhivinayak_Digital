@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Admin Dashboard — Siddhivinayak Digital</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <h1>Admin Dashboard</h1>
+  <p>Only admins can see this page.</p>
+  <a href="settings.html">Go to Settings</a>
+  <button onclick="logout()">Logout</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    checkRole("admin", "index.html");
+  </script>
+</body>
+</html>
