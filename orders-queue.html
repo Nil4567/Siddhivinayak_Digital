@@ -9,6 +9,7 @@
     th, td { padding: 8px 10px; border: 1px solid #ddd; text-align: left; }
     thead { background: #f4f4f4; }
     #toast { display:none; position: fixed; right: 20px; bottom: 20px; z-index: 9999; }
+    select, input { padding: 4px; }
   </style>
 </head>
 <body>
@@ -26,6 +27,9 @@
         <th>Advance</th>
         <th>Pending</th>
         <th>Date</th>
+        <th>TAT (days)</th>
+        <th>Assign User</th>
+        <th>Order Token</th>
       </tr>
     </thead>
     <tbody id="orders-body"></tbody>
@@ -42,6 +46,8 @@
     const { createClient } = supabase;
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
+    let usersList = [];
+
     // Toast helper
     function showToast(msg, type = "success") {
       const toast = document.getElementById("toast");
@@ -52,6 +58,20 @@
       toast.style.padding = "8px 12px";
       toast.style.borderRadius = "6px";
       setTimeout(() => { toast.style.display = "none"; }, 2500);
+    }
+
+    // Load active users for dropdown
+    async function loadUsers() {
+      const { data, error } = await supabaseClient
+        .from("profiles")
+        .select("id, email, role")
+        .eq("role", "user"); // or "admin" depending on your need
+
+      if (error) {
+        console.error("Error loading users:", error);
+        return;
+      }
+      usersList = data || [];
     }
 
     // Load orders
@@ -71,22 +91,39 @@
         const tbody = document.getElementById("orders-body");
         tbody.innerHTML = "";
         if (!data || data.length === 0) {
-          tbody.innerHTML = "<tr><td colspan='9'>No orders found</td></tr>";
+          tbody.innerHTML = "<tr><td colspan='12'>No orders found</td></tr>";
           return;
         }
 
         data.forEach(o => {
+          const orderDate = o.order_date ? new Date(o.order_date) : null;
+          const today = new Date();
+          const tatDays = orderDate ? Math.floor((today - orderDate) / (1000*60*60*24)) : "";
+
+          // Build user dropdown
+          let userOptions = `<option value="">--Select--</option>`;
+          usersList.forEach(u => {
+            userOptions += `<option value="${u.id}" ${o.assigned_to === u.id ? "selected" : ""}>${u.email}</option>`;
+          });
+
           tbody.innerHTML += `
             <tr>
               <td>${o.order_id}</td>
               <td>${o.cust_name || ""}</td>
               <td>${o.cust_email || ""}</td>
               <td>${o.cust_mobile || ""}</td>
-              <td>${o.job_description || ""}</td>
+              <td contenteditable="true" onblur="updateJobDescription(${o.order_id}, this.innerText)">${o.job_description || ""}</td>
               <td>₹${Number(o.total_amount || 0).toFixed(2)}</td>
               <td>₹${Number(o.advance_amount || 0).toFixed(2)}</td>
               <td>₹${Number(o.pending_amount || 0).toFixed(2)}</td>
-              <td>${o.order_date ? new Date(o.order_date).toLocaleString() : ""}</td>
+              <td>${orderDate ? orderDate.toLocaleString() : ""}</td>
+              <td>${tatDays}</td>
+              <td>
+                <select onchange="assignUser(${o.order_id}, this.value)">
+                  ${userOptions}
+                </select>
+              </td>
+              <td>${o.order_token || ""}</td>
             </tr>`;
         });
       } catch (err) {
@@ -95,8 +132,39 @@
       }
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
-      loadOrders();
+    // Update job description
+    async function updateJobDescription(orderId, newDesc) {
+      const { error } = await supabaseClient
+        .from("orders")
+        .update({ job_description: newDesc })
+        .eq("order_id", orderId);
+
+      if (error) {
+        console.error("Update job description error:", error);
+        showToast("Error updating job", "error");
+      } else {
+        showToast("Job description updated", "success");
+      }
+    }
+
+    // Assign user
+    async function assignUser(orderId, userId) {
+      const { error } = await supabaseClient
+        .from("orders")
+        .update({ assigned_to: userId })
+        .eq("order_id", orderId);
+
+      if (error) {
+        console.error("Assign user error:", error);
+        showToast("Error assigning user", "error");
+      } else {
+        showToast("User assigned", "success");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      await loadUsers();
+      await loadOrders();
 
       // Real-time subscription: auto-refresh when new orders are inserted
       supabaseClient
