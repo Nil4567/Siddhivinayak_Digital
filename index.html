@@ -1,166 +1,64 @@
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/auth.js"></script>
-<script>
-  const { createClient } = supabase;
-  const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
-  const supabaseKey = "YOUR_ANON_KEY"; // replace with your anon key
-  const supabaseClient = createClient(supabaseUrl, supabaseKey);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Welcome to Sidhivinayak Digital</title>
+</head>
+<body>
+  <h2>Welcome to Sidhivinayak Digital</h2>
+  <div id="user-info">Loading user...</div>
+  <div id="datetime"></div>
 
-  // Tab switching
-  function showTab(tabId) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    document.querySelector(`.tab[onclick="showTab('${tabId}')"]`).classList.add('active');
-    document.getElementById(tabId).classList.add('active');
-  }
+  <form id="order-form">
+    <input type="text" id="cust_name" placeholder="Customer Name" required>
+    <input type="text" id="job_description" placeholder="Job Description" required>
+    <input type="number" id="total_amount" placeholder="Total Amount" required>
+    <button type="submit">Save Order</button>
+  </form>
 
-  // Live date/time
-  function startClock() {
-    const el = document.getElementById('datetime');
-    function update() {
-      const now = new Date();
-      const opts = { year: 'numeric', month: 'short', day: 'numeric' };
-      const date = now.toLocaleDateString('en-IN', opts);
-      const time = now.toLocaleTimeString('en-IN');
-      el.textContent = `${date} ${time}`;
-    }
-    update();
-    setInterval(update, 1000);
-  }
+  <h3>Orders in Queue</h3>
+  <table border="1">
+    <thead><tr><th>ID</th><th>Name</th><th>Job</th><th>Total</th></tr></thead>
+    <tbody id="orders-body"></tbody>
+  </table>
 
-  // Toast helper
-  function showToast(message, type = 'success', duration = 3000) {
-    const toast = document.getElementById('toast');
-    toast.textContent = message;
-    toast.className = ''; // reset
-    toast.classList.add(type);
-    toast.style.display = 'block';
-    setTimeout(() => {
-      toast.style.display = 'none';
-    }, duration);
-  }
+  <div id="toast"></div>
 
-  // Display logged-in user info and set assigned_to automatically
-  async function setLoggedInUserInfo() {
-    const { data: userData } = await supabaseClient.auth.getUser();
-    const user = userData?.user;
-    if (!user) {
-      document.getElementById('user-info').textContent = 'Not signed in';
-      document.getElementById('assigned-display').querySelector('.assigned-badge').textContent = 'Not set';
-      return;
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const { createClient } = supabase;
+    const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
+    const supabaseKey = "YOUR_ANON_KEY"; // replace with your anon key
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.textContent = msg;
+      toast.style.display = "block";
+      setTimeout(() => toast.style.display = "none", 2000);
     }
 
-    const { data: profile } = await supabaseClient
-      .from('profiles')
-      .select('role,email')
-      .eq('id', user.id)
-      .maybeSingle();
-
-    const role = profile?.role || 'user';
-    const displayEmail = profile?.email || user.email;
-
-    if (role === 'admin') {
-      document.getElementById('user-info').innerHTML =
-        `<strong>Admin:</strong> ${displayEmail}`;
-    } else {
-      document.getElementById('user-info').textContent = displayEmail;
+    async function loadOrders() {
+      const { data, error } = await supabaseClient.from("orders").select("*").order("order_id");
+      if (error) { console.error(error); return; }
+      const tbody = document.getElementById("orders-body");
+      tbody.innerHTML = "";
+      data.forEach(o => {
+        tbody.innerHTML += `<tr><td>${o.order_id}</td><td>${o.cust_name}</td><td>${o.job_description}</td><td>₹${o.total_amount}</td></tr>`;
+      });
     }
 
-    document.getElementById('assigned_to').value = user.id;
-    document.getElementById('assigned-display').querySelector('.assigned-badge').textContent =
-      `${displayEmail} (${role})`;
-  }
-
-  // Save new order
-  document.getElementById('order-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const cust_name = document.getElementById('cust_name').value.trim();
-    const cust_email = document.getElementById('cust_email').value.trim();
-    const cust_mobile = document.getElementById('cust_mobile').value.trim();
-    const job_description = document.getElementById('job_description').value.trim();
-    const total_amount = parseFloat(document.getElementById('total_amount').value) || 0;
-    const advance_amount = parseFloat(document.getElementById('advance_amount').value) || 0;
-    const assigned_to = document.getElementById('assigned_to').value || null;
-
-    if (!cust_name || !job_description || total_amount <= 0) {
-      showToast('Please fill required fields and ensure Total Amount > 0', 'error', 3500);
-      return;
-    }
-
-    const { error } = await supabaseClient.from('orders').insert([
-      {
-        cust_name,
-        cust_email,
-        cust_mobile,
-        job_description,
-        total_amount,
-        advance_amount,
-        assigned_to
-      }
-    ]);
-
-    if (error) {
-      showToast('Error saving order', 'error', 3500);
-    } else {
-      showToast('Order submitted', 'success', 2500);
-      e.target.reset();
-      await setLoggedInUserInfo();
-      loadOrders(); // refresh queue immediately
-    }
-  });
-
-  // Load orders into queue
-  async function loadOrders() {
-    const { data, error } = await supabaseClient
-      .from('orders')
-      .select('*')
-      .order('order_id', { ascending: true });
-
-    if (error) { console.error(error); return; }
-
-    const tbody = document.getElementById('orders-body');
-    tbody.innerHTML = '';
-    data.forEach(order => {
-      const pending = order.pending_amount ?? (order.total_amount - (order.advance_amount || 0));
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${order.order_id}</td>
-        <td>${order.cust_name}</td>
-        <td>${order.cust_email || ''}</td>
-        <td>${order.cust_mobile || ''}</td>
-        <td>${order.job_description}</td>
-        <td>₹${Number(order.total_amount).toFixed(2)}</td>
-        <td>₹${Number(order.advance_amount || 0).toFixed(2)}</td>
-        <td style="color:${pending > 0 ? 'red' : 'green'}">₹${Number(pending).toFixed(2)}</td>
-        <td>${order.assigned_to || ''}</td>
-        <td>${order.order_date || ''}</td>
-      `;
-      tbody.appendChild(tr);
+    document.getElementById("order-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const cust_name = document.getElementById("cust_name").value;
+      const job_description = document.getElementById("job_description").value;
+      const total_amount = parseFloat(document.getElementById("total_amount").value);
+      const { error } = await supabaseClient.from("orders").insert([{ cust_name, job_description, total_amount }]);
+      if (error) { showToast("Error saving order"); }
+      else { showToast("Order submitted"); loadOrders(); e.target.reset(); }
     });
-  }
 
-  // Realtime subscription
-  function subscribeToOrdersRealtime() {
-    supabaseClient.channel('orders-channel')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
-        loadOrders();
-        showToast(`New order #${payload.new.order_id} added`, 'success', 2200);
-      })
-      .subscribe();
-  }
-
-  // Initialize
-  document.addEventListener('DOMContentLoaded', async () => {
-    startClock();
-    await setLoggedInUserInfo();
-    await loadOrders();
-    subscribeToOrdersRealtime();
-  });
-
-  // Logout
-  document.getElementById('logout-btn').addEventListener('click', async () => {
-    await supabaseClient.auth.signOut();
-    window.location.href = 'login.html';
-  });
-</script>
+    loadOrders();
+  </script>
+</body>
+</html>
