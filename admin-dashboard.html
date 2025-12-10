@@ -3,10 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <h2>Welcome, Admin</h2>
-  <button id="logout-btn">Logout</button>
+
+  <nav>
+    <ul>
+      <li><a href="settings.html">Manage Users</a></li>
+      <li><button id="logout-btn">Logout</button></li>
+    </ul>
+  </nav>
+
+  <section>
+    <p>You are logged in with admin privileges. Use the settings page to manage user roles.</p>
+  </section>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/auth.js"></script>
