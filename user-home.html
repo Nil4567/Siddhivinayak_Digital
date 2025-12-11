@@ -1,44 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8" />
   <title>User Home</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; background: #f9f9f9; }
-    header { background: #27ae60; color: #fff; padding: 20px; text-align: center; }
-    header h1 { margin: 0; }
-    .container { padding: 20px; }
-    .link-btn { display: inline-block; margin: 10px; padding: 10px 15px; background: #2980b9; color: #fff; text-decoration: none; border-radius: 4px; }
-    .link-btn:hover { background: #1f6391; }
-    .btn { padding: 8px 12px; background: #e74c3c; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
-    .btn:hover { background: #c0392b; }
+    body { font-family: Arial, sans-serif; margin:0; background:#f6f7f9; }
+    header { background:#27ae60; color:#fff; padding:18px; text-align:center; }
+    .container { padding:18px; max-width:800px; margin:18px auto; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.06); text-align:center; }
+    .nav { margin:14px 0; }
+    .link { display:inline-block; margin:6px; padding:10px 14px; background:#2980b9; color:#fff; border-radius:6px; text-decoration:none; }
+    .btn { margin-top:12px; padding:8px 12px; background:#e74c3c; color:#fff; border:none; border-radius:6px; cursor:pointer; }
   </style>
 </head>
 <body>
   <header>
     <h1>User Dashboard</h1>
-    <h3 id="welcome"></h3>
+    <div id="welcome" style="margin-top:6px;font-weight:600"></div>
   </header>
+
   <div class="container">
-    <a href="new-order.html" class="link-btn">New Order</a>
-    <a href="orders-queue.html" class="link-btn">Orders Queue</a>
-    <br><br>
+    <div class="nav">
+      <a class="link" href="new-order.html">New Order</a>
+      <a class="link" href="orders-queue.html">Orders Queue</a>
+    </div>
+
+    <p>Use the links above to navigate. Display name and UID are shown in the header.</p>
+
     <button id="logout" class="btn">Logout</button>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXFqY3h6eXRqdHNpa3pyZHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMzA4NjAsImV4cCI6MjA4MDgwNjg2MH0.q0gkhSgqT_BNfsZBCd2stkgskf2V-CDVIG9p6S5LHdM";
-    const { createClient } = supabase;
-    const supabaseClient = createClient(supabaseUrl, supabaseKey);
-
     const name = localStorage.getItem("displayName") || "Staff";
     const uid = localStorage.getItem("uid") || "";
     document.getElementById("welcome").textContent = `Welcome, ${name} (UID: ${uid})`;
 
-    document.getElementById("logout").addEventListener("click", async () => {
-      await supabaseClient.auth.signOut();
+    document.getElementById("logout").addEventListener("click", () => {
       localStorage.clear();
       window.location.href = "login.html";
     });
