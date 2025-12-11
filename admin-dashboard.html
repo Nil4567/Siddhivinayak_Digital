@@ -1,62 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8">
   <title>Admin Dashboard</title>
   <style>
-    body { font-family: Arial, sans-serif; margin:0; background:#f6f7f9; }
-    header { background:#222; color:#fff; padding:18px; text-align:center; }
-    .container { padding:18px; max-width:900px; margin:18px auto; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
-    table { width:100%; border-collapse:collapse; margin-top:12px; }
+    body { margin:0; font-family:"Segoe UI",Arial,sans-serif; background:#f4f6f9; display:flex; height:100vh; }
+    .sidebar { width:220px; background:linear-gradient(180deg,#2c3e50,#34495e); color:#fff; display:flex; flex-direction:column; padding-top:20px; }
+    .sidebar h2 { text-align:center; margin-bottom:20px; font-size:20px; }
+    .tab { padding:14px 20px; cursor:pointer; transition:background 0.3s; }
+    .tab:hover { background:#1abc9c; }
+    .tab.active { background:#16a085; font-weight:bold; }
+    .content { flex:1; padding:30px; background:#fff; overflow-y:auto; }
+    .hidden { display:none; }
+    .cards { display:flex; gap:20px; margin-bottom:30px; }
+    .card { flex:1; background:#f9fafc; border-radius:8px; padding:20px; box-shadow:0 2px 6px rgba(0,0,0,0.05); text-align:center; }
+    .card h4 { margin:0; font-size:16px; color:#555; }
+    .card p { font-size:24px; margin:10px 0 0; font-weight:bold; color:#2c3e50; }
+    table { width:100%; border-collapse:collapse; margin-top:20px; }
     th, td { padding:10px; border:1px solid #eee; text-align:left; }
     .btn { padding:8px 12px; background:#e74c3c; color:#fff; border:none; border-radius:6px; cursor:pointer; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Admin Dashboard</h1>
-    <div id="welcome" style="margin-top:6px;font-weight:600"></div>
-  </header>
-
-  <div class="container">
-    <p>Hard-coded users list (for demo). You can edit this file to change names/emails/UIDs.</p>
-
-    <table id="usersTable">
-      <thead><tr><th>Display name</th><th>UID</th><th>Email</th><th>Role</th></tr></thead>
-      <tbody></tbody>
-    </table>
-
-    <div style="margin-top:14px;">
-      <button id="logout" class="btn">Logout</button>
-    </div>
+  <div class="sidebar">
+    <h2>Admin Dashboard</h2>
+    <div class="tab active" data-target="overview">Overview</div>
+    <div class="tab" data-target="users">Users</div>
+    <div class="tab" data-target="orders">Orders</div>
+    <div class="tab" data-target="settings">Settings</div>
   </div>
 
-  <script>
-    // Mirror the same hard-coded users here for display (keep in sync with login.html)
-    const USERS_LIST = [
-      { email: "admin@sd.com", uid: "859b41e0-6026-4e96-8025-3a9195e73416", displayName: "Admin", role: "admin" },
-      { email: "sd1@sd.com", uid: "bee951e8-6a26-45a7-a6f0-cc8d14fc6ded", displayName: "Staff 1", role: "user" },
-      { email: "sd2@sd.com", uid: "62d38679-a9c6-4dad-800a-c43d304a304b", displayName: "Staff 2", role: "user" },
-      { email: "sd3@sd.com", uid: "69295dcb-d89e-4fc4-a819-39c24fe6ada0", displayName: "Staff 3", role: "user" },
-      { email: "sd5@sd.com", uid: "4c4ef61f-5f35-45c9-a492-af2461158027", displayName: "Staff 5", role: "user" },
-      { email: "ad4@sd.com", uid: "cf6af25a-bdf9-4493-b41a-c3dab596cc2f", displayName: "Staff 4", role: "user" }
-    ];
+  <div class="content">
+    <div id="overview" class="tab-content">
+      <h3>Overview</h3>
+      <p>Welcome, <strong id="welcomeName"></strong> (UID: <span id="welcomeUid"></span>)</p>
+      <div class="cards">
+        <div class="card"><h4>Total Orders</h4><p>128</p></div>
+        <div class="card"><h4>Pending</h4><p>34</p></div>
+        <div class="card"><h4>Completed</h4><p>94</p></div>
+      </div>
+    </div>
 
-    const name = localStorage.getItem("displayName") || "Admin";
-    const uid = localStorage.getItem("uid") || "";
-    document.getElementById("welcome").textContent = `Welcome, ${name} (UID: ${uid})`;
+    <div id="users" class="tab-content hidden">
+      <h3>Users</h3>
+      <table>
+        <thead><tr><th>Display Name</th><th>UID</th><th>Email</th><th>Role</th></tr></thead>
+        <tbody id="usersTable"></tbody>
+      </table>
+    </div>
 
-    const tbody = document.querySelector("#usersTable tbody");
-    USERS_LIST.forEach(u => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${u.displayName}</td><td>${u.uid}</td><td>${u.email}</td><td>${u.role}</td>`;
-      tbody.appendChild(tr);
-    });
-
-    document.getElementById("logout").addEventListener("click", () => {
-      localStorage.clear();
-      window.location.href = "login.html";
-    });
-  </script>
-</body>
-</html>
+    <div id="orders" class="tab
