@@ -31,13 +31,10 @@
     </table>
   </div>
 
+  <!-- Shared Supabase config -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
   <script>
-    const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
-    const supabaseKey = "YOUR-ANON-KEY-HERE"; // replace with your anon key
-    const { createClient } = supabase;
-    const supabaseClient = createClient(supabaseUrl, supabaseKey);
-
     async function loadCompleted() {
       const { data: orders, error } = await supabaseClient
         .from("orders")
