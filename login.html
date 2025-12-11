@@ -7,8 +7,8 @@
     body { font-family: Arial, sans-serif; background: #f9f9f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
     .login-box { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); width: 320px; }
     .login-box h2 { text-align: center; margin-bottom: 20px; }
-    .login-box input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 4px; }
-    .login-box button { width: 100%; padding: 10px; background: #27ae60; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    .login-box input, .login-box button { width: 100%; padding: 10px; margin: 8px 0; border-radius: 4px; border: 1px solid #ddd; }
+    .login-box button { background: #27ae60; color: #fff; border: none; font-weight: bold; cursor: pointer; }
     .login-box button:hover { background: #219150; }
     #toast { display:none; position: fixed; right: 20px; bottom: 20px; z-index: 9999; }
   </style>
@@ -20,21 +20,13 @@
     <input type="password" id="password" placeholder="Password" required>
     <button id="login-btn">Login</button>
   </div>
-
   <div id="toast"></div>
 
-  <!-- Supabase client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXFqY3h6eXRqdHNpa3pyZHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMzA4NjAsImV4cCI6MjA4MDgwNjg2MH0.q0gkhSgqT_BNfsZBCd2stkgskf2V-CDVIG9p6S5LHdM"; // replace with your anon key
-
-    // List of admin UIDs
-    const ADMIN_UIDS = [
-      "859b41e0-6026-4e96-8025-3a9195e73416", // admin@sd.com
-      "cf6af25a-bdf9-4493-b41a-c3dab596cc2f", // ad4@sd.com (optional admin)
-    ];
-
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXFqY3h6eXRqdHNpa3pyZHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMzA4NjAsImV4cCI6MjA4MDgwNjg2MH0.q0gkhSgqT_BNfsZBCd2stkgskf2V-CDVIG9p6S5LHdM";
+    const ADMIN_UIDS = ["859b41e0-6026-4e96-8025-3a9195e73416", "cf6af25a-bdf9-4493-b41a-c3dab596cc2f"];
     const { createClient } = supabase;
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
@@ -54,15 +46,9 @@
       const password = document.getElementById("password").value.trim();
 
       const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-
-      if (error) {
-        showToast("Invalid login", "error");
-        return;
-      }
+      if (error) { showToast("Invalid login", "error"); return; }
 
       const user = data.user;
-
-      // Fetch role + display_name directly from Supabase
       const { data: profile, error: profileError } = await supabaseClient
         .from("profiles")
         .select("role, display_name")
@@ -74,10 +60,9 @@
         return;
       }
 
-      // Store display name in localStorage for later use
       localStorage.setItem("displayName", profile.display_name || "Staff");
+      localStorage.setItem("uid", user.id);
 
-      // UID-based redirect
       if (ADMIN_UIDS.includes(user.id) || profile.role === "admin") {
         window.location.href = "admin-dashboard.html";
       } else {
