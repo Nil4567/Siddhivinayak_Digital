@@ -2,144 +2,83 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Admin Dashboard - Siddhivinayak Digital</title>
+  <title>Admin Dashboard</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 0; background: #f9f9f9; }
     header { background: #333; color: #fff; padding: 20px; text-align: center; }
     header h1 { margin: 0; }
-    .container { display: flex; padding: 20px; gap: 20px; }
-    .card {
-      flex: 1; background: #fff; padding: 20px; border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    h2 { margin-top: 0; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    table, th, td { border: 1px solid #ddd; }
-    th, td { padding: 8px; text-align: left; }
-    .btn { padding: 8px 12px; background: #27ae60; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
-    .btn:hover { background: #219150; }
-    #logout { margin-top: 20px; background: #e74c3c; }
-    #logout:hover { background: #c0392b; }
-    #toast { display:none; position: fixed; right: 20px; bottom: 20px; z-index: 9999; }
+    .container { padding: 20px; }
+    .btn { padding: 8px 12px; background: #e74c3c; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    .btn:hover { background: #c0392b; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { padding: 8px; border: 1px solid #ddd; text-align: left; }
   </style>
 </head>
 <body>
   <header>
     <h1>Admin Dashboard</h1>
-    <p>Manage users, orders, and system settings</p>
+    <h3 id="welcome"></h3>
   </header>
-
   <div class="container">
-    <!-- Orders Section -->
-    <div class="card">
-      <h2>Orders Overview</h2>
-      <table id="orders-table">
-        <thead>
-          <tr>
-            <th>Order ID</th>
-            <th>Customer</th>
-            <th>Job</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Orders will be loaded here -->
-        </tbody>
-      </table>
-    </div>
+    <p>Manage users and orders here.</p>
 
-    <!-- User Management Section -->
-    <div class="card">
-      <h2>Create New User</h2>
-      <form id="create-user-form">
-        <input type="email" id="new-email" placeholder="Email" required><br>
-        <input type="password" id="new-password" placeholder="Password" required><br>
-        <select id="new-role">
-          <option value="user">User</option>
-          <option value="admin">Admin</option>
-        </select><br><br>
-        <button type="submit" class="btn">Create User</button>
-      </form>
-    </div>
+    <!-- Example: quick users table (admin can expand this) -->
+    <table id="users-table">
+      <thead>
+        <tr><th>Display name</th><th>UID</th><th>Email</th><th>Role</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <br>
+    <button id="logout" class="btn">Logout</button>
   </div>
 
-  <button id="logout" class="btn">Logout</button>
-  <div id="toast"></div>
-
-  <!-- Supabase client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
-    const supabaseKey = "YOUR_ANON_PUBLIC_KEY"; // anon key only
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXFqY3h6eXRqdHNpa3pyZHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMzA4NjAsImV4cCI6MjA4MDgwNjg2MH0.q0gkhSgqT_BNfsZBCd2stkgskf2V-CDVIG9p6S5LHdM";
     const { createClient } = supabase;
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-    function showToast(msg, type="success") {
-      const toast = document.getElementById("toast");
-      toast.textContent = msg;
-      toast.style.display = "block";
-      toast.style.background = type === "error" ? "#e74c3c" : "#27ae60";
-      toast.style.color = "#fff";
-      toast.style.padding = "8px 12px";
-      toast.style.borderRadius = "6px";
-      setTimeout(() => { toast.style.display = "none"; }, 2500);
-    }
+    const name = localStorage.getItem("displayName") || "Admin";
+    const uid = localStorage.getItem("uid") || "";
+    document.getElementById("welcome").textContent = `Welcome, ${name} (UID: ${uid})`;
 
-    // Protect page: redirect if not admin
-    document.addEventListener("DOMContentLoaded", async () => {
-      const { data: { user } } = await supabaseClient.auth.getUser();
-      if (!user) {
-        window.location.href = "login.html";
-        return;
-      }
-      const { data: profile } = await supabaseClient
+    // Load the 6 users (adjust query if your table differs)
+    async function loadUsers() {
+      const { data, error } = await supabaseClient
         .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-      if (!profile || profile.role !== "admin") {
-        window.location.href = "user-home.html";
-      }
-    });
+        .select("id, email, display_name, role")
+        .in("id", [
+          "4c4ef61f-5f35-45c9-a492-af2461158027",
+          "62d38679-a9c6-4dad-800a-c43d304a304b",
+          "69295dcb-d89e-4fc4-a819-39c24fe6ada0",
+          "859b41e0-6026-4e96-8025-3a9195e73416",
+          "bee951e8-6a26-45a7-a6f0-cc8d14fc6ded",
+          "cf6af25a-bdf9-4493-b41a-c3dab596cc2f"
+        ]);
 
-    // Logout
-    document.getElementById("logout").addEventListener("click", async () => {
-      await supabaseClient.auth.signOut();
-      window.location.href = "login.html";
-    });
-
-    // Load orders (basic example)
-    async function loadOrders() {
-      const { data: orders, error } = await supabaseClient
-        .from("orders")
-        .select("order_id, cust_name, job_description");
       if (error) {
-        showToast("Error loading orders", "error");
+        console.error("Error loading users:", error);
         return;
       }
-      const tbody = document.querySelector("#orders-table tbody");
+
+      const tbody = document.querySelector("#users-table tbody");
       tbody.innerHTML = "";
-      orders.forEach(o => {
-        const row = `<tr>
-          <td>${o.order_id}</td>
-          <td>${o.cust_name}</td>
-          <td>${o.job_description}</td>
-          <td>Pending</td>
-        </tr>`;
-        tbody.innerHTML += row;
+      data.forEach(u => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${u.display_name || "-"}</td><td>${u.id}</td><td>${u.email || "-"}</td><td>${u.role || "user"}</td>`;
+        tbody.appendChild(tr);
       });
     }
-    loadOrders();
 
-    // Create user (placeholder — requires backend with service role key)
-    document.getElementById("create-user-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const email = document.getElementById("new-email").value.trim();
-      const password = document.getElementById("new-password").value.trim();
-      const role = document.getElementById("new-role").value;
+    loadUsers();
 
-      showToast("User creation requires backend service role key", "error");
-      // TODO: Call your backend API or Supabase Edge Function here
+    document.getElementById("logout").addEventListener("click", async () => {
+      await supabaseClient.auth.signOut();
+      localStorage.clear();
+      window.location.href = "login.html";
     });
   </script>
 </body>
