@@ -3,32 +3,53 @@
 <head>
   <meta charset="UTF-8">
   <title>New Order</title>
+  <style>
+    body { font-family: "Segoe UI", Arial, sans-serif; margin:0; padding:20px; background:#f4f6f9; }
+    h1 { color:#2c3e50; }
+    form { max-width:400px; margin:auto; background:#fff; padding:20px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.1); }
+    input, button { width:100%; padding:10px; margin:8px 0; border:1px solid #ccc; border-radius:4px; }
+    button { background:#27ae60; color:#fff; border:none; cursor:pointer; }
+    button:hover { background:#219150; }
+  </style>
 </head>
 <body>
+  <h1>Submit New Order</h1>
   <form id="orderForm">
     <input type="text" id="custName" placeholder="Customer Name" required />
+    <input type="email" id="custEmail" placeholder="Customer Email (optional)" />
+    <input type="text" id="custMobile" placeholder="Customer Mobile (optional)" />
     <input type="text" id="jobDesc" placeholder="Job Description" required />
     <input type="number" id="totalAmount" placeholder="Total Amount" required />
-    <button type="submit">Submit</button>
+    <input type="number" id="advanceAmount" placeholder="Advance Amount" />
+    <button type="submit">Submit Order</button>
   </form>
 
+  <!-- Supabase client + shared config -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
   <script>
-    const uid = localStorage.getItem("uid");
-
     document.getElementById("orderForm").addEventListener("submit", async (e) => {
       e.preventDefault();
+
+      // Get logged-in user UID
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      const uid = user?.id;
+
+      // Insert into orders table
       const { error } = await supabaseClient.from("orders").insert({
-        customer_name: document.getElementById("custName").value,
+        cust_name: document.getElementById("custName").value,
+        cust_email: document.getElementById("custEmail").value || null,
+        cust_mobile: document.getElementById("custMobile").value || null,
         job_description: document.getElementById("jobDesc").value,
         total_amount: parseFloat(document.getElementById("totalAmount").value),
+        advance_amount: parseFloat(document.getElementById("advanceAmount").value) || 0,
         created_by: uid
       });
+
       if (error) {
         alert("Error: " + error.message);
       } else {
-        alert("Order submitted successfully");
+        alert("Order submitted successfully!");
         window.location.href = "orders-queue.html";
       }
     });
