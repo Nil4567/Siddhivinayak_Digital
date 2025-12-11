@@ -4,125 +4,63 @@
   <meta charset="UTF-8">
   <title>Siddhivinayak Digital - Home</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f9f9f9;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .login-box {
-      background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      width: 320px;
-    }
-    .login-box h2 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .login-box input {
-      width: 100%;
-      padding: 10px;
-      margin: 8px 0;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-    }
-    .login-box button {
-      width: 100%;
-      padding: 10px;
-      background: #27ae60;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    .login-box button:hover {
-      background: #219150;
-    }
-    #toast {
-      display:none;
-      position: fixed;
-      right: 20px;
-      bottom: 20px;
-      z-index: 9999;
-    }
+    body { font-family: Arial, sans-serif; margin: 0; background: #f9f9f9; }
+    header { background: #333; color: #fff; padding: 20px; text-align: center; }
+    header h1 { margin: 0; }
+    .container { display: flex; justify-content: space-between; padding: 20px; }
+    .shop-info { flex: 2; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-right: 20px; }
+    .shop-info h2 { margin-top: 0; }
+    .login-box { flex: 1; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    .login-box h2 { text-align: center; margin-bottom: 20px; }
+    .login-box input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 4px; }
+    .login-box button { width: 100%; padding: 10px; background: #27ae60; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    .login-box button:hover { background: #219150; }
+    #toast { display:none; position: fixed; right: 20px; bottom: 20px; z-index: 9999; }
+    footer { background: #333; color: #fff; text-align: center; padding: 10px; margin-top: 20px; }
   </style>
 </head>
 <body>
-  <div class="login-box">
-    <h2>Staff Login</h2>
-    <input type="email" id="email" placeholder="Email" required>
-    <input type="password" id="password" placeholder="Password" required>
-    <button id="login-btn">Login</button>
+  <header>
+    <h1>Welcome to Siddhivinayak Digital</h1>
+    <p>Your trusted partner for digital printing and retail solutions</p>
+  </header>
+
+  <div class="container">
+    <!-- Shop Information -->
+    <div class="shop-info">
+      <h2>About Us</h2>
+      <p>Siddhivinayak Digital provides high‑quality printing, digital services, and retail solutions. 
+         We specialize in quick turnaround jobs, personalized designs, and professional support for businesses and individuals.</p>
+
+      <h2>Our Services</h2>
+      <ul>
+        <li>Digital Printing</li>
+        <li>Graphic Design</li>
+        <li>Retail Counter Solutions</li>
+        <li>Custom Orders</li>
+      </ul>
+
+      <h2>Contact</h2>
+      <p>Email: info@siddhivinayakdigital.com<br>
+         Phone: +91‑9876543210<br>
+         Address: Mumbai, Maharashtra</p>
+    </div>
+
+    <!-- Login Box -->
+    <div class="login-box">
+      <h2>Staff Login</h2>
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="password" placeholder="Password" required>
+      <button id="login-btn">Login</button>
+    </div>
   </div>
 
   <div id="toast"></div>
 
+  <footer>
+    <p>&copy; 2025 Siddhivinayak Digital. All rights reserved.</p>
+  </footer>
+
   <!-- Supabase client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-    const HARD_CODED_ADMIN_UUID = "859b41e0-6026-4e96-8025-3a9195e73416";
-
-    const { createClient } = supabase;
-    const supabaseClient = createClient(supabaseUrl, supabaseKey);
-
-    function showToast(msg, type="success") {
-      const toast = document.getElementById("toast");
-      toast.textContent = msg;
-      toast.style.display = "block";
-      toast.style.background = type === "error" ? "#e74c3c" : "#27ae60";
-      toast.style.color = "#fff";
-      toast.style.padding = "8px 12px";
-      toast.style.borderRadius = "6px";
-      setTimeout(() => { toast.style.display = "none"; }, 2500);
-    }
-
-    document.getElementById("login-btn").addEventListener("click", async () => {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value.trim();
-
-      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-
-      if (error) {
-        console.error("Login error:", error);
-        showToast("Invalid login", "error");
-        return;
-      }
-
-      const user = data.user;
-
-      // Hard-coded admin override
-      if (user.id === HARD_CODED_ADMIN_UUID) {
-        window.location.href = "admin-dashboard.html";
-        return;
-      }
-
-      // Otherwise check role from profiles table
-      const { data: profile, error: profileError } = await supabaseClient
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      if (profileError) {
-        console.error("Profile error:", profileError);
-        showToast("Error fetching role", "error");
-        return;
-      }
-
-      if (profile?.role === "admin") {
-        window.location.href = "admin-dashboard.html";
-      } else {
-        window.location.href = "user-home.html";
-      }
-    });
-  </script>
-</body>
-</html>
