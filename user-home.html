@@ -3,12 +3,42 @@
 <head>
   <meta charset="UTF-8">
   <title>User Home</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f9f9f9; }
+    header { background: #27ae60; color: #fff; padding: 20px; text-align: center; }
+    .container { padding: 20px; }
+    .link-btn { display: inline-block; margin: 10px; padding: 10px 15px; background: #2980b9; color: #fff; text-decoration: none; border-radius: 4px; }
+    .btn { padding: 8px 12px; background: #e74c3c; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+  </style>
 </head>
 <body>
-  <h2>Welcome, User</h2>
-  <button id="logout-btn">Logout</button>
+  <header>
+    <h1>User Dashboard</h1>
+    <h3 id="welcome"></h3>
+  </header>
+  <div class="container">
+    <a href="new-order.html" class="link-btn">New Order</a>
+    <a href="orders-queue.html" class="link-btn">Orders Queue</a>
+    <br><br>
+    <button id="logout" class="btn">Logout</button>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/auth.js"></script>
+  <script>
+    const name = localStorage.getItem("displayName");
+    const uid = localStorage.getItem("uid");
+    document.getElementById("welcome").textContent = `Welcome, ${name} (UID: ${uid})`;
+
+    const supabaseClient = supabase.createClient(
+      "https://qcyqjcxzytjtsikzrdyv.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXFqY3h6eXRqdHNpa3pyZHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMzA4NjAsImV4cCI6MjA4MDgwNjg2MH0.q0gkhSgqT_BNfsZBCd2stkgskf2V-CDVIG9p6S5LHdM"
+    );
+
+    document.getElementById("logout").addEventListener("click", async () => {
+      await supabaseClient.auth.signOut();
+      localStorage.clear();
+      window.location.href = "login.html";
+    });
+  </script>
 </body>
 </html>
