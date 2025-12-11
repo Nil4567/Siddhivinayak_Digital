@@ -2,92 +2,61 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>New Order - Siddhivinayak Digital</title>
+  <title>New Order</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    form input { margin: 6px; padding: 8px; }
-    button { padding: 8px 12px; }
-    #toast { display:none; position: fixed; right: 20px; bottom: 20px; z-index: 9999; }
+    body { font-family: "Segoe UI", Arial, sans-serif; background:#f4f6f9; margin:0; }
+    header { background:#27ae60; color:#fff; padding:18px; text-align:center; }
+    .container { max-width:600px; margin:30px auto; background:#fff; padding:20px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.05); }
+    input { width:100%; padding:10px; margin:8px 0; border:1px solid #ddd; border-radius:4px; }
+    button { padding:10px 14px; background:#2980b9; color:#fff; border:none; border-radius:6px; cursor:pointer; }
+    button:hover { background:#1f6391; }
+    #msg { margin-top:10px; display:none; padding:8px; border-radius:6px; color:#fff; }
   </style>
 </head>
 <body>
-  <h2>New Order</h2>
+  <header><h1>Submit New Order</h1></header>
+  <div class="container">
+    <form id="orderForm">
+      <input type="text" id="custName" placeholder="Customer Name" required />
+      <input type="email" id="custEmail" placeholder="Customer Email" />
+      <input type="text" id="custMobile" placeholder="Customer Mobile" />
+      <input type="text" id="jobDesc" placeholder="Job Description" required />
+      <input type="number" id="totalAmount" placeholder="Total Amount" required />
+      <input type="number" id="advanceAmount" placeholder="Advance Amount" />
+      <button type="submit">Submit Order</button>
+    </form>
+    <div id="msg"></div>
+  </div>
 
-  <form id="order-form">
-    <input type="text" id="cust_name" placeholder="Customer Name" required>
-    <input type="email" id="cust_email" placeholder="Customer Email">
-    <input type="text" id="cust_mobile" placeholder="Customer Mobile">
-    <input type="text" id="job_description" placeholder="Job Description" required>
-    <input type="number" id="total_amount" placeholder="Total Amount" required>
-    <input type="number" id="advance_amount" placeholder="Advance Amount" value="0">
-    <button type="submit">Save Order</button>
-  </form>
-
-  <div id="toast"></div>
-
-  <!-- Supabase client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // Supabase config
     const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXFqY3h6eXRqdHNpa3pyZHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMzA4NjAsImV4cCI6MjA4MDgwNjg2MH0.q0gkhSgqT_BNfsZBCd2stkgskf2V-CDVIG9p6S5LHdM";
+    const supabaseKey = "YOUR-ANON-KEY-HERE"; // replace with your anon key
     const { createClient } = supabase;
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-    // Toast helper
-    function showToast(msg, type = "success") {
-      const toast = document.getElementById("toast");
-      toast.textContent = msg;
-      toast.style.display = "block";
-      toast.style.background = type === "error" ? "#e74c3c" : "#27ae60";
-      toast.style.color = "#fff";
-      toast.style.padding = "8px 12px";
-      toast.style.borderRadius = "6px";
-      setTimeout(() => { toast.style.display = "none"; }, 2500);
+    const uid = localStorage.getItem("uid");
+
+    const msgEl = document.getElementById("msg");
+    function showMsg(text, isError=false) {
+      msgEl.style.display = "block";
+      msgEl.style.background = isError ? "#e74c3c" : "#27ae60";
+      msgEl.textContent = text;
+      setTimeout(() => { msgEl.style.display = "none"; }, 2500);
     }
 
-    // Handle form submit
-    document.addEventListener("DOMContentLoaded", () => {
-      const form = document.getElementById("order-form");
-
-      form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-
-        const cust_name = document.getElementById("cust_name").value.trim();
-        const cust_email = document.getElementById("cust_email").value.trim();
-        const cust_mobile = document.getElementById("cust_mobile").value.trim();
-        const job_description = document.getElementById("job_description").value.trim();
-        const total_amount = parseFloat(document.getElementById("total_amount").value) || 0;
-        const advance_amount = parseFloat(document.getElementById("advance_amount").value) || 0;
-
-        if (!cust_name || !job_description || total_amount <= 0) {
-          showToast("Please fill required fields", "error");
-          return;
-        }
-
-        const payload = {
-          cust_name,
-          cust_email,
-          cust_mobile,
-          job_description,
-          total_amount,
-          advance_amount
-        };
-
-        try {
-          const { error } = await supabaseClient.from("orders").insert([payload]);
-          if (error) {
-            console.error("Insert error:", error);
-            showToast("Error saving order", "error");
-            return;
-          }
-          showToast("Order submitted", "success");
-          form.reset();
-        } catch (err) {
-          console.error("Unexpected insert error:", err);
-          showToast("Unexpected error", "error");
-        }
+    document.getElementById("orderForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const { error } = await supabaseClient.from("orders").insert({
+        customer_name: document.getElementById("custName").value,
+        customer_contact: document.getElementById("custMobile").value,
+        job_description: document.getElementById("jobDesc").value,
+        total_amount: parseFloat(document.getElementById("totalAmount").value),
+        advance_amount: parseFloat(document.getElementById("advanceAmount").value) || 0,
+        created_by: uid
       });
+      if (error) { showMsg("Error: " + error.message, true); }
+      else { showMsg("Order submitted successfully"); window.location.href="orders-queue.html"; }
     });
   </script>
 </body>
