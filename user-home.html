@@ -6,9 +6,12 @@
   <style>
     body { font-family: Arial, sans-serif; margin: 0; background: #f9f9f9; }
     header { background: #27ae60; color: #fff; padding: 20px; text-align: center; }
+    header h1 { margin: 0; }
     .container { padding: 20px; }
     .link-btn { display: inline-block; margin: 10px; padding: 10px 15px; background: #2980b9; color: #fff; text-decoration: none; border-radius: 4px; }
+    .link-btn:hover { background: #1f6391; }
     .btn { padding: 8px 12px; background: #e74c3c; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    .btn:hover { background: #c0392b; }
   </style>
 </head>
 <body>
@@ -25,14 +28,14 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    const name = localStorage.getItem("displayName");
-    const uid = localStorage.getItem("uid");
-    document.getElementById("welcome").textContent = `Welcome, ${name} (UID: ${uid})`;
+    const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXFqY3h6eXRqdHNpa3pyZHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMzA4NjAsImV4cCI6MjA4MDgwNjg2MH0.q0gkhSgqT_BNfsZBCd2stkgskf2V-CDVIG9p6S5LHdM";
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-    const supabaseClient = supabase.createClient(
-      "https://qcyqjcxzytjtsikzrdyv.supabase.co",
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXFqY3h6eXRqdHNpa3pyZHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMzA4NjAsImV4cCI6MjA4MDgwNjg2MH0.q0gkhSgqT_BNfsZBCd2stkgskf2V-CDVIG9p6S5LHdM"
-    );
+    const name = localStorage.getItem("displayName") || "Staff";
+    const uid = localStorage.getItem("uid") || "";
+    document.getElementById("welcome").textContent = `Welcome, ${name} (UID: ${uid})`;
 
     document.getElementById("logout").addEventListener("click", async () => {
       await supabaseClient.auth.signOut();
