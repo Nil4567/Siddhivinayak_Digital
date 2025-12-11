@@ -2,32 +2,76 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Siddhivinayak Digital Hub</title>
+  <title>Siddhivinayak Digital - Login</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; }
-    .sidebar {
-      width: 200px; background: #333; color: #fff; height: 100vh; float: left;
-      display: flex; flex-direction: column; padding-top: 20px;
-    }
-    .sidebar a {
-      color: #fff; padding: 12px; text-decoration: none; display: block;
-    }
-    .sidebar a:hover { background: #444; }
-    .content { margin-left: 200px; padding: 20px; }
+    body { font-family: Arial, sans-serif; background: #f9f9f9; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    .login-box { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); width: 300px; }
+    .login-box h2 { text-align: center; margin-bottom: 20px; }
+    .login-box input { width: 100%; padding: 10px; margin: 8px 0; }
+    .login-box button { width: 100%; padding: 10px; background: #27ae60; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    .login-box button:hover { background: #219150; }
+    #toast { display:none; position: fixed; right: 20px; bottom: 20px; z-index: 9999; }
   </style>
 </head>
 <body>
-  <div class="sidebar">
-    <h3 style="text-align:center;">Menu</h3>
-    <a href="new-order.html">➕ New Order</a>
-    <a href="orders-queue.html">📋 Orders Queue</a>
-    <a href="admin-dashboard.html">⚙️ Admin Dashboard</a>
-    <a href="settings.html">🔧 Settings</a>
-    <a href="user-home.html">🏠 User Home</a>
+  <div class="login-box">
+    <h2>Staff Login</h2>
+    <input type="email" id="email" placeholder="Email" required>
+    <input type="password" id="password" placeholder="Password" required>
+    <button id="login-btn">Login</button>
   </div>
-  <div class="content">
-    <h2>Welcome to Siddhivinayak Digital</h2>
-    <p>Select an option from the left menu to get started.</p>
-  </div>
+
+  <div id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
+    const supabaseKey = "YOUR_SUPABASE_KEY";
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    function showToast(msg, type="success") {
+      const toast = document.getElementById("toast");
+      toast.textContent = msg;
+      toast.style.display = "block";
+      toast.style.background = type === "error" ? "#e74c3c" : "#27ae60";
+      toast.style.color = "#fff";
+      toast.style.padding = "8px 12px";
+      toast.style.borderRadius = "6px";
+      setTimeout(() => { toast.style.display = "none"; }, 2500);
+    }
+
+    document.getElementById("login-btn").addEventListener("click", async () => {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        console.error("Login error:", error);
+        showToast("Invalid login", "error");
+        return;
+      }
+
+      // Get user role from profiles table
+      const { data: profile, error: profileError } = await supabaseClient
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .single();
+
+      if (profileError) {
+        console.error("Profile error:", profileError);
+        showToast("Error fetching role", "error");
+        return;
+      }
+
+      if (profile.role === "admin") {
+        window.location.href = "admin-dashboard.html";
+      } else {
+        window.location.href = "user-home.html";
+      }
+    });
+  </script>
 </body>
 </html>
