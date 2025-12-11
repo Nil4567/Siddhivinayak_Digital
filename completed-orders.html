@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Completed Orders</title>
+  <style>
+    body { font-family:"Segoe UI",Arial,sans-serif; margin:0; background:#f4f6f9; }
+    header { background:#16a085; color:#fff; padding:18px; text-align:center; }
+    .container { padding:20px; }
+    table { width:100%; border-collapse:collapse; margin-top:20px; }
+    th, td { padding:10px; border:1px solid #ddd; text-align:left; }
+  </style>
+</head>
+<body>
+  <header><h1>Completed Orders</h1></header>
+  <div class="container">
+    <table id="completedTable">
+      <thead>
+        <tr>
+          <th>Token</th>
+          <th>Customer</th>
+          <th>Job Description</th>
+          <th>Total</th>
+          <th>Advance</th>
+          <th>Pending</th>
+          <th>Completed At</th>
+          <th>Assigned To</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
+    const supabaseKey = "YOUR-ANON-KEY-HERE"; // replace with your anon key
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    async function loadCompleted() {
+      const { data: orders, error } = await supabaseClient
+        .from("orders")
+        .select("order_token, customer_name, job_description, total_amount, advance_amount, pending_amount, created_at, assigned_to")
+        .eq("status", "Completed")
+        .order("created_at", { ascending: false });
+
+      if (error) { console.error(error); return; }
+
+      const tbody = document.querySelector("#completedTable tbody");
+      tbody.innerHTML = "";
+      orders.forEach(o => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${o.order_token || "-"}</td>
+          <td>${o.customer_name || "-"}</td>
+          <td>${o.job_description || "-"}</td>
+          <td>${o.total_amount || "-"}</td>
+          <td>${o.advance_amount || "-"}</td>
+          <td>${o.pending_amount || "-"}</td>
+          <td>${new Date(o.created_at).toLocaleString()}</td>
+          <td>${o.assigned_to || "-"}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    loadCompleted();
+  </script>
+</body>
+</html>
