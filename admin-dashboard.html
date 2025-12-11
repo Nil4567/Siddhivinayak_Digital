@@ -2,97 +2,144 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Admin Dashboard</title>
-  <link rel="stylesheet" href="css/style.css">
+  <title>Admin Dashboard - Siddhivinayak Digital</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f9f9f9; }
+    header { background: #333; color: #fff; padding: 20px; text-align: center; }
+    header h1 { margin: 0; }
+    .container { display: flex; padding: 20px; gap: 20px; }
+    .card {
+      flex: 1; background: #fff; padding: 20px; border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    h2 { margin-top: 0; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    table, th, td { border: 1px solid #ddd; }
+    th, td { padding: 8px; text-align: left; }
+    .btn { padding: 8px 12px; background: #27ae60; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    .btn:hover { background: #219150; }
+    #logout { margin-top: 20px; background: #e74c3c; }
+    #logout:hover { background: #c0392b; }
+    #toast { display:none; position: fixed; right: 20px; bottom: 20px; z-index: 9999; }
+  </style>
 </head>
 <body>
-  <h2>Admin Dashboard</h2>
+  <header>
+    <h1>Admin Dashboard</h1>
+    <p>Manage users, orders, and system settings</p>
+  </header>
 
-  <!-- Navigation -->
-  <nav>
-    <button onclick="window.location.href='index.html'">Home</button>
-    <button onclick="history.back()">Back</button>
-    <button id="logout-btn">Logout</button>
-  </nav>
+  <div class="container">
+    <!-- Orders Section -->
+    <div class="card">
+      <h2>Orders Overview</h2>
+      <table id="orders-table">
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Customer</th>
+            <th>Job</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Orders will be loaded here -->
+        </tbody>
+      </table>
+    </div>
 
-  <!-- User Management Table -->
-  <section>
-    <h3>Manage Users</h3>
-    <table border="1" id="users-table">
-      <thead>
-        <tr>
-          <th>Email</th>
-          <th>Role</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="users-body">
-        <!-- Filled dynamically -->
-      </tbody>
-    </table>
-  </section>
+    <!-- User Management Section -->
+    <div class="card">
+      <h2>Create New User</h2>
+      <form id="create-user-form">
+        <input type="email" id="new-email" placeholder="Email" required><br>
+        <input type="password" id="new-password" placeholder="Password" required><br>
+        <select id="new-role">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select><br><br>
+        <button type="submit" class="btn">Create User</button>
+      </form>
+    </div>
+  </div>
 
-  <!-- Activity Logs -->
-  <section>
-    <h3>Activity Logs</h3>
-    <ul id="activity-log">
-      <!-- Logs will appear here -->
-    </ul>
-  </section>
+  <button id="logout" class="btn">Logout</button>
+  <div id="toast"></div>
 
-  <!-- Admin Tools -->
-  <section>
-    <h3>Admin Tools</h3>
-    <ul>
-      <li><a href="settings.html">Content Manager</a></li>
-      <li><a href="#">Analytics (coming soon)</a></li>
-    </ul>
-  </section>
-
+  <!-- Supabase client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/auth.js"></script>
   <script>
-    const { createClient } = supabase;
     const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
-    const supabaseKey = "YOUR_ANON_KEY"; // replace with your anon key
+    const supabaseKey = "YOUR_ANON_PUBLIC_KEY"; // anon key only
+    const { createClient } = supabase;
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-    async function loadUsers() {
-      const { data, error } = await supabaseClient.from("profiles").select("id,email,role");
-      if (error) { console.error(error); return; }
+    function showToast(msg, type="success") {
+      const toast = document.getElementById("toast");
+      toast.textContent = msg;
+      toast.style.display = "block";
+      toast.style.background = type === "error" ? "#e74c3c" : "#27ae60";
+      toast.style.color = "#fff";
+      toast.style.padding = "8px 12px";
+      toast.style.borderRadius = "6px";
+      setTimeout(() => { toast.style.display = "none"; }, 2500);
+    }
 
-      const tbody = document.getElementById("users-body");
+    // Protect page: redirect if not admin
+    document.addEventListener("DOMContentLoaded", async () => {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
+      const { data: profile } = await supabaseClient
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      if (!profile || profile.role !== "admin") {
+        window.location.href = "user-home.html";
+      }
+    });
+
+    // Logout
+    document.getElementById("logout").addEventListener("click", async () => {
+      await supabaseClient.auth.signOut();
+      window.location.href = "login.html";
+    });
+
+    // Load orders (basic example)
+    async function loadOrders() {
+      const { data: orders, error } = await supabaseClient
+        .from("orders")
+        .select("order_id, cust_name, job_description");
+      if (error) {
+        showToast("Error loading orders", "error");
+        return;
+      }
+      const tbody = document.querySelector("#orders-table tbody");
       tbody.innerHTML = "";
-      data.forEach(user => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${user.email}</td>
-          <td>${user.role}</td>
-          <td>
-            <button onclick="updateRole('${user.id}','admin')">Promote</button>
-            <button onclick="updateRole('${user.id}','user')">Demote</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
+      orders.forEach(o => {
+        const row = `<tr>
+          <td>${o.order_id}</td>
+          <td>${o.cust_name}</td>
+          <td>${o.job_description}</td>
+          <td>Pending</td>
+        </tr>`;
+        tbody.innerHTML += row;
       });
     }
+    loadOrders();
 
-    async function updateRole(id, role) {
-      const { error } = await supabaseClient.from("profiles").update({ role }).eq("id", id);
-      if (error) { console.error(error); return; }
-      logActivity(`User ${id} role changed to ${role}`);
-      loadUsers();
-    }
+    // Create user (placeholder — requires backend with service role key)
+    document.getElementById("create-user-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("new-email").value.trim();
+      const password = document.getElementById("new-password").value.trim();
+      const role = document.getElementById("new-role").value;
 
-    function logActivity(message) {
-      const log = document.getElementById("activity-log");
-      const li = document.createElement("li");
-      li.textContent = new Date().toLocaleString() + " - " + message;
-      log.appendChild(li);
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      loadUsers();
+      showToast("User creation requires backend service role key", "error");
+      // TODO: Call your backend API or Supabase Edge Function here
     });
   </script>
 </body>
