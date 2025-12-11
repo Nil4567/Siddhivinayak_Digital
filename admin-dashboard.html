@@ -15,6 +15,8 @@
     table { width:100%; border-collapse:collapse; margin-top:20px; }
     th, td { padding:10px; border:1px solid #eee; text-align:left; }
     .btn { padding:8px 12px; background:#e74c3c; color:#fff; border:none; border-radius:6px; cursor:pointer; }
+    .link-btn { display:inline-block; margin:8px; padding:10px 14px; background:#2980b9; color:#fff; text-decoration:none; border-radius:6px; }
+    .link-btn:hover { background:#1f6391; }
   </style>
 </head>
 <body>
@@ -22,6 +24,9 @@
     <h2>Admin Dashboard</h2>
     <div class="tab active" data-target="overview">Overview</div>
     <div class="tab" data-target="users">Users</div>
+    <div class="tab" data-target="ordersQueue">Orders Queue</div>
+    <div class="tab" data-target="newOrder">New Order</div>
+    <div class="tab" data-target="userHome">User Home Control</div>
     <div class="tab" data-target="settings">Settings</div>
   </div>
 
@@ -39,6 +44,27 @@
         <thead><tr><th>Display Name</th><th>UID</th><th>Email</th><th>Role</th></tr></thead>
         <tbody id="usersTable"></tbody>
       </table>
+    </div>
+
+    <!-- Orders Queue -->
+    <div id="ordersQueue" class="tab-content hidden">
+      <h3>Orders Queue</h3>
+      <p>Admin can view the same queue as staff.</p>
+      <a href="orders-queue.html" class="link-btn">Open Orders Queue Page</a>
+    </div>
+
+    <!-- New Order -->
+    <div id="newOrder" class="tab-content hidden">
+      <h3>New Order</h3>
+      <p>Admin can submit orders just like staff.</p>
+      <a href="new-order.html" class="link-btn">Open New Order Page</a>
+    </div>
+
+    <!-- User Home Control -->
+    <div id="userHome" class="tab-content hidden">
+      <h3>User Home Control</h3>
+      <p>Admin can open the staff dashboard view.</p>
+      <a href="user-home.html" class="link-btn">Open User Home Page</a>
     </div>
 
     <!-- Settings -->
