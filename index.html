@@ -1,34 +1,49 @@
-document.getElementById("login-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Siddhivinayak Digital — Login</title>
+</head>
+<body>
+  <h2>Login</h2>
+  <form id="login-form">
+    <input type="email" id="email" placeholder="Email" required />
+    <input type="password" id="password" placeholder="Password" required />
+    <button type="submit">Login</button>
+  </form>
+  <div id="error" style="color:red;"></div>
 
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+  <script src="js/supabase-config.js"></script>
+  <script>
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
 
-  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) {
+        document.getElementById("error").innerText = "Auth error: " + error.message;
+        return;
+      }
 
-  if (error) {
-    document.getElementById("error").innerText = "Auth error: " + error.message;
-    console.error("Auth error:", error);
-    return;
-  }
+      const userId = data.user.id;
+      const { data: profile, error: profileError } = await supabaseClient
+        .from("profiles")
+        .select("role")
+        .eq("id", userId)
+        .single();
 
-  console.log("Login success:", data);
+      if (profileError) {
+        document.getElementById("error").innerText = "Profile error: " + profileError.message;
+        return;
+      }
 
-  const { data: profile, error: profileError } = await supabaseClient
-    .from("profiles")
-    .select("role")
-    .eq("id", data.user.id)
-    .single();
-
-  if (profileError) {
-    document.getElementById("error").innerText = "Profile error: " + profileError.message;
-    console.error("Profile error:", profileError);
-    return;
-  }
-
-  if (profile.role === "admin") {
-    window.location.href = "admin-dashboard.html";
-  } else {
-    window.location.href = "user-home.html";
-  }
-});
+      if (profile.role === "admin") {
+        window.location.href = "admin-dashboard.html";
+      } else {
+        window.location.href = "user-home.html";
+      }
+    });
+  </script>
+</body>
+</html>
