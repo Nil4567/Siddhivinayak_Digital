@@ -1,54 +1,32 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Siddhivinayak Digital — Home</title>
-</head>
-<body>
-  <header>
-    <h1>Siddhivinayak Digital</h1>
-    <p>Your trusted digital printing & services partner</p>
-  </header>
+<!-- home.html -->
+<script src="js/supabase-config.js"></script>
+<script>
+  async function checkSession() {
+    const { data: { session }, error } = await supabaseClient.auth.getSession();
+    if (error) {
+      console.error("Session error:", error);
+      return;
+    }
+    if (!session) return;
 
-  <div class="big-title">Siddhivinayak Digital</div>
-  <div class="tagline">Printing • Xerox • Binding • Lamination • Designing</div>
+    const userId = session.user.id;
+    const { data: profile, error: pErr } = await supabaseClient
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .single();
 
-  <button id="loginBtn">Login to Staff Dashboard</button>
-  <button id="logoutBtn" style="display:none;">Logout</button>
-
-  <script src="js/supabase-config.js"></script>
-  <script>
-    const loginBtn = document.getElementById("loginBtn");
-    const logoutBtn = document.getElementById("logoutBtn");
-
-    async function checkSession() {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (session) {
-        const { data: profile } = await supabaseClient
-          .from("profiles")
-          .select("role")
-          .eq("id", session.user.id)
-          .single();
-        if (profile?.role === "admin") {
-          window.location.href = "admin-dashboard.html";
-        } else {
-          window.location.href = "user-home.html";
-        }
-      }
+    if (pErr) {
+      console.error("Profile error:", pErr);
+      return;
     }
 
-    loginBtn.addEventListener("click", () => {
-      window.location.href = "index.html";
-    });
+    if (profile?.role === "admin") {
+      window.location.href = "admin-dashboard.html";
+    } else {
+      window.location.href = "user-home.html";
+    }
+  }
 
-    logoutBtn.addEventListener("click", async () => {
-      await supabaseClient.auth.signOut();
-      alert("Logged out successfully");
-      loginBtn.style.display = "inline-block";
-      logoutBtn.style.display = "none";
-    });
-
-    checkSession();
-  </script>
-</body>
-</html>
+  checkSession();
+</script>
