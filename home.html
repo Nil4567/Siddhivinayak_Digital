@@ -3,7 +3,6 @@
 <head>
   <meta charset="utf-8" />
   <title>Siddhivinayak Digital — Home</title>
-  <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
   <header>
@@ -14,43 +13,22 @@
   <div class="big-title">Siddhivinayak Digital</div>
   <div class="tagline">Printing • Xerox • Binding • Lamination • Designing</div>
 
-  <div class="home-wrapper">
-    <article class="brochure">
-      <h3>Welcome to Siddhivinayak Digital</h3>
-      <ul>
-        <li>High-quality colour & black-white printing.</li>
-        <li>Fast photocopying and bulk duplication.</li>
-        <li>Professional binding and lamination.</li>
-        <li>Custom design jobs.</li>
-        <li>Digitization & scanning services.</li>
-      </ul>
-    </article>
+  <button id="loginBtn">Login to Staff Dashboard</button>
+  <button id="logoutBtn" style="display:none;">Logout</button>
 
-    <!-- Login / Logout buttons -->
-    <button id="loginBtn" class="btn-login">Login to Staff Dashboard</button>
-    <button id="logoutBtn" class="btn-logout" style="display:none;">Logout</button>
-
-    <div class="footer">© 2025 Siddhivinayak Digital. All rights reserved.</div>
-  </div>
-
-  <!-- Load Supabase config -->
   <script src="js/supabase-config.js"></script>
-
-  <!-- Session check -->
   <script>
     const loginBtn = document.getElementById("loginBtn");
     const logoutBtn = document.getElementById("logoutBtn");
 
     async function checkSession() {
       const { data: { session } } = await supabaseClient.auth.getSession();
-
       if (session) {
         const { data: profile } = await supabaseClient
           .from("profiles")
           .select("role")
           .eq("id", session.user.id)
           .single();
-
         if (profile?.role === "admin") {
           window.location.href = "admin-dashboard.html";
         } else {
@@ -60,7 +38,7 @@
     }
 
     loginBtn.addEventListener("click", () => {
-      window.location.href = "index.html"; // go to login page
+      window.location.href = "index.html";
     });
 
     logoutBtn.addEventListener("click", async () => {
