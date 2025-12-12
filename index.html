@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Siddhivinayak Digital — Login</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <h2>Login</h2>
@@ -14,27 +13,25 @@
   </form>
   <div id="error" style="color:red;"></div>
 
-  <script>
-    const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
-    const supabaseKey = "YOUR_ANON_KEY";
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+  <!-- Load Supabase config -->
+  <script src="js/supabase-config.js"></script>
 
+  <!-- Login logic -->
+  <script>
     document.getElementById("login-form").addEventListener("submit", async (e) => {
       e.preventDefault();
 
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
 
-      // Sign in
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
       if (error) {
         document.getElementById("error").innerText = error.message;
         return;
       }
 
-      // Fetch role from profiles
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile, error: profileError } = await supabaseClient
         .from("profiles")
         .select("role")
         .eq("id", data.user.id)
@@ -45,7 +42,6 @@
         return;
       }
 
-      // Redirect based on role
       if (profile.role === "admin") {
         window.location.href = "admin-dashboard.html";
       } else {
