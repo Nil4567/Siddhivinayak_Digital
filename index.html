@@ -1,24 +1,37 @@
-<!-- index.html -->
-<script src="js/supabase-config.js"></script>
-<script>
-  const form = document.getElementById("login-form");
-  const err = document.getElementById("error");
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Siddhivinayak Digital — Login</title>
+</head>
+<body>
+  <h2>Login</h2>
+  <form id="login-form">
+    <input type="email" id="email" placeholder="Email" required />
+    <input type="password" id="password" placeholder="Password" required />
+    <button type="submit">Login</button>
+  </form>
+  <div id="error" style="color:red;"></div>
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    err.textContent = "";
+  <!-- Load Supabase library + config -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
 
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value;
+  <script>
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
 
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    if (error) {
-      err.textContent = "Auth error: " + error.message;
-      console.error("Auth error:", error);
-      return;
-    }
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) {
+        document.getElementById("error").innerText = "Auth error: " + error.message;
+        return;
+      }
 
-    // Return to home; home will detect session and redirect to the proper dashboard.
-    window.location.href = "home.html";
-  });
-</script>
+      // Always go back to home; home.html will redirect based on role
+      window.location.href = "home.html";
+    });
+  </script>
+</body>
+</html>
