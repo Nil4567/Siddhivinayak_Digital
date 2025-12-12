@@ -2,18 +2,62 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Staff Login - Hardcoded Users</title>
+  <title>Staff Login - Siddhivinayak Digital</title>
   <style>
-    body { font-family: Arial, sans-serif; background:#f9f9f9; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; }
-    .box { background:#fff; padding:20px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08); width:340px; }
-    input { width:100%; padding:10px; margin:8px 0; border:1px solid #ddd; border-radius:4px; }
-    button { width:100%; padding:10px; background:#27ae60; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:600; }
-    #msg { display:none; margin-top:8px; padding:8px; border-radius:6px; color:#fff; }
+    body {
+      font-family: Arial, sans-serif;
+      background:#f9f9f9;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      height:100vh;
+      margin:0;
+    }
+    .box {
+      background:#fff;
+      padding:20px;
+      border-radius:8px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.08);
+      width:340px;
+    }
+    h2 {
+      text-align:center;
+      margin:0 0 12px 0;
+    }
+    input {
+      width:100%;
+      padding:10px;
+      margin:8px 0;
+      border:1px solid #ddd;
+      border-radius:4px;
+    }
+    button {
+      width:100%;
+      padding:10px;
+      background:#27ae60;
+      color:#fff;
+      border:none;
+      border-radius:4px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    button:hover {
+      background:#219150;
+    }
+    #msg {
+      display:none;
+      margin-top:8px;
+      padding:8px;
+      border-radius:6px;
+      color:#fff;
+      font-size:14px;
+      text-align:center;
+    }
   </style>
 </head>
 <body>
   <div class="box">
-    <h2 style="text-align:center;margin:0 0 12px 0">Staff Login</h2>
+    <h2>Staff Login</h2>
     <input id="email" type="email" placeholder="Email" />
     <input id="password" type="password" placeholder="Password" />
     <button id="loginBtn">Login</button>
@@ -73,14 +117,24 @@
       const email = document.getElementById("email").value.trim().toLowerCase();
       const password = document.getElementById("password").value;
 
-      if (!email || !password) { showMsg("Enter email and password", true); return; }
+      if (!email || !password) {
+        showMsg("Enter email and password", true);
+        return;
+      }
 
       const user = USERS[email];
-      if (!user) { showMsg("User not found", true); return; }
+      if (!user) {
+        showMsg("User not found", true);
+        return;
+      }
 
-      if (password !== user.password) { showMsg("Incorrect password", true); return; }
+      if (password !== user.password) {
+        showMsg("Incorrect password", true);
+        return;
+      }
 
-      // Save display name and uid
+      // Save session info
+      localStorage.setItem("loggedIn", "yes");
       localStorage.setItem("displayName", user.displayName);
       localStorage.setItem("uid", user.uid);
       localStorage.setItem("role", user.role);
