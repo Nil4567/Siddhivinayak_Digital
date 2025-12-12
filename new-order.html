@@ -46,8 +46,8 @@
     <label for="custName">Customer Name</label>
     <input type="text" id="custName" required />
 
-    <label for="custEmail">Email</label>
-    <input type="email" id="custEmail" required />
+    <label for="custEmail">Email (optional)</label>
+    <input type="email" id="custEmail" />
 
     <label for="custMobile">Mobile</label>
     <input type="tel" id="custMobile" required />
@@ -105,29 +105,41 @@
     document.getElementById("totalAmount").addEventListener("input", calcPending);
     document.getElementById("advanceAmount").addEventListener("input", calcPending);
 
-    // Handle form submit
-    document.getElementById("orderForm").addEventListener("submit", function(e) {
+    // Submit order to backend
+    document.getElementById("orderForm").addEventListener("submit", async function(e) {
       e.preventDefault();
       const order = {
         orderId: document.getElementById("orderId").value,
         orderDate: document.getElementById("orderDate").value,
         custName: document.getElementById("custName").value,
-        custEmail: document.getElementById("custEmail").value,
+        custEmail: document.getElementById("custEmail").value || null, // optional
         custMobile: document.getElementById("custMobile").value,
         jobDesc: document.getElementById("jobDesc").value,
         totalAmount: document.getElementById("totalAmount").value,
         advanceAmount: document.getElementById("advanceAmount").value,
         pendingAmount: document.getElementById("pendingAmount").value,
         createdBy: localStorage.getItem("uid"),
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        status: "Pending"
       };
-      console.log("New Order Submitted:", order);
-      alert("Order submitted successfully!");
-      document.getElementById("orderForm").reset();
-      // Reset date to today after clear
-      document.getElementById("orderDate").value = today;
-      // Generate next order ID
-      document.getElementById("orderId").value = generateOrderId();
+
+      try {
+        // Example: send to Supabase "orders" table
+        const { data, error } = await supabaseClient
+          .from("orders")
+          .insert([order]);
+
+        if (error) {
+          alert("Error submitting order: " + error.message);
+        } else {
+          alert("Order submitted successfully!");
+          document.getElementById("orderForm").reset();
+          document.getElementById("orderDate").value = today;
+          document.getElementById("orderId").value = generateOrderId();
+        }
+      } catch (err) {
+        alert("Backend error: " + err.message);
+      }
     });
   </script>
 </body>
