@@ -14,6 +14,7 @@
     form { background:#fff; padding:20px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08); max-width:500px; margin:20px auto; }
     label { display:block; margin-top:12px; font-weight:600; color:#333; }
     input, textarea { width:100%; padding:10px; margin-top:6px; border:1px solid #ddd; border-radius:4px; }
+    input[readonly] { background:#f0f0f0; }
     button.submit { margin-top:20px; width:100%; padding:12px; background:#27ae60; color:#fff; border:none; border-radius:6px; font-size:16px; font-weight:600; cursor:pointer; }
     button.submit:hover { background:#219150; }
   </style>
@@ -28,7 +29,7 @@
   <header>
     <div class="clock" id="clock"></div>
     <div class="buttons">
-      <button class="btn-back" onclick="window.location.href='home.html'">Back</button>
+      <button class="btn-back" onclick="window.history.back()">Back</button>
       <button class="btn-logout" onclick="logout()">Logout</button>
     </div>
   </header>
@@ -36,6 +37,12 @@
   <h1>New Order Form</h1>
 
   <form id="orderForm">
+    <label for="orderId">Order ID</label>
+    <input type="text" id="orderId" readonly />
+
+    <label for="orderDate">Order Date</label>
+    <input type="date" id="orderDate" required />
+
     <label for="custName">Customer Name</label>
     <input type="text" id="custName" required />
 
@@ -51,16 +58,17 @@
     <label for="totalAmount">Total Amount</label>
     <input type="number" id="totalAmount" required />
 
-    <label for="pendingAmount">Pending Amount</label>
-    <input type="number" id="pendingAmount" required />
+    <label for="advanceAmount">Advance Amount</label>
+    <input type="number" id="advanceAmount" required />
 
-    <label for="tat">Turn-Around Time (TAT)</label>
-    <input type="text" id="tat" placeholder="e.g. 2 days" required />
+    <label for="pendingAmount">Pending Amount</label>
+    <input type="number" id="pendingAmount" readonly />
 
     <button type="submit" class="submit">Submit Order</button>
   </form>
 
   <script>
+    // Live clock
     function updateClock() {
       const now = new Date();
       document.getElementById("clock").textContent = now.toLocaleDateString() + " " + now.toLocaleTimeString();
@@ -73,23 +81,53 @@
       window.location.href = "home.html";
     }
 
+    // Auto-populate Order ID (simple series using localStorage counter)
+    function generateOrderId() {
+      let counter = localStorage.getItem("orderCounter");
+      if (!counter) counter = 1;
+      else counter = parseInt(counter) + 1;
+      localStorage.setItem("orderCounter", counter);
+      return "ORD-" + counter.toString().padStart(4, "0");
+    }
+    document.getElementById("orderId").value = generateOrderId();
+
+    // Default date = today
+    const today = new Date().toISOString().split("T")[0];
+    document.getElementById("orderDate").value = today;
+
+    // Auto-calc pending amount
+    function calcPending() {
+      const total = parseFloat(document.getElementById("totalAmount").value) || 0;
+      const advance = parseFloat(document.getElementById("advanceAmount").value) || 0;
+      const pending = total - advance;
+      document.getElementById("pendingAmount").value = pending >= 0 ? pending : 0;
+    }
+    document.getElementById("totalAmount").addEventListener("input", calcPending);
+    document.getElementById("advanceAmount").addEventListener("input", calcPending);
+
+    // Handle form submit
     document.getElementById("orderForm").addEventListener("submit", function(e) {
       e.preventDefault();
       const order = {
+        orderId: document.getElementById("orderId").value,
+        orderDate: document.getElementById("orderDate").value,
         custName: document.getElementById("custName").value,
         custEmail: document.getElementById("custEmail").value,
         custMobile: document.getElementById("custMobile").value,
         jobDesc: document.getElementById("jobDesc").value,
         totalAmount: document.getElementById("totalAmount").value,
+        advanceAmount: document.getElementById("advanceAmount").value,
         pendingAmount: document.getElementById("pendingAmount").value,
-        tat: document.getElementById("tat").value,
         createdBy: localStorage.getItem("uid"),
         createdAt: new Date().toISOString()
       };
-      // For now, just log to console (later you can push to Supabase or localStorage)
       console.log("New Order Submitted:", order);
       alert("Order submitted successfully!");
       document.getElementById("orderForm").reset();
+      // Reset date to today after clear
+      document.getElementById("orderDate").value = today;
+      // Generate next order ID
+      document.getElementById("orderId").value = generateOrderId();
     });
   </script>
 </body>
