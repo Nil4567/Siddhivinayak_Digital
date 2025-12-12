@@ -1,156 +1,36 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Staff Login - Siddhivinayak Digital</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background:#f9f9f9;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      height:100vh;
-      margin:0;
-    }
-    .box {
-      background:#fff;
-      padding:20px;
-      border-radius:8px;
-      box-shadow:0 2px 8px rgba(0,0,0,0.08);
-      width:340px;
-    }
-    h2 {
-      text-align:center;
-      margin:0 0 12px 0;
-    }
-    input {
-      width:100%;
-      padding:10px;
-      margin:8px 0;
-      border:1px solid #ddd;
-      border-radius:4px;
-    }
-    button {
-      width:100%;
-      padding:10px;
-      background:#27ae60;
-      color:#fff;
-      border:none;
-      border-radius:4px;
-      cursor:pointer;
-      font-weight:600;
-    }
-    button:hover {
-      background:#219150;
-    }
-    #msg {
-      display:none;
-      margin-top:8px;
-      padding:8px;
-      border-radius:6px;
-      color:#fff;
-      font-size:14px;
-      text-align:center;
-    }
-  </style>
-</head>
-<body>
-  <div class="box">
-    <h2>Staff Login</h2>
-    <input id="email" type="email" placeholder="Email" />
-    <input id="password" type="password" placeholder="Password" />
-    <button id="loginBtn">Login</button>
-    <div id="msg"></div>
-  </div>
+document.getElementById("login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-  <script>
-    // Hard-coded users: email -> { uid, displayName, password, role }
-    const USERS = {
-      "admin@sd.com": {
-        uid: "859b41e0-6026-4e96-8025-3a9195e73416",
-        displayName: "Admin",
-        password: "adminpass",
-        role: "admin"
-      },
-      "sd1@sd.com": {
-        uid: "bee951e8-6a26-45a7-a6f0-cc8d14fc6ded",
-        displayName: "Staff 1",
-        password: "staff1pass",
-        role: "user"
-      },
-      "sd2@sd.com": {
-        uid: "62d38679-a9c6-4dad-800a-c43d304a304b",
-        displayName: "Staff 2",
-        password: "staff2pass",
-        role: "user"
-      },
-      "sd3@sd.com": {
-        uid: "69295dcb-d89e-4fc4-a819-39c24fe6ada0",
-        displayName: "Staff 3",
-        password: "staff3pass",
-        role: "user"
-      },
-      "sd5@sd.com": {
-        uid: "4c4ef61f-5f35-45c9-a492-af2461158027",
-        displayName: "Staff 5",
-        password: "staff5pass",
-        role: "user"
-      },
-      "ad4@sd.com": {
-        uid: "cf6af25a-bdf9-4493-b41a-c3dab596cc2f",
-        displayName: "Staff 4",
-        password: "staff4pass",
-        role: "user"
-      }
-    };
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
-    const msgEl = document.getElementById("msg");
-    function showMsg(text, isError = false) {
-      msgEl.style.display = "block";
-      msgEl.style.background = isError ? "#e74c3c" : "#27ae60";
-      msgEl.textContent = text;
-      setTimeout(() => { msgEl.style.display = "none"; }, 2500);
-    }
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
-    document.getElementById("loginBtn").addEventListener("click", () => {
-      const email = document.getElementById("email").value.trim().toLowerCase();
-      const password = document.getElementById("password").value;
+  if (error) {
+    document.getElementById("error").innerText = "Auth error: " + error.message;
+    console.error("Auth error:", error);
+    return;
+  }
 
-      if (!email || !password) {
-        showMsg("Enter email and password", true);
-        return;
-      }
+  console.log("Login success:", data);
 
-      const user = USERS[email];
-      if (!user) {
-        showMsg("User not found", true);
-        return;
-      }
+  const userId = data.user.id;
 
-      if (password !== user.password) {
-        showMsg("Incorrect password", true);
-        return;
-      }
+  const { data: profile, error: profileError } = await supabaseClient
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .single();
 
-      // Save session info
-      localStorage.setItem("loggedIn", "yes");
-      localStorage.setItem("displayName", user.displayName);
-      localStorage.setItem("uid", user.uid);
-      localStorage.setItem("role", user.role);
+  if (profileError) {
+    document.getElementById("error").innerText = "Profile error: " + profileError.message;
+    console.error("Profile error:", profileError);
+    return;
+  }
 
-      // Redirect based on role
-      if (user.role === "admin") {
-        window.location.href = "admin-dashboard.html";
-      } else {
-        window.location.href = "user-home.html";
-      }
-    });
-
-    // Optional: allow Enter key to submit
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") document.getElementById("loginBtn").click();
-    });
-  </script>
-</body>
-</html>
+  if (profile.role === "admin") {
+    window.location.href = "admin-dashboard.html";
+  } else {
+    window.location.href = "user-home.html";
+  }
+});
