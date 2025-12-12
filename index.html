@@ -1,9 +1,57 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta http-equiv="refresh" content="0; url=home.html">
+  <meta charset="UTF-8">
+  <title>Siddhivinayak Digital — Login</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <p>Redirecting to <a href="home.html">home.html</a>...</p>
+  <h2>Login</h2>
+  <form id="login-form">
+    <input type="email" id="email" placeholder="Email" required />
+    <input type="password" id="password" placeholder="Password" required />
+    <button type="submit">Login</button>
+  </form>
+  <div id="error" style="color:red;"></div>
+
+  <script>
+    const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
+    const supabaseKey = "YOUR_ANON_KEY";
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      // Sign in
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        document.getElementById("error").innerText = error.message;
+        return;
+      }
+
+      // Fetch role from profiles
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .single();
+
+      if (profileError) {
+        document.getElementById("error").innerText = profileError.message;
+        return;
+      }
+
+      // Redirect based on role
+      if (profile.role === "admin") {
+        window.location.href = "admin-dashboard.html";
+      } else {
+        window.location.href = "user-home.html";
+      }
+    });
+  </script>
 </body>
 </html>
