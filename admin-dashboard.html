@@ -1,14 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
- 
-  </div>
-</header>
   <meta charset="utf-8" />
   <title>Admin Dashboard - Siddhivinayak Digital</title>
   <style>
     body { font-family: Arial, sans-serif; background:#f4f6f9; margin:0; padding:20px; }
-    header { display:flex; justify-content:space-between; align-items:center; background:#2c3e50; color:#fff; padding:15px; border-radius:6px; }
+    header { display:flex; justify-content:space-between; align-items:center; background:#34495e; color:#fff; padding:15px; border-radius:6px; }
     .clock { font-weight:bold; }
     .buttons button { margin-left:10px; padding:8px 16px; border:none; border-radius:4px; cursor:pointer; font-weight:600; }
     .btn-back { background:#0073ff; color:#fff; }
@@ -21,6 +18,7 @@
   </style>
 </head>
 <body>
+  <!-- Session check -->
   <script>
     if (localStorage.getItem("loggedIn") !== "yes" || localStorage.getItem("role") !== "admin") {
       window.location.href = "home.html";
@@ -41,26 +39,30 @@
   </div>
 
   <nav>
-    <a href="new-order.html">New Order</a>
+    <a href="user-home.html">View User Dashboard</a>
+    <a href="manage-users.html">Manage Users</a>
     <a href="orders-queue.html">Orders Queue</a>
     <a href="settings.html">Settings</a>
-    <a href="user-home.html">View User Dashboard</a>
   </nav>
 
   <script>
+    // Clock updater
     function updateClock() {
       const now = new Date();
-      document.getElementById("clock").textContent = now.toLocaleDateString() + " " + now.toLocaleTimeString();
+      document.getElementById("clock").textContent =
+        now.toLocaleDateString() + " " + now.toLocaleTimeString();
     }
     setInterval(updateClock, 1000);
     updateClock();
 
+    // Show admin info from localStorage
     document.getElementById("name").textContent = localStorage.getItem("displayName");
     document.getElementById("uid").textContent = localStorage.getItem("uid");
 
+    // Logout clears localStorage
     function logout() {
       localStorage.clear();
-      window.location.href = "home.html";
+      window.location.href = "login.html";
     }
   </script>
 </body>
