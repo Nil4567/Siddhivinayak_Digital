@@ -67,6 +67,10 @@
     <button type="submit" class="submit">Submit Order</button>
   </form>
 
+  <!-- Supabase library + config -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+
   <script>
     // Live clock
     function updateClock() {
@@ -81,7 +85,7 @@
       window.location.href = "home.html";
     }
 
-    // Auto-populate Order ID (simple series using localStorage counter)
+    // Auto-populate Order ID
     function generateOrderId() {
       let counter = localStorage.getItem("orderCounter");
       if (!counter) counter = 1;
@@ -105,14 +109,14 @@
     document.getElementById("totalAmount").addEventListener("input", calcPending);
     document.getElementById("advanceAmount").addEventListener("input", calcPending);
 
-    // Submit order to backend
+    // Submit order
     document.getElementById("orderForm").addEventListener("submit", async function(e) {
       e.preventDefault();
       const order = {
         orderId: document.getElementById("orderId").value,
         orderDate: document.getElementById("orderDate").value,
         custName: document.getElementById("custName").value,
-        custEmail: document.getElementById("custEmail").value || null, // optional
+        custEmail: document.getElementById("custEmail").value || null,
         custMobile: document.getElementById("custMobile").value,
         jobDesc: document.getElementById("jobDesc").value,
         totalAmount: document.getElementById("totalAmount").value,
@@ -124,7 +128,6 @@
       };
 
       try {
-        // Example: send to Supabase "orders" table
         const { data, error } = await supabaseClient
           .from("orders")
           .insert([order]);
