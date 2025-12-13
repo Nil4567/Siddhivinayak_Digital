@@ -58,6 +58,9 @@
     <label for="advanceAmount">Advance Amount</label>
     <input type="number" id="advanceAmount" required />
 
+    <label for="pendingAmount">Pending Amount</label>
+    <input type="number" id="pendingAmount" readonly />
+
     <button type="submit" class="submit">Submit Order</button>
   </form>
 
@@ -94,6 +97,16 @@
       const today = new Date().toISOString().split("T")[0];
       document.getElementById("orderDate").value = today;
 
+      // Pending calculation
+      function calcPending() {
+        const total = parseFloat(document.getElementById("totalAmount").value) || 0;
+        const advance = parseFloat(document.getElementById("advanceAmount").value) || 0;
+        const pending = total - advance;
+        document.getElementById("pendingAmount").value = pending >= 0 ? pending : 0;
+      }
+      document.getElementById("totalAmount").addEventListener("input", calcPending);
+      document.getElementById("advanceAmount").addEventListener("input", calcPending);
+
       // Submit order
       document.getElementById("orderForm").addEventListener("submit", async function(e) {
         e.preventDefault();
@@ -103,6 +116,7 @@
           job_description: document.getElementById("jobDesc").value,
           total_amount: document.getElementById("totalAmount").value,
           advance_amount: document.getElementById("advanceAmount").value,
+          pending_amount: document.getElementById("pendingAmount").value, // now reflected
           created_by: localStorage.getItem("uid"),
           status: "Pending"
         };
