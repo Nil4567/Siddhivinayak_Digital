@@ -5,28 +5,19 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Siddhivinayak Digital — Login</title>
   <link rel="stylesheet" href="style.css" />
-
   <style>
     body { font-family: Arial, sans-serif; background:#f4f6f9; margin:0; padding:20px; }
     .login-wrapper {
-      max-width:400px;
-      margin:60px auto;
-      background:white;
-      padding:30px;
-      border-radius:12px;
-      box-shadow:0 8px 20px rgba(0,0,0,0.08);
+      max-width:400px; margin:60px auto; background:white;
+      padding:30px; border-radius:12px; box-shadow:0 8px 20px rgba(0,0,0,0.08);
     }
     h2 { text-align:center; color:#2c3e50; margin-bottom:20px; }
     label { display:block; margin-top:12px; font-weight:600; color:#333; }
-    input {
-      width:100%; padding:10px; margin-top:6px;
-      border:1px solid #ccc; border-radius:6px;
-    }
+    input { width:100%; padding:10px; margin-top:6px; border:1px solid #ccc; border-radius:6px; }
     button {
       width:100%; margin-top:20px; padding:12px;
-      background:#0073ff; color:white; border:none;
-      border-radius:8px; font-size:16px; font-weight:700;
-      cursor:pointer; transition:0.2s;
+      background:#0073ff; color:white; border:none; border-radius:8px;
+      font-size:16px; font-weight:700; cursor:pointer; transition:0.2s;
     }
     button:hover { background:#005fd6; transform:scale(1.03); }
   </style>
@@ -52,18 +43,14 @@
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
 
       // Supabase login
-      const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email, password
-      });
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
       if (error) {
-        alert("Login failed: " + error.message); // popup for wrong credentials
-        console.error("Auth error:", error);
+        alert("Login failed: " + error.message);
         return;
       }
 
@@ -77,12 +64,11 @@
         .single();
 
       if (profileError || !profile) {
-        alert("User not found in database."); // popup if no profile
-        console.error("Profile error:", profileError);
+        alert("User not found in database.");
         return;
       }
 
-      // Save session info in localStorage
+      // Save session info
       localStorage.setItem("loggedIn", "yes");
       localStorage.setItem("uid", userId);
       localStorage.setItem("displayName", profile.email);
@@ -94,7 +80,7 @@
       } else if (profile.role === "user") {
         window.location.href = "user-home.html";
       } else {
-        alert("Unknown role. Please contact admin."); // popup for unexpected role
+        alert("Unknown role. Please contact admin.");
       }
     });
   </script>
