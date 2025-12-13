@@ -37,9 +37,6 @@
   <h1>New Order Form</h1>
 
   <form id="orderForm">
-    <label for="orderId">Order ID</label>
-    <input type="text" id="orderId" readonly />
-
     <label for="orderDate">Order Date</label>
     <input type="date" id="orderDate" required />
 
@@ -83,16 +80,6 @@
       }
       window.logout = logout;
 
-      // Order ID generator
-      function generateOrderId() {
-        let counter = localStorage.getItem("orderCounter");
-        if (!counter) counter = 1;
-        else counter = parseInt(counter) + 1;
-        localStorage.setItem("orderCounter", counter);
-        return "ORD-" + counter.toString().padStart(4, "0");
-      }
-      document.getElementById("orderId").value = generateOrderId();
-
       // Default date
       const today = new Date().toISOString().split("T")[0];
       document.getElementById("orderDate").value = today;
@@ -123,16 +110,16 @@
         try {
           const { data, error } = await supabaseClient
             .from("orders")
-            .insert([order]);
+            .insert([order])
+            .select("order_code"); // fetch generated order_code from DB
 
           if (error) {
             alert("Error submitting order: " + error.message);
           } else {
-            alert("Order submitted successfully!");
+            alert("Order submitted successfully! Order ID: " + data[0].order_code);
             document.getElementById("orderForm").reset();
             document.getElementById("orderDate").value = today;
-            document.getElementById("orderId").value = generateOrderId();
-            document.getElementById("pendingAmount").value = ""; // clear pending field
+            document.getElementById("pendingAmount").value = "";
           }
         } catch (err) {
           alert("Backend error: " + err.message);
