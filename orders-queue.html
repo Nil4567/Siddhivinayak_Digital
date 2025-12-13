@@ -1,47 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Orders Queue</title>
+  <meta charset="utf-8" />
+  <title>Orders Queue - Siddhivinayak Digital</title>
   <style>
-    body { font-family: "Segoe UI", Arial, sans-serif; margin:0; background:#f4f6f9; }
-    header { background:#34495e; color:#fff; padding:18px; text-align:center; }
-    .container { padding:20px; }
-    table { width:100%; border-collapse:collapse; margin-top:20px; }
-    th, td { padding:10px; border:1px solid #ddd; text-align:left; }
-    input, select { padding:6px; border:1px solid #ccc; border-radius:4px; }
-    .btn { padding:8px 12px; background:#e74c3c; color:#fff; border:none; border-radius:6px; cursor:pointer; }
-    .btn:hover { background:#c0392b; }
-    #toast { display:none; position:fixed; bottom:20px; right:20px; background:#27ae60; color:#fff; padding:10px 14px; border-radius:6px; }
+    body { font-family: Arial, sans-serif; background:#f4f6f9; margin:0; padding:20px; }
+    header { display:flex; justify-content:space-between; align-items:center; background:#2c3e50; color:#fff; padding:15px; border-radius:6px; }
+    .clock { font-weight:bold; }
+    .buttons button { margin-left:10px; padding:8px 16px; border:none; border-radius:4px; cursor:pointer; font-weight:600; }
+    .btn-logout { background:#e74c3c; color:#fff; }
+    h1 { margin-top:20px; color:#2c3e50; }
+    table { width:100%; border-collapse:collapse; margin-top:20px; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+    th, td { padding:12px; border:1px solid #ddd; text-align:left; }
+    th { background:#2c3e50; color:#fff; }
+    tr:nth-child(even) { background:#f9f9f9; }
   </style>
 </head>
 <body>
+  <script>
+    if (localStorage.getItem("loggedIn") !== "yes") {
+      window.location.href = "home.html";
+    }
+  </script>
+
   <header>
-    <h1>Orders Queue</h1>
-    <div id="welcome"></div>
+    <div class="clock" id="clock"></div>
+    <div class="buttons">
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
   </header>
 
-  <div class="container">
-    <table id="ordersTable">
-      <thead>
-        <tr>
-          <th>Token</th>
-          <th>Customer</th>
-          <th>Job Description</th>
-          <th>TAT</th>
-          <th>Status</th>
-          <th>Assigned To</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-    <br>
-    <button id="logout" class="btn">Logout</button>
-  </div>
+  <h1>Orders Queue</h1>
 
-  <div id="toast"></div>
+  <table id="ordersTable">
+    <thead>
+      <tr>
+        <th>Token</th>
+        <th>Customer</th>
+        <th>Job Description</th>
+        <th>TAT</th>
+        <th>Status</th>
+        <th>Assigned To</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-  <!-- Shared Supabase config -->
+  <!-- Supabase library + config -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
+
   <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      // Clock
+      function updateClock() {
+        const now = new Date();
+        document.getElementById("clock").textContent = now.toLocaleDateString() + " " + now.toLocaleTimeString();
+      }
+      setInterval(updateClock, 1000); updateClock();
+
+      function logout() {
+        localStorage.clear();
+        window.location.href = "home.html";
+      }
+      window.logout = logout;
+
+      // Fetch orders
+      try {
+        const { data, error } = await supabaseClient
+          .from("orders")
+          .select(`
+            order_code,
+            customer_name,
+            job_description,
+            tat,
+            status,
+            assigned_to,
+            profiles:assigned_to(display_name,email)
+          `)
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          alert("Error loading orders: " + error.message);
+          return;
+        }
+
+        const tbody = document.querySelector("#ordersTable tbody");
+        tbody.innerHTML = "";
+
+        data.forEach(order => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${order.order_code || ""}</td>
+            <td>${order.customer_name || ""}</td>
+            <td>${order.job_description || ""}</td>
+            <td>${order.tat || ""}</td>
+            <td>${order.status || ""}</td>
+            <td>${order.profiles ? order.profiles.display_name : ""}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        alert("Backend error: " + err.message);
+      }
+    });
+  </script>
+</body>
+</html>
