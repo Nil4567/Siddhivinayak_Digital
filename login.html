@@ -1,36 +1,70 @@
-document.getElementById("login-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login — Siddhivinayak Digital</title>
+</head>
+<body>
+  <h2>Login</h2>
+  <form id="login-form">
+    <label>Email:</label>
+    <input type="email" id="email" required />
+    <br />
+    <label>Password:</label>
+    <input type="password" id="password" required />
+    <br />
+    <button type="submit">Login</button>
+  </form>
+  <p id="error" style="color:red;"></p>
 
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+  <!-- Supabase library + config -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
 
-  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  <script>
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-  if (error) {
-    document.getElementById("error").innerText = "Auth error: " + error.message;
-    console.error("Auth error:", error);
-    return;
-  }
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
 
-  console.log("Login success:", data);
+      // Supabase v2: signInWithPassword
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password
+      });
 
-  const userId = data.user.id;
+      if (error) {
+        document.getElementById("error").innerText = "Auth error: " + error.message;
+        console.error("Auth error:", error);
+        return;
+      }
 
-  const { data: profile, error: profileError } = await supabaseClient
-    .from("profiles")
-    .select("role")
-    .eq("id", userId)
-    .single();
+      console.log("Login success:", data);
 
-  if (profileError) {
-    document.getElementById("error").innerText = "Profile error: " + profileError.message;
-    console.error("Profile error:", profileError);
-    return;
-  }
+      // In v2, user object is inside data.user
+      const userId = data.user.id;
 
-  if (profile.role === "admin") {
-    window.location.href = "admin-dashboard.html";
-  } else {
-    window.location.href = "user-home.html";
-  }
-});
+      // Fetch role from profiles table
+      const { data: profile, error: profileError } = await supabaseClient
+        .from("profiles")
+        .select("role")
+        .eq("id", userId)
+        .single();
+
+      if (profileError) {
+        document.getElementById("error").innerText = "Profile error: " + profileError.message;
+        console.error("Profile error:", profileError);
+        return;
+      }
+
+      // Redirect based on role
+      if (profile?.role === "admin") {
+        window.location.href = "admin-dashboard.html";
+      } else {
+        window.location.href = "user-home.html";
+      }
+    });
+  </script>
+</body>
+</html>
