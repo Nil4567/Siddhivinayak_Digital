@@ -13,7 +13,7 @@
   <div class="big-title">Siddhivinayak Digital</div>
   <div class="tagline">Printing • Xerox • Binding • Lamination • Designing</div>
 
-  <button id="loginBtn">Login to Staff Dashboard</button>
+  <button id="loginBtn">Login</button>
   <button id="logoutBtn" style="display:none;">Logout</button>
 
   <!-- Load Supabase library + config -->
@@ -25,18 +25,35 @@
     const logoutBtn = document.getElementById("logoutBtn");
 
     async function checkSession() {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (session) {
-        const { data: profile } = await supabaseClient
-          .from("profiles")
-          .select("role")
-          .eq("id", session.user.id)
-          .single();
-        if (profile?.role === "admin") {
-          window.location.href = "admin-dashboard.html";
-        } else {
-          window.location.href = "user-home.html";
-        }
+      const { data: { session }, error } = await supabaseClient.auth.getSession();
+      if (error) {
+        console.error("Session error:", error.message);
+        return;
+      }
+      if (!session) {
+        // No active session → show login button
+        loginBtn.style.display = "inline-block";
+        logoutBtn.style.display = "none";
+        return;
+      }
+
+      // Session exists → check role
+      const userId = session.user.id;
+      const { data: profile, error: pErr } = await supabaseClient
+        .from("profiles")
+        .select("role")
+        .eq("id", userId)
+        .single();
+
+      if (pErr) {
+        console.error("Profile error:", pErr.message);
+        return;
+      }
+
+      if (profile?.role === "admin") {
+        window.location.href = "admin-dashboard.html";
+      } else {
+        window.location.href = "user-home.html";
       }
     }
 
@@ -45,12 +62,17 @@
     });
 
     logoutBtn.addEventListener("click", async () => {
-      await supabaseClient.auth.signOut();
+      const { error } = await supabaseClient.auth.signOut();
+      if (error) {
+        alert("Logout error: " + error.message);
+        return;
+      }
       alert("Logged out successfully");
       loginBtn.style.display = "inline-block";
       logoutBtn.style.display = "none";
     });
 
+    // Run session check on page load
     checkSession();
   </script>
 </body>
