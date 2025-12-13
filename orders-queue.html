@@ -8,12 +8,14 @@
     header { display:flex; justify-content:space-between; align-items:center; background:#2c3e50; color:#fff; padding:15px; border-radius:6px; }
     .clock { font-weight:bold; }
     .buttons button { margin-left:10px; padding:8px 16px; border:none; border-radius:4px; cursor:pointer; font-weight:600; }
+    .btn-home { background:#0073ff; color:#fff; }
     .btn-logout { background:#e74c3c; color:#fff; }
     h1 { margin-top:20px; color:#2c3e50; }
     table { width:100%; border-collapse:collapse; margin-top:20px; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
     th, td { padding:12px; border:1px solid #ddd; text-align:left; }
     th { background:#2c3e50; color:#fff; }
     tr:nth-child(even) { background:#f9f9f9; }
+    select { padding:6px; }
   </style>
 </head>
 <body>
@@ -26,6 +28,7 @@
   <header>
     <div class="clock" id="clock"></div>
     <div class="buttons">
+      <button class="btn-home" onclick="goDashboard()">Home</button>
       <button class="btn-logout" onclick="logout()">Logout</button>
     </div>
   </header>
@@ -65,44 +68,113 @@
       }
       window.logout = logout;
 
-      // Fetch orders
-      try {
-        const { data, error } = await supabaseClient
-          .from("orders")
-          .select(`
-            order_code,
-            customer_name,
-            job_description,
-            tat,
-            status,
-            assigned_to,
-            profiles:assigned_to(display_name,email)
-          `)
-          .order("created_at", { ascending: false });
-
-        if (error) {
-          alert("Error loading orders: " + error.message);
-          return;
+      function goDashboard() {
+        const role = localStorage.getItem("role");
+        if (role === "admin") {
+          window.location.href = "admin-dashboard.html";
+        } else {
+          window.location.href = "user-home.html";
         }
-
-        const tbody = document.querySelector("#ordersTable tbody");
-        tbody.innerHTML = "";
-
-        data.forEach(order => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${order.order_code || ""}</td>
-            <td>${order.customer_name || ""}</td>
-            <td>${order.job_description || ""}</td>
-            <td>${order.tat || ""}</td>
-            <td>${order.status || ""}</td>
-            <td>${order.profiles ? order.profiles.display_name : ""}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-      } catch (err) {
-        alert("Backend error: " + err.message);
       }
+      window.goDashboard = goDashboard;
+
+      // Fetch staff list for dropdown
+      const { data: staffList } = await supabaseClient
+        .from("profiles")
+        .select("id, display_name, role")
+        .eq("role", "user");
+
+      // Fetch orders
+      const { data, error } = await supabaseClient
+        .from("orders")
+        .select(`
+          order_id,
+          order_code,
+          customer_name,
+          job_description,
+          created_at,
+          tat,
+          status,
+          assigned_to,
+          profiles:assigned_to(display_name)
+        `)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        alert("Error loading orders: " + error.message);
+        return;
+      }
+
+      const tbody = document.querySelector("#ordersTable tbody");
+      tbody.innerHTML = "";
+
+      data.forEach(order => {
+        const tr = document.createElement("tr");
+
+        // Calculate TAT = today - order punch date
+        const today = new Date();
+        const punchDate = new Date(order.created_at);
+        const diffDays = Math.floor((today - punchDate) / (1000 * 60 * 60 * 24));
+
+        // Status dropdown
+        const statusSelect = document.createElement("select");
+        ["Hold","In Process","Pending","Completed"].forEach(st => {
+          const opt = document.createElement("option");
+          opt.value = st;
+          opt.textContent = st;
+          if (order.status === st) opt.selected = true;
+
+          // Restrict Completed for non-admins
+          const role = localStorage.getItem("role");
+          if (st === "Completed" && role !== "admin") {
+            opt.disabled = true;
+          }
+
+          statusSelect.appendChild(opt);
+        });
+        statusSelect.onchange = async () => {
+          const role = localStorage.getItem("role");
+          if (statusSelect.value === "Completed" && role !== "admin") {
+            alert("Only admins can mark orders as Completed.");
+            statusSelect.value = order.status; // revert
+            return;
+          }
+          await supabaseClient.from("orders")
+            .update({ status: statusSelect.value })
+            .eq("order_id", order.order_id);
+          order.status = statusSelect.value;
+        };
+
+        // Assigned To dropdown
+        const assignSelect = document.createElement("select");
+        staffList.forEach(staff => {
+          const opt = document.createElement("option");
+          opt.value = staff.id;
+          opt.textContent = staff.display_name;
+          if (order.assigned_to === staff.id) opt.selected = true;
+          assignSelect.appendChild(opt);
+        });
+        assignSelect.onchange = async () => {
+          await supabaseClient.from("orders")
+            .update({ assigned_to: assignSelect.value })
+            .eq("order_id", order.order_id);
+        };
+
+        tr.innerHTML = `
+          <td>${order.order_code || ""}</td>
+          <td>${order.customer_name || ""}</td>
+          <td>${order.job_description || ""}</td>
+          <td>${diffDays} days</td>
+        `;
+        const tdStatus = document.createElement("td");
+        tdStatus.appendChild(statusSelect);
+        const tdAssign = document.createElement("td");
+        tdAssign.appendChild(assignSelect);
+
+        tr.appendChild(tdStatus);
+        tr.appendChild(tdAssign);
+        tbody.appendChild(tr);
+      });
     });
   </script>
 </body>
