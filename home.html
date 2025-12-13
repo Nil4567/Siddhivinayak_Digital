@@ -84,14 +84,6 @@
       transform:scale(1.05);
     }
 
-    /* Footer */
-    .footer {
-      text-align:center;
-      margin-top:30px;
-      color:#777;
-      font-size:14px;
-    }
-
     /* Logout button */
     .btn-logout {
       display:inline-block;
@@ -108,6 +100,14 @@
     .btn-logout:hover {
       background:#c0392b;
     }
+
+    /* Footer */
+    .footer {
+      text-align:center;
+      margin-top:30px;
+      color:#777;
+      font-size:14px;
+    }
   </style>
 </head>
 
@@ -115,7 +115,7 @@
   <!-- Session check -->
   <script>
     if (localStorage.getItem("loggedIn") !== "yes") {
-      window.location.href = "index.html";
+      window.location.href = "login.html"; // go to login page if not logged in
     }
   </script>
 
@@ -134,8 +134,8 @@
       </ul>
     </article>
 
-    <!-- Login only -->
-    <a class="btn-login" href="pages/login.html">Login to Staff Dashboard</a>
+    <!-- Login button -->
+    <a class="btn-login" href="login.html">Login to Staff Dashboard</a>
 
     <!-- Logout button -->
     <button class="btn-logout" onclick="logout()">Logout</button>
@@ -146,7 +146,7 @@
   <script>
     function logout() {
       localStorage.removeItem("loggedIn");
-      window.location.href = "index.html";
+      window.location.href = "login.html"; // after logout, go to login page
     }
   </script>
 </body>
