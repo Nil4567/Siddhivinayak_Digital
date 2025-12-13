@@ -72,20 +72,19 @@
   <script src="js/supabase-config.js"></script>
 
   <script>
-    // Live clock
+    // Clock
     function updateClock() {
       const now = new Date();
       document.getElementById("clock").textContent = now.toLocaleDateString() + " " + now.toLocaleTimeString();
     }
-    setInterval(updateClock, 1000);
-    updateClock();
+    setInterval(updateClock, 1000); updateClock();
 
     function logout() {
       localStorage.clear();
       window.location.href = "home.html";
     }
 
-    // Auto-populate Order ID
+    // Order ID generator
     function generateOrderId() {
       let counter = localStorage.getItem("orderCounter");
       if (!counter) counter = 1;
@@ -95,55 +94,13 @@
     }
     document.getElementById("orderId").value = generateOrderId();
 
-    // Default date = today
+    // Default date
     const today = new Date().toISOString().split("T")[0];
     document.getElementById("orderDate").value = today;
 
-    // Auto-calc pending amount
+    // Pending calculation
     function calcPending() {
       const total = parseFloat(document.getElementById("totalAmount").value) || 0;
       const advance = parseFloat(document.getElementById("advanceAmount").value) || 0;
       const pending = total - advance;
-      document.getElementById("pendingAmount").value = pending >= 0 ? pending : 0;
-    }
-    document.getElementById("totalAmount").addEventListener("input", calcPending);
-    document.getElementById("advanceAmount").addEventListener("input", calcPending);
-
-    // Submit order
-    document.getElementById("orderForm").addEventListener("submit", async function(e) {
-      e.preventDefault();
-      const order = {
-        orderId: document.getElementById("orderId").value,
-        orderDate: document.getElementById("orderDate").value,
-        custName: document.getElementById("custName").value,
-        custEmail: document.getElementById("custEmail").value || null,
-        custMobile: document.getElementById("custMobile").value,
-        jobDesc: document.getElementById("jobDesc").value,
-        totalAmount: document.getElementById("totalAmount").value,
-        advanceAmount: document.getElementById("advanceAmount").value,
-        pendingAmount: document.getElementById("pendingAmount").value,
-        createdBy: localStorage.getItem("uid"),
-        createdAt: new Date().toISOString(),
-        status: "Pending"
-      };
-
-      try {
-        const { data, error } = await supabaseClient
-          .from("orders")
-          .insert([order]);
-
-        if (error) {
-          alert("Error submitting order: " + error.message);
-        } else {
-          alert("Order submitted successfully!");
-          document.getElementById("orderForm").reset();
-          document.getElementById("orderDate").value = today;
-          document.getElementById("orderId").value = generateOrderId();
-        }
-      } catch (err) {
-        alert("Backend error: " + err.message);
-      }
-    });
-  </script>
-</body>
-</html>
+      document.getElementBy
