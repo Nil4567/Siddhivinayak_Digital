@@ -136,6 +136,7 @@
 
           statusSelect.appendChild(opt);
         });
+
         statusSelect.onchange = async () => {
           const role = localStorage.getItem("role");
           if (statusSelect.value === "Completed" && role !== "admin") {
