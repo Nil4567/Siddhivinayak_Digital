@@ -116,7 +116,6 @@
           job_description: document.getElementById("jobDesc").value,
           total_amount: document.getElementById("totalAmount").value,
           advance_amount: document.getElementById("advanceAmount").value,
-          pending_amount: document.getElementById("pendingAmount").value, // now reflected
           created_by: localStorage.getItem("uid"),
           status: "Pending"
         };
@@ -133,6 +132,7 @@
             document.getElementById("orderForm").reset();
             document.getElementById("orderDate").value = today;
             document.getElementById("orderId").value = generateOrderId();
+            document.getElementById("pendingAmount").value = ""; // clear pending field
           }
         } catch (err) {
           alert("Backend error: " + err.message);
