@@ -56,10 +56,10 @@
 
       const userId = data.user.id;
 
-      // Fetch role from profiles table
+      // Fetch role + display_name from profiles table
       const { data: profile, error: profileError } = await supabaseClient
         .from("profiles")
-        .select("role, email")
+        .select("role, email, display_name")
         .eq("id", userId)
         .single();
 
@@ -71,8 +71,9 @@
       // Save session info
       localStorage.setItem("loggedIn", "yes");
       localStorage.setItem("uid", userId);
-      localStorage.setItem("displayName", profile.email);
-      localStorage.setItem("role", profile.role);
+      localStorage.setItem("email", profile.email);
+      localStorage.setItem("displayName", profile.display_name || profile.email);
+      localStorage.setItem("role", profile.role); // critical fix
 
       // Redirect based on role
       if (profile.role === "admin") {
