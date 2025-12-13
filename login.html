@@ -29,7 +29,6 @@
       cursor:pointer; transition:0.2s;
     }
     button:hover { background:#005fd6; transform:scale(1.03); }
-    .error { color:red; margin-top:15px; text-align:center; }
   </style>
 </head>
 <body>
@@ -42,7 +41,6 @@
       <input type="password" id="password" required />
       <button type="submit">Login</button>
     </form>
-    <p id="error" class="error"></p>
   </div>
 
   <!-- Supabase library + config -->
@@ -51,7 +49,6 @@
 
   <script>
     const form = document.getElementById("login-form");
-    const errorBox = document.getElementById("error");
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -65,7 +62,7 @@
       });
 
       if (error) {
-        errorBox.textContent = "Auth error: " + error.message;
+        alert("Login failed: " + error.message); // popup for wrong credentials
         console.error("Auth error:", error);
         return;
       }
@@ -79,8 +76,8 @@
         .eq("id", userId)
         .single();
 
-      if (profileError) {
-        errorBox.textContent = "Profile error: " + profileError.message;
+      if (profileError || !profile) {
+        alert("User not found in database."); // popup if no profile
         console.error("Profile error:", profileError);
         return;
       }
@@ -94,8 +91,10 @@
       // Redirect based on role
       if (profile.role === "admin") {
         window.location.href = "admin-dashboard.html";
-      } else {
+      } else if (profile.role === "user") {
         window.location.href = "user-home.html";
+      } else {
+        alert("Unknown role. Please contact admin."); // popup for unexpected role
       }
     });
   </script>
