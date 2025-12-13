@@ -1,37 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Siddhivinayak Digital — Login</title>
+  <meta http-equiv="refresh" content="0; url=home.html" />
 </head>
 <body>
-  <h2>Login</h2>
-  <form id="login-form">
-    <input type="email" id="email" placeholder="Email" required />
-    <input type="password" id="password" placeholder="Password" required />
-    <button type="submit">Login</button>
-  </form>
-  <div id="error" style="color:red;"></div>
-
-  <!-- Load Supabase library + config -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase-config.js"></script>
-
-  <script>
-    document.getElementById("login-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
-
-      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-      if (error) {
-        document.getElementById("error").innerText = "Auth error: " + error.message;
-        return;
-      }
-
-      // Always go back to home; home.html will redirect based on role
-      window.location.href = "home.html";
-    });
-  </script>
+  <p>Redirecting to home...</p>
 </body>
 </html>
