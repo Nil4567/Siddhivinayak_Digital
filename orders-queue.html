@@ -79,10 +79,15 @@
       window.goDashboard = goDashboard;
 
       // Fetch staff list for dropdown
-      const { data: staffList } = await supabaseClient
+      const { data: staffList, error: staffError } = await supabaseClient
         .from("profiles")
-        .select("id, display_name, role")
+        .select("id, display_name, email, role")
         .eq("role", "user");
+
+      if (staffError) {
+        alert("Error loading staff list: " + staffError.message);
+        return;
+      }
 
       // Fetch orders
       const { data, error } = await supabaseClient
@@ -95,8 +100,7 @@
           created_at,
           tat,
           status,
-          assigned_to,
-          profiles:assigned_to(display_name)
+          assigned_to
         `)
         .order("created_at", { ascending: false });
 
@@ -139,25 +143,35 @@
             statusSelect.value = order.status; // revert
             return;
           }
-          await supabaseClient.from("orders")
+          const { error } = await supabaseClient.from("orders")
             .update({ status: statusSelect.value })
             .eq("order_id", order.order_id);
-          order.status = statusSelect.value;
+          if (error) alert("Error updating status: " + error.message);
+          else order.status = statusSelect.value;
         };
 
         // Assigned To dropdown
         const assignSelect = document.createElement("select");
+        const blankOpt = document.createElement("option");
+        blankOpt.value = "";
+        blankOpt.textContent = "-- Select Staff --";
+        assignSelect.appendChild(blankOpt);
+
         staffList.forEach(staff => {
           const opt = document.createElement("option");
-          opt.value = staff.id;
-          opt.textContent = staff.display_name;
+          opt.value = staff.id; // must be UUID
+          opt.textContent = staff.display_name || staff.email;
           if (order.assigned_to === staff.id) opt.selected = true;
           assignSelect.appendChild(opt);
         });
+
         assignSelect.onchange = async () => {
-          await supabaseClient.from("orders")
-            .update({ assigned_to: assignSelect.value })
+          const newAssigned = assignSelect.value || null;
+          const { error } = await supabaseClient.from("orders")
+            .update({ assigned_to: newAssigned })
             .eq("order_id", order.order_id);
+          if (error) alert("Error updating assignment: " + error.message);
+          else alert("Order reassigned successfully!");
         };
 
         tr.innerHTML = `
