@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    .tab { overflow: hidden; border-bottom: 1px solid #ccc; }
+    .tab button { background: inherit; border: none; cursor: pointer; padding: 10px 20px; }
+    .tab button.active { background: #ccc; }
+    .tabcontent { display: none; padding: 10px; }
+    .tabcontent.active { display: block; }
+  </style>
+</head>
+<body>
+  <h1>Admin Dashboard</h1>
+
+  <!-- Tab Buttons -->
+  <div class="tab">
+    <button class="tablinks active" onclick="showTab('new')">New Orders</button>
+    <button class="tablinks" onclick="showTab('queue')">Queue Orders</button>
+    <button class="tablinks" onclick="showTab('completed')">Completed Orders</button>
+  </div>
+
+  <!-- New Orders -->
+  <div id="new" class="tabcontent active">
+    <h2>New Orders</h2>
+    <table id="newOrdersTable">
+      <tr><th>Code</th><th>Customer</th><th>Job</th><th>Total</th><th>Action</th></tr>
+    </table>
+  </div>
+
+  <!-- Queue Orders -->
+  <div id="queue" class="tabcontent">
+    <h2>Queue Orders</h2>
+    <table id="queueOrdersTable">
+      <tr><th>Code</th><th>Customer</th><th>Job</th><th>Total</th><th>Action</th></tr>
+    </table>
+  </div>
+
+  <!-- Completed Orders -->
+  <div id="completed" class="tabcontent">
+    <h2>Completed Orders</h2>
+    <table id="completedOrdersTable">
+      <tr><th>Token</th><th>Customer</th><th>Job</th><th>Total</th><th>Completed At</th></tr>
+    </table>
+  </div>
+
+  <script>
+    // 🔹 Connect to Supabase
+    const supabase = supabase.createClient(
+      "https://<your-project>.supabase.co",
+      "<your-anon-key>"
+    );
+
+    async function loadOrders() {
+      // New Orders
+      let { data: newOrders } = await supabase
+        .from("orders")
+        .select("*")
+        .in("status", ["Pending", "Hold"]);
+      renderOrders(newOrders, "newOrdersTable", "Start", startOrder);
+
+      // Queue Orders
+      let { data: queueOrders } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("status", "In Process");
+      renderOrders(queueOrders, "queueOrdersTable", "Complete", completeOrder);
+
+      // Completed Orders
+      let { data: completedOrders } = await supabase
+        .from("completed_orders")
+        .select("*");
+      renderCompleted(completedOrders, "completedOrdersTable");
+    }
+
+    function renderOrders(orders, tableId, actionLabel, actionFn) {
+      const table = document.getElementById(tableId);
+      orders.forEach(order => {
+        const row = table.insertRow();
+        row.insertCell().innerText = order.order_code;
+        row.insertCell().innerText = order.customer_name;
+        row.insertCell().innerText = order.job_description;
+        row.insertCell().innerText = order.total_amount;
+        const actionCell = row.insertCell();
+        const btn = document.createElement("button");
+        btn.innerText = actionLabel;
+        btn.onclick = () => actionFn(order.order_id);
+        actionCell.appendChild(btn);
+      });
+    }
+
+    function renderCompleted(orders, tableId) {
+      const table = document.getElementById(tableId);
+      orders.forEach(order => {
+        const row = table.insertRow();
+        row.insertCell().innerText = order.order_token;
+        row.insertCell().innerText = order.customer_name;
+        row.insertCell().innerText = order.job_description;
+        row.insertCell().innerText = order.total_amount;
+        row.insertCell().innerText = order.completed_at;
+      });
+    }
+
+    async function startOrder(orderId) {
+      await supabase.from("orders")
+        .update({ status: "In Process" })
+        .eq("order_id", orderId);
+      location.reload();
+    }
+
+    async function completeOrder(orderId) {
+      await supabase.from("orders")
+        .update({ status: "Completed" })
+        .eq("order_id", orderId);
+      location.reload();
+    }
+
+    function showTab(tabId) {
+      document.querySelectorAll('.tabcontent').forEach(div => div.classList.remove('active'));
+      document.querySelectorAll('.tablinks').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      event.currentTarget.classList.add('active');
+    }
+
+    loadOrders();
+  </script>
+</body>
+</html>
