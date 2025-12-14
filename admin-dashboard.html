@@ -125,4 +125,36 @@
         .from('orders')
         .update({ status: 'Completed' })
         .eq('order_code', orderCode);
-      if 
+      if (error) { console.error(error); return; }
+      loadActiveOrders();
+      loadCompletedOrders();
+    }
+
+    // Fetch Completed Orders (Admin Only)
+    async function loadCompletedOrders() {
+      const { data, error } = await supabase
+        .from('completed_orders')
+        .select('order_token, customer_name, job_description, total_amount, completed_at');
+      if (error) { console.error(error); return; }
+
+      const tbody = document.getElementById('completedOrdersBody');
+      tbody.innerHTML = '';
+      data.forEach(order => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${order.order_token}</td>
+          <td>${order.customer_name}</td>
+          <td>${order.job_description}</td>
+          <td>${order.total_amount}</td>
+          <td>${new Date(order.completed_at).toLocaleString()}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // Initial load
+    loadActiveOrders();
+    loadCompletedOrders();
+  </script>
+</body>
+</html>
