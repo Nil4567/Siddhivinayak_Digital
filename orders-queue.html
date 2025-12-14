@@ -8,14 +8,14 @@
     header { display:flex; justify-content:space-between; align-items:center; background:#2c3e50; color:#fff; padding:15px; border-radius:6px; }
     .clock { font-weight:bold; }
     .buttons button { margin-left:10px; padding:8px 16px; border:none; border-radius:4px; cursor:pointer; font-weight:600; }
-    .btn-home { background:#0073ff; color:#fff; }
+    .btn-back { background:#0073ff; color:#fff; }
     .btn-logout { background:#e74c3c; color:#fff; }
     h1 { margin-top:20px; color:#2c3e50; }
     table { width:100%; border-collapse:collapse; margin-top:20px; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
-    th, td { padding:12px; border:1px solid #ddd; text-align:left; }
+    th, td { padding:10px; border:1px solid #ddd; text-align:left; }
     th { background:#2c3e50; color:#fff; }
-    tr:nth-child(even) { background:#f9f9f9; }
-    select { padding:6px; }
+    button.complete { padding:6px 12px; background:#27ae60; color:#fff; border:none; border-radius:4px; cursor:pointer; }
+    button.complete:hover { background:#219150; }
   </style>
 </head>
 <body>
@@ -28,25 +28,23 @@
   <header>
     <div class="clock" id="clock"></div>
     <div class="buttons">
-      <button class="btn-home" onclick="goDashboard()">Home</button>
+      <button class="btn-back" onclick="window.history.back()">Back</button>
       <button class="btn-logout" onclick="logout()">Logout</button>
     </div>
   </header>
 
   <h1>Orders Queue</h1>
 
-  <table id="ordersTable">
-    <thead>
-      <tr>
-        <th>Token</th>
-        <th>Customer</th>
-        <th>Job Description</th>
-        <th>TAT</th>
-        <th>Status</th>
-        <th>Assigned To</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
+  <table id="queueTable">
+    <tr>
+      <th>Order Code</th>
+      <th>Customer</th>
+      <th>Job</th>
+      <th>Total</th>
+      <th>Advance</th>
+      <th>Pending</th>
+      <th>Action</th>
+    </tr>
   </table>
 
   <!-- Supabase library + config -->
@@ -68,128 +66,53 @@
       }
       window.logout = logout;
 
-      function goDashboard() {
-        const role = localStorage.getItem("role");
-        if (role === "admin") {
-          window.location.href = "admin-dashboard.html";
+      // Load queue orders
+      async function loadQueue() {
+        const { data, error } = await supabaseClient
+          .from("orders")
+          .select("*")
+          .eq("status", "In Process");
+
+        if (error) {
+          alert("Error loading queue: " + error.message);
+          return;
+        }
+
+        const table = document.getElementById("queueTable");
+        data.forEach(order => {
+          const row = table.insertRow();
+          row.insertCell().innerText = order.order_code;
+          row.insertCell().innerText = order.customer_name;
+          row.insertCell().innerText = order.job_description;
+          row.insertCell().innerText = order.total_amount;
+          row.insertCell().innerText = order.advance_amount;
+          row.insertCell().innerText = order.pending_amount;
+
+          const actionCell = row.insertCell();
+          const btn = document.createElement("button");
+          btn.className = "complete";
+          btn.innerText = "Complete";
+          btn.onclick = () => completeOrder(order.order_id);
+          actionCell.appendChild(btn);
+        });
+      }
+
+      // Mark order as completed
+      async function completeOrder(orderId) {
+        const { error } = await supabaseClient
+          .from("orders")
+          .update({ status: "Completed" })
+          .eq("order_id", orderId);
+
+        if (error) {
+          alert("Error completing order: " + error.message);
         } else {
-          window.location.href = "user-home.html";
+          alert("Order marked as Completed!");
+          location.reload();
         }
       }
-      window.goDashboard = goDashboard;
 
-      // Fetch staff list for dropdown
-      const { data: staffList, error: staffError } = await supabaseClient
-        .from("profiles")
-        .select("id, display_name, email, role")
-        .eq("role", "user");
-
-      if (staffError) {
-        alert("Error loading staff list: " + staffError.message);
-        return;
-      }
-
-      // Fetch orders
-      const { data, error } = await supabaseClient
-        .from("orders")
-        .select(`
-          order_id,
-          order_code,
-          customer_name,
-          job_description,
-          created_at,
-          tat,
-          status,
-          assigned_to
-        `)
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        alert("Error loading orders: " + error.message);
-        return;
-      }
-
-      const tbody = document.querySelector("#ordersTable tbody");
-      tbody.innerHTML = "";
-
-      data.forEach(order => {
-        const tr = document.createElement("tr");
-
-        // Calculate TAT = today - order punch date
-        const today = new Date();
-        const punchDate = new Date(order.created_at);
-        const diffDays = Math.floor((today - punchDate) / (1000 * 60 * 60 * 24));
-
-        // Status dropdown
-        const statusSelect = document.createElement("select");
-        ["Hold","In Process","Pending","Completed"].forEach(st => {
-          const opt = document.createElement("option");
-          opt.value = st;
-          opt.textContent = st;
-          if (order.status === st) opt.selected = true;
-
-          // Restrict Completed for non-admins
-          const role = localStorage.getItem("role");
-          if (st === "Completed" && role !== "admin") {
-            opt.disabled = true;
-          }
-
-          statusSelect.appendChild(opt);
-        });
-
-        statusSelect.onchange = async () => {
-          const role = localStorage.getItem("role");
-          if (statusSelect.value === "Completed" && role !== "admin") {
-            alert("Only admins can mark orders as Completed.");
-            statusSelect.value = order.status; // revert
-            return;
-          }
-          const { error } = await supabaseClient.from("orders")
-            .update({ status: statusSelect.value })
-            .eq("order_id", order.order_id);
-          if (error) alert("Error updating status: " + error.message);
-          else order.status = statusSelect.value;
-        };
-
-        // Assigned To dropdown
-        const assignSelect = document.createElement("select");
-        const blankOpt = document.createElement("option");
-        blankOpt.value = "";
-        blankOpt.textContent = "-- Select Staff --";
-        assignSelect.appendChild(blankOpt);
-
-        staffList.forEach(staff => {
-          const opt = document.createElement("option");
-          opt.value = staff.id; // must be UUID
-          opt.textContent = staff.display_name || staff.email;
-          if (order.assigned_to === staff.id) opt.selected = true;
-          assignSelect.appendChild(opt);
-        });
-
-        assignSelect.onchange = async () => {
-          const newAssigned = assignSelect.value || null;
-          const { error } = await supabaseClient.from("orders")
-            .update({ assigned_to: newAssigned })
-            .eq("order_id", order.order_id);
-          if (error) alert("Error updating assignment: " + error.message);
-          else alert("Order reassigned successfully!");
-        };
-
-        tr.innerHTML = `
-          <td>${order.order_code || ""}</td>
-          <td>${order.customer_name || ""}</td>
-          <td>${order.job_description || ""}</td>
-          <td>${diffDays} days</td>
-        `;
-        const tdStatus = document.createElement("td");
-        tdStatus.appendChild(statusSelect);
-        const tdAssign = document.createElement("td");
-        tdAssign.appendChild(assignSelect);
-
-        tr.appendChild(tdStatus);
-        tr.appendChild(tdAssign);
-        tbody.appendChild(tr);
-      });
+      loadQueue();
     });
   </script>
 </body>
