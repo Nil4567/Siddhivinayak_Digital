@@ -4,12 +4,46 @@
   <title>Admin Dashboard</title>
   <link rel="stylesheet" href="css/style.css">
   <script src="js/auth.js"></script>
+  <style>
+    .tab {
+      overflow: hidden;
+      border-bottom: 1px solid #ccc;
+    }
+    .tab button {
+      background-color: inherit;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      padding: 10px 20px;
+      transition: 0.3s;
+      font-size: 16px;
+    }
+    .tab button:hover {
+      background-color: #ddd;
+    }
+    .tab button.active {
+      background-color: #ccc;
+    }
+    .tabcontent {
+      display: none;
+      padding: 10px;
+    }
+    .tabcontent.active {
+      display: block;
+    }
+  </style>
 </head>
 <body>
   <h1>Admin Dashboard</h1>
 
-  <!-- Active Orders Queue -->
-  <section>
+  <!-- Tab Buttons -->
+  <div class="tab">
+    <button class="tablinks active" onclick="openTab(event, 'ActiveOrders')">Active Orders</button>
+    <button class="tablinks" onclick="openTab(event, 'CompletedOrders')">Completed Orders</button>
+  </div>
+
+  <!-- Active Orders Tab -->
+  <div id="ActiveOrders" class="tabcontent active">
     <h2>Active Orders</h2>
     <table id="activeOrdersTable" border="1">
       <thead>
@@ -24,10 +58,10 @@
       </thead>
       <tbody id="activeOrdersBody"></tbody>
     </table>
-  </section>
+  </div>
 
-  <!-- Completed Orders Archive (Admin Only) -->
-  <section>
+  <!-- Completed Orders Tab -->
+  <div id="CompletedOrders" class="tabcontent">
     <h2>Completed Orders (Admin Only)</h2>
     <table id="completedOrdersTable" border="1">
       <thead>
@@ -41,10 +75,24 @@
       </thead>
       <tbody id="completedOrdersBody"></tbody>
     </table>
-  </section>
+  </div>
 
   <script type="module">
     import { supabase } from './js/auth.js';
+
+    // Tab switching logic
+    function openTab(evt, tabName) {
+      const tabcontent = document.getElementsByClassName("tabcontent");
+      const tablinks = document.getElementsByClassName("tablinks");
+      for (let i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].classList.remove("active");
+      }
+      for (let i = 0; i < tablinks.length; i++) {
+        tablinks[i].classList.remove("active");
+      }
+      document.getElementById(tabName).classList.add("active");
+      evt.currentTarget.classList.add("active");
+    }
 
     // Fetch Active Orders
     async function loadActiveOrders() {
@@ -72,41 +120,9 @@
     }
 
     // Mark order as Completed
-    async function markCompleted(orderCode) {
+    window.markCompleted = async function(orderCode) {
       const { error } = await supabase
         .from('orders')
         .update({ status: 'Completed' })
         .eq('order_code', orderCode);
-      if (error) { console.error(error); return; }
-      loadActiveOrders();
-      loadCompletedOrders();
-    }
-
-    // Fetch Completed Orders (Admin Only)
-    async function loadCompletedOrders() {
-      const { data, error } = await supabase
-        .from('completed_orders')
-        .select('order_token, customer_name, job_description, total_amount, completed_at');
-      if (error) { console.error(error); return; }
-
-      const tbody = document.getElementById('completedOrdersBody');
-      tbody.innerHTML = '';
-      data.forEach(order => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${order.order_token}</td>
-          <td>${order.customer_name}</td>
-          <td>${order.job_description}</td>
-          <td>${order.total_amount}</td>
-          <td>${new Date(order.completed_at).toLocaleString()}</td>
-        `;
-        tbody.appendChild(row);
-      });
-    }
-
-    // Initial load
-    loadActiveOrders();
-    loadCompletedOrders();
-  </script>
-</body>
-</html>
+      if 
