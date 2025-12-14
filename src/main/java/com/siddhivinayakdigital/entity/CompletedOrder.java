@@ -1,16 +1,15 @@
 @Entity
-@Table(name = "orders")
-public class Order {
+@Table(name = "completed_orders")
+public class CompletedOrder {
     @Id
-    @Column(name = "order_id")
-    private UUID orderId;
+    @Column(name = "completed_id")
+    private UUID completedId;
 
-    private String orderCode;
+    private String orderToken;
     private String customerName;
     private String jobDescription;
     private BigDecimal totalAmount;
-    private String status; // Pending, Hold, In Process, Completed
-    private Instant createdAt;
+    private Instant completedAt;
 
     // Getters and setters
 }
