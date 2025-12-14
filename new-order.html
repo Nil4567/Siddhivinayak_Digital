@@ -1,131 +1,48 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>New Order - Siddhivinayak Digital</title>
-  <style>
-    body { font-family: Arial, sans-serif; background:#f4f6f9; margin:0; padding:20px; }
-    header { display:flex; justify-content:space-between; align-items:center; background:#2c3e50; color:#fff; padding:15px; border-radius:6px; }
-    .clock { font-weight:bold; }
-    .buttons button { margin-left:10px; padding:8px 16px; border:none; border-radius:4px; cursor:pointer; font-weight:600; }
-    .btn-back { background:#0073ff; color:#fff; }
-    .btn-logout { background:#e74c3c; color:#fff; }
-    h1 { margin-top:20px; color:#2c3e50; }
-    form { background:#fff; padding:20px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08); max-width:500px; margin:20px auto; }
-    label { display:block; margin-top:12px; font-weight:600; color:#333; }
-    input, textarea { width:100%; padding:10px; margin-top:6px; border:1px solid #ddd; border-radius:4px; }
-    input[readonly] { background:#f0f0f0; }
-    button.submit { margin-top:20px; width:100%; padding:12px; background:#27ae60; color:#fff; border:none; border-radius:6px; font-size:16px; font-weight:600; cursor:pointer; }
-    button.submit:hover { background:#219150; }
-  </style>
-</head>
-<body>
-  <script>
-    if (localStorage.getItem("loggedIn") !== "yes") {
-      window.location.href = "home.html";
+<script>
+  document.getElementById("orderForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    // 1) Collect values
+    const order_date = document.getElementById("orderDate").value;
+    const customer_name = document.getElementById("custName").value.trim();
+    const customer_contact = document.getElementById("custMobile").value.trim();
+    const job_description = document.getElementById("jobDesc").value.trim();
+    const total_amount = parseFloat(document.getElementById("totalAmount").value) || 0;
+    const advance_amount = parseFloat(document.getElementById("advanceAmount").value) || 0;
+
+    // 2) Build minimal order payload
+    const order = {
+      order_id: crypto.randomUUID(),        // if your table has default UUID, you can remove this
+      order_date: order_date,               // date as yyyy-mm-dd
+      customer_name: customer_name,
+      customer_contact: customer_contact,
+      job_description: job_description,
+      total_amount: total_amount,
+      advance_amount: advance_amount,
+      status: "Pending",
+      created_by: localStorage.getItem("uid") || null
+    };
+
+    // 3) Insert into Supabase
+    try {
+      const { data, error } = await supabaseClient
+        .from("orders")
+        .insert(order)
+        .select("order_code"); // if you auto-generate order_code with a trigger, this returns it
+
+      if (error) {
+        alert("Error creating order: " + error.message);
+        return;
+      }
+
+      const code = data && data.length ? data[0].order_code : "(created)";
+      alert("Order created successfully! Code: " + code);
+
+      // Reset minimal fields
+      document.getElementById("orderForm").reset();
+      document.getElementById("orderDate").value = new Date().toISOString().split("T")[0];
+    } catch (err) {
+      alert("Unexpected error: " + err.message);
     }
-  </script>
-
-  <header>
-    <div class="clock" id="clock"></div>
-    <div class="buttons">
-      <button class="btn-back" onclick="window.history.back()">Back</button>
-      <button class="btn-logout" onclick="logout()">Logout</button>
-    </div>
-  </header>
-
-  <h1>New Order Form</h1>
-
-  <form id="orderForm">
-    <label for="orderDate">Order Date</label>
-    <input type="date" id="orderDate" required />
-
-    <label for="custName">Customer Name</label>
-    <input type="text" id="custName" required />
-
-    <label for="custMobile">Mobile</label>
-    <input type="tel" id="custMobile" required />
-
-    <label for="jobDesc">Job Description</label>
-    <textarea id="jobDesc" rows="3" required></textarea>
-
-    <label for="totalAmount">Total Amount</label>
-    <input type="number" id="totalAmount" required />
-
-    <label for="advanceAmount">Advance Amount</label>
-    <input type="number" id="advanceAmount" required />
-
-    <label for="pendingAmount">Pending Amount</label>
-    <input type="number" id="pendingAmount" readonly />
-
-    <button type="submit" class="submit">Submit Order</button>
-  </form>
-
-  <!-- Supabase library + config -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase-config.js"></script>
-
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      // Clock
-      function updateClock() {
-        const now = new Date();
-        document.getElementById("clock").textContent = now.toLocaleDateString() + " " + now.toLocaleTimeString();
-      }
-      setInterval(updateClock, 1000); updateClock();
-
-      function logout() {
-        localStorage.clear();
-        window.location.href = "home.html";
-      }
-      window.logout = logout;
-
-      // Default date
-      const today = new Date().toISOString().split("T")[0];
-      document.getElementById("orderDate").value = today;
-
-      // Pending calculation
-      function calcPending() {
-        const total = parseFloat(document.getElementById("totalAmount").value) || 0;
-        const advance = parseFloat(document.getElementById("advanceAmount").value) || 0;
-        const pending = total - advance;
-        document.getElementById("pendingAmount").value = pending >= 0 ? pending : 0;
-      }
-      document.getElementById("totalAmount").addEventListener("input", calcPending);
-      document.getElementById("advanceAmount").addEventListener("input", calcPending);
-
-      // Submit order
-      document.getElementById("orderForm").addEventListener("submit", async function(e) {
-        e.preventDefault();
-        const order = {
-          customer_name: document.getElementById("custName").value,
-          customer_contact: document.getElementById("custMobile").value,
-          job_description: document.getElementById("jobDesc").value,
-          total_amount: document.getElementById("totalAmount").value,
-          advance_amount: document.getElementById("advanceAmount").value,
-          created_by: localStorage.getItem("uid"),
-          status: "Pending"
-        };
-
-        try {
-          const { data, error } = await supabaseClient
-            .from("orders")
-            .insert([order])
-            .select("order_code"); // fetch generated order_code from DB
-
-          if (error) {
-            alert("Error submitting order: " + error.message);
-          } else {
-            alert("Order submitted successfully! Order ID: " + data[0].order_code);
-            document.getElementById("orderForm").reset();
-            document.getElementById("orderDate").value = today;
-            document.getElementById("pendingAmount").value = "";
-          }
-        } catch (err) {
-          alert("Backend error: " + err.message);
-        }
-      });
-    });
-  </script>
-</body>
-</html>
+  });
+</script>
