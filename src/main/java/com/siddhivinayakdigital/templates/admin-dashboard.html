@@ -1,22 +1,88 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head><title>Create New Order</title></head>
+<head>
+  <title>Admin Dashboard</title>
+  <style>
+    .tab { overflow: hidden; border-bottom: 1px solid #ccc; }
+    .tab button { background: inherit; border: none; cursor: pointer; padding: 10px 20px; }
+    .tab button.active { background: #ccc; }
+    .tabcontent { display: none; padding: 10px; }
+    .tabcontent.active { display: block; }
+  </style>
+</head>
 <body>
-  <h2>Create New Order</h2>
-  <form th:action="@{/admin/orders/new}" th:object="${order}" method="post">
-    <label>Customer Name:</label>
-    <input type="text" th:field="*{customerName}" required><br>
+  <h1>Admin Dashboard</h1>
 
-    <label>Contact:</label>
-    <input type="text" th:field="*{customerContact}"><br>
+  <!-- Tab Buttons -->
+  <div class="tab">
+    <button class="tablinks active" onclick="showTab('new')">New Orders</button>
+    <button class="tablinks" onclick="showTab('queue')">Queue Orders</button>
+    <button class="tablinks" onclick="showTab('completed')">Completed Orders</button>
+    <a href="/admin/orders/new"><button>Create New Order</button></a>
+  </div>
 
-    <label>Job Description:</label>
-    <input type="text" th:field="*{jobDescription}" required><br>
+  <!-- New Orders -->
+  <div id="new" class="tabcontent active">
+    <h2>New Orders</h2>
+    <table>
+      <tr><th>Code</th><th>Customer</th><th>Job</th><th>Total</th><th>Status</th><th>Action</th></tr>
+      <tr th:each="order : ${newOrders}">
+        <td th:text="${order.orderCode}"></td>
+        <td th:text="${order.customerName}"></td>
+        <td th:text="${order.jobDescription}"></td>
+        <td th:text="${order.totalAmount}"></td>
+        <td th:text="${order.status}"></td>
+        <td>
+          <form th:action="@{'/admin/start/' + ${order.orderId}}" method="post">
+            <button type="submit">Start</button>
+          </form>
+        </td>
+      </tr>
+    </table>
+  </div>
 
-    <label>Total Amount:</label>
-    <input type="number" th:field="*{totalAmount}" required><br>
+  <!-- Queue Orders -->
+  <div id="queue" class="tabcontent">
+    <h2>Queue Orders</h2>
+    <table>
+      <tr><th>Code</th><th>Customer</th><th>Job</th><th>Total</th><th>Status</th><th>Action</th></tr>
+      <tr th:each="order : ${queueOrders}">
+        <td th:text="${order.orderCode}"></td>
+        <td th:text="${order.customerName}"></td>
+        <td th:text="${order.jobDescription}"></td>
+        <td th:text="${order.totalAmount}"></td>
+        <td th:text="${order.status}"></td>
+        <td>
+          <form th:action="@{'/admin/complete/' + ${order.orderId}}" method="post">
+            <button type="submit">Complete</button>
+          </form>
+        </td>
+      </tr>
+    </table>
+  </div>
 
-    <button type="submit">Create Order</button>
-  </form>
+  <!-- Completed Orders -->
+  <div id="completed" class="tabcontent">
+    <h2>Completed Orders</h2>
+    <table>
+      <tr><th>Token</th><th>Customer</th><th>Job</th><th>Total</th><th>Completed At</th></tr>
+      <tr th:each="order : ${completedOrders}">
+        <td th:text="${order.orderToken}"></td>
+        <td th:text="${order.customerName}"></td>
+        <td th:text="${order.jobDescription}"></td>
+        <td th:text="${order.totalAmount}"></td>
+        <td th:text="${order.completedAt}"></td>
+      </tr>
+    </table>
+  </div>
+
+  <script>
+    function showTab(tabId) {
+      document.querySelectorAll('.tabcontent').forEach(div => div.classList.remove('active'));
+      document.querySelectorAll('.tablinks').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      event.currentTarget.classList.add('active');
+    }
+  </script>
 </body>
 </html>
