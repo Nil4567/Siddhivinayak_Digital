@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Order Token - Siddhivinayak Digital</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f4f6f9; margin:0; padding:20px; }
+    .sheet { border:2px solid #000; padding:20px; background:#fff; max-width:400px; margin:auto; }
+    .sheet h2 { margin:0; text-align:center; }
+    .sheet p { margin:5px 0; }
+    .sheet table { width:100%; border-collapse:collapse; margin-top:10px; }
+    .sheet th, .sheet td { text-align:left; padding:6px; }
+    .sheet th { width:40%; }
+    button { margin-top:15px; padding:10px; background:#0073ff; color:#fff; border:none; border-radius:4px; cursor:pointer; }
+    button:hover { background:#0056b3; }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <h2>Siddhivinayak Digital</h2>
+    <p><strong>Address:</strong> Shop No. 12, Main Road, Mumbai</p>
+    <hr>
+    <table>
+      <tr><th>Order Code</th><td id="code"></td></tr>
+      <tr><th>Customer</th><td id="customer"></td></tr>
+      <tr><th>Job Description</th><td id="job"></td></tr>
+      <tr><th>Total</th><td id="total"></td></tr>
+      <tr><th>Advance</th><td id="advance"></td></tr>
+      <tr><th>Pending</th><td id="pending"></td></tr>
+      <tr><th>Order Date</th><td id="date"></td></tr>
+      <tr><th>TAT (Days)</th><td id="tat"></td></tr>
+    </table>
+    <button onclick="window.print()">Print / Save as PDF</button>
+  </div>
+
+  <!-- Supabase SDK + Config -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+
+  <script>
+    async function loadToken() {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+
+      const { data, error } = await supabaseClient
+        .from("orders")
+        .select("order_code, customer_name, job_description, total_amount, advance_amount, pending_amount, created_at")
+        .eq("order_code", code)
+        .single();
+
+      if (error) {
+        alert("Error loading token: " + error.message);
+        return;
+      }
+
+      document.getElementById("code").textContent = data.order_code;
+      document.getElementById("customer").textContent = data.customer_name;
+      document.getElementById("job").textContent = data.job_description;
+      document.getElementById("total").textContent = data.total_amount || 0;
+      document.getElementById("advance").textContent = data.advance_amount || 0;
+      document.getElementById("pending").textContent = data.pending_amount || 0;
+      document.getElementById("date").textContent = data.created_at.split("T")[0];
+
+      const orderDate = new Date(data.created_at);
+      const today = new Date();
+      const tatDays = Math.floor((today - orderDate) / (1000*60*60*24));
+      document.getElementById("tat").textContent = tatDays;
+    }
+
+    loadToken();
+  </script>
+</body>
+</html>
