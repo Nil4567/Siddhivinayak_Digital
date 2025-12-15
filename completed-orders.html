@@ -1,53 +1,17 @@
-<script>
-  async function loadCompleted() {
-    const start = document.getElementById("startDate").value;
-    const end = document.getElementById("endDate").value;
+let query = supabaseClient
+  .from("completed_orders")
+  .select("order_id, order_code, customer_name, customer_contact, job_description, total_amount, advance_amount, pending_amount, assigned_to, created_at, completed_at");
 
-    let query = supabaseClient
-      .from("completed_orders")
-      .select("order_id, order_code, customer_name, customer_contact, job_description, total_amount, advance_amount, pending_amount, assigned_to, created_at, completed_at");
+const start = document.getElementById("startDate").value;
+const end = document.getElementById("endDate").value;
 
-    if (start && end) {
-      query = query.gte("completed_at", start).lte("completed_at", end);
-    }
+// If only start date provided → use today as default end
+if (start && !end) {
+  const today = new Date().toISOString().split("T")[0];
+  query = query.gte("completed_at", start).lte("completed_at", today);
+} else {
+  if (start) query = query.gte("completed_at", start);
+  if (end)   query = query.lte("completed_at", end);
+}
 
-    const { data, error } = await query.order("completed_at", { ascending: false });
-    if (error) { alert("Error loading completed orders: " + error.message); return; }
-
-    const rows = data || [];
-    // Summary
-    let totalPaid = 0;
-    rows.forEach(o => { totalPaid += (o.total_amount ?? 0) - (o.pending_amount ?? 0); });
-    document.getElementById("totalPaid").textContent = "Total Paid: ₹" + totalPaid.toFixed(2);
-    document.getElementById("completedCount").textContent = "Completed Orders: " + rows.length;
-
-    // Table
-    const tbody = document.querySelector("#completedTable tbody");
-    tbody.innerHTML = "";
-    rows.forEach(order => {
-      const orderDate = new Date(order.created_at);
-      const completedDate = order.completed_at ? new Date(order.completed_at) : null;
-      const tatDays = completedDate ? Math.floor((completedDate - orderDate) / (1000*60*60*24)) : "";
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${order.order_code || ""}</td>
-        <td>${order.customer_name || ""}</td>
-        <td>${order.customer_contact || ""}</td>
-        <td>${order.job_description || ""}</td>
-        <td>${order.total_amount ?? 0}</td>
-        <td>${order.advance_amount ?? 0}</td>
-        <td>${order.pending_amount ?? 0}</td>
-        <td>${orderDate.toISOString().split("T")[0]}</td>
-        <td>${completedDate ? completedDate.toISOString().split("T")[0] : ""}</td>
-        <td>${tatDays}</td>
-        <td>${"Unassigned"}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-
-  (async function init(){
-    await loadCompleted();
-  })();
-</script>
+const { data, error } = await query.order("completed_at", { ascending: false });
