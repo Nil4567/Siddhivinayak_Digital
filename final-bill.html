@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Final Bill - Siddhivinayak Digital</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background:#f4f6f9; margin:0; padding:40px; display:flex; justify-content:center; }
+    .bill { border:2px solid #333; padding:25px; background:#fff; width:480px; box-shadow:0 4px 10px rgba(0,0,0,0.2); }
+    .bill h2 { margin:0; text-align:center; color:#0073ff; }
+    .bill p { margin:6px 0; font-size:14px; }
+    .bill hr { margin:12px 0; border:0; border-top:1px dashed #aaa; }
+    .bill table { width:100%; border-collapse:collapse; margin-top:10px; }
+    .bill th, .bill td { text-align:left; padding:6px; font-size:14px; }
+    .bill th { width:40%; color:#2c3e50; }
+    .actions { margin-top:15px; display:flex; justify-content:space-between; }
+    .actions button { padding:8px 12px; background:#0073ff; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:14px; }
+    .actions button:hover { background:#0056b3; }
+    .totalBox { margin-top:15px; padding:10px; background:#f1f9ff; border:1px solid #0073ff; border-radius:6px; font-weight:bold; text-align:right; }
+  </style>
+</head>
+<body>
+  <div class="bill" id="billCard">
+    <h2>Siddhivinayak Digital</h2>
+    <p><strong>Address:</strong> Shop No. 12, Main Road, Mumbai</p>
+    <hr>
+    <table>
+      <tr><th>Bill No</th><td id="billNo"></td></tr>
+      <tr><th>Customer</th><td id="customer"></td></tr>
+      <tr><th>Mobile</th><td id="mobile"></td></tr>
+      <tr><th>Job Description</th><td id="job"></td></tr>
+      <tr><th>Total Amount</th><td id="total"></td></tr>
+      <tr><th>Advance Paid</th><td id="advance"></td></tr>
+      <tr><th>Pending Amount</th><td id="pending"></td></tr>
+      <tr><th>Order Date</th><td id="orderDate"></td></tr>
+      <tr><th>Completed Date</th><td id="completedDate"></td></tr>
+       
+    </table>
+    <div class="totalBox">Final Amount Paid: ₹<span id="finalPaid"></span></div>
+    <div class="actions">
+      <button onclick="window.print()">Print / PDF</button>
+      <button onclick="downloadBill()">Download PNG</button>
+      <button onclick="shareBill()">Share</button>
+    </div>
+  </div>
+
+  <!-- Supabase SDK + Config + html2canvas -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="js/supabase-config.js"></script>
+
+  <script>
+    async function loadBill() {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get
