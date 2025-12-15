@@ -6,9 +6,9 @@
       customer_name: document.getElementById("custName").value,
       customer_contact: document.getElementById("custMobile").value,
       job_description: document.getElementById("jobDesc").value,
-      total_amount: parseFloat(document.getElementById("totalAmount").value),
-      advance_amount: parseFloat(document.getElementById("advanceAmount").value),
-      created_by: localStorage.getItem("uid"), // must match auth.uid()
+      total_amount: parseFloat(document.getElementById("totalAmount").value) || 0,
+      advance_amount: parseFloat(document.getElementById("advanceAmount").value) || 0,
+      created_by: localStorage.getItem("uid"),
       status: "Pending"
     };
 
@@ -16,7 +16,7 @@
       const { data, error } = await supabaseClient
         .from("orders")
         .insert([order])
-        .select("order_code"); // fetch auto-generated order_code
+        .select("order_code"); // auto-generated SD/001 style
 
       if (error) {
         alert("Error submitting order: " + error.message);
