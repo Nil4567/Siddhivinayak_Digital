@@ -18,6 +18,14 @@
     select, button.updateBtn { padding:6px; }
     button.updateBtn { background:#0073ff; color:#fff; border:none; border-radius:4px; cursor:pointer; }
     button.updateBtn:hover { background:#0056b3; }
+    .sheet { border:2px solid #000; padding:20px; margin-top:20px; background:#fff; max-width:400px; }
+    .sheet h2 { margin:0; text-align:center; }
+    .sheet p { margin:5px 0; }
+    .sheet table { width:100%; border-collapse:collapse; margin-top:10px; }
+    .sheet th, .sheet td { text-align:left; padding:6px; }
+    .sheet th { width:40%; }
+    .sheet button { margin-top:10px; padding:8px 12px; background:#0073ff; color:#fff; border:none; border-radius:4px; cursor:pointer; }
+    .sheet button:hover { background:#0056b3; }
   </style>
 </head>
 <body>
@@ -56,8 +64,28 @@
     <tbody></tbody>
   </table>
 
+  <!-- Order Token Template -->
+  <div id="orderSheet" class="sheet" style="display:none;">
+    <h2>Siddhivinayak Digital</h2>
+    <p><strong>Address:</strong> Shop No. 12, Main Road, Mumbai</p>
+    <hr>
+    <table>
+      <tr><th>Order Code</th><td id="sheetCode"></td></tr>
+      <tr><th>Customer</th><td id="sheetCustomer"></td></tr>
+      <tr><th>Job Description</th><td id="sheetJob"></td></tr>
+      <tr><th>Total</th><td id="sheetTotal"></td></tr>
+      <tr><th>Advance</th><td id="sheetAdvance"></td></tr>
+      <tr><th>Pending</th><td id="sheetPending"></td></tr>
+      <tr><th>Order Date</th><td id="sheetDate"></td></tr>
+      <tr><th>TAT (Days)</th><td id="sheetTat"></td></tr>
+    </table>
+    <button onclick="printToken()">Print / Save as PDF</button>
+    <button onclick="downloadToken()">Download as PNG</button>
+  </div>
+
   <!-- Supabase SDK + Config -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="js/supabase-config.js"></script>
 
   <script>
@@ -131,57 +159,9 @@
           </td>
           <td>
             <button data-id="${order.order_id}" class="updateBtn">Update</button>
+            <button onclick="showSheet(${JSON.stringify(order).replace(/"/g,'&quot;')})">Token</button>
           </td>
         `;
         tbody.appendChild(row);
       });
 
-      attachEvents();
-    }
-
-    function attachEvents() {
-      document.querySelectorAll(".updateBtn").forEach(btn => {
-        btn.addEventListener("click", async function() {
-          const id = this.getAttribute("data-id");
-          const status = document.querySelector(`.statusSelect[data-id="${id}"]`).value;
-          const assigned = document.querySelector(`.assignSelect[data-id="${id}"]`).value || null;
-          const jobDesc = document.querySelector(`input.editable[data-id="${id}"]`).value;
-
-          const { error } = await supabaseClient
-            .from("orders")
-            .update({ status, assigned_to: assigned, job_description: jobDesc })
-            .eq("order_id", id);
-
-          if (error) {
-            alert("Error updating order: " + error.message);
-          } else {
-            if (status === "Completed") {
-              alert("Order marked Completed! It will be moved to archive.");
-            } else {
-              alert("Order updated successfully!");
-            }
-            loadOrders();
-          }
-        });
-      });
-    }
-
-    function logout() {
-      localStorage.clear();
-      window.location.href = "login.html";
-    }
-
-    function goHome() {
-      const role = localStorage.getItem("role");
-      if (role === "admin") {
-        window.location.href = "admin-dashboard.html";
-      } else {
-        window.location.href = "user-home.html";
-      }
-    }
-
-    // Load users first, then orders
-    loadUsers().then(loadOrders);
-  </script>
-</body>
-</html>
