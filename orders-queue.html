@@ -5,17 +5,27 @@
   <title>Orders Queue - Siddhivinayak Digital</title>
   <style>
     body { font-family: Arial, sans-serif; background:#f4f6f9; margin:0; padding:20px; }
-    h1 { color:#2c3e50; }
-    table { width:100%; border-collapse:collapse; margin-top:20px; background:#fff; }
+    header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+    h1 { color:#2c3e50; margin:0; }
+    button.nav { padding:8px 14px; margin-left:10px; background:#0073ff; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:600; }
+    button.nav:hover { background:#0056b3; }
+    table { width:100%; border-collapse:collapse; background:#fff; }
     th, td { border:1px solid #ccc; padding:10px; text-align:left; }
     th { background:#0073ff; color:#fff; }
-    select, button { padding:6px; margin:0; }
-    button { background:#0073ff; color:#fff; border:none; border-radius:4px; cursor:pointer; }
-    button:hover { background:#0056b3; }
+    select, button.updateBtn { padding:6px; }
+    button.updateBtn { background:#0073ff; color:#fff; border:none; border-radius:4px; cursor:pointer; }
+    button.updateBtn:hover { background:#0056b3; }
   </style>
 </head>
 <body>
-  <h1>Orders Queue</h1>
+  <header>
+    <h1>Orders Queue</h1>
+    <div>
+      <button class="nav" onclick="goHome()">Home</button>
+      <button class="nav" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
   <table id="ordersTable">
     <thead>
       <tr>
@@ -42,7 +52,7 @@
       const { data, error } = await supabaseClient
         .from("orders")
         .select("order_id, order_code, customer_name, job_description, total_amount, advance_amount, pending_amount, status, assigned_to")
-        .in("status", ["Pending", "In Process"]);
+        .in("status", ["Pending", "In Process", "Hold"]);
 
       if (error) {
         alert("Error loading orders: " + error.message);
@@ -66,8 +76,8 @@
             <select data-id="${order.order_id}" class="statusSelect">
               <option ${order.status === "Pending" ? "selected" : ""}>Pending</option>
               <option ${order.status === "In Process" ? "selected" : ""}>In Process</option>
-              <option ${order.status === "Completed" ? "selected" : ""}>Completed</option>
               <option ${order.status === "Hold" ? "selected" : ""}>Hold</option>
+              <option ${order.status === "Completed" ? "selected" : ""}>Completed</option>
             </select>
           </td>
           <td>${order.assigned_to || "Unassigned"}</td>
@@ -91,11 +101,30 @@
           if (error) {
             alert("Error updating order: " + error.message);
           } else {
-            alert("Order updated successfully!");
+            if (status === "Completed") {
+              alert("Order marked Completed! It will be moved to archive.");
+            } else {
+              alert("Order status updated successfully!");
+            }
             loadOrders(); // reload table
           }
         });
       });
+    }
+
+    // Navigation
+    function logout() {
+      localStorage.clear();
+      window.location.href = "login.html";
+    }
+
+    function goHome() {
+      const role = localStorage.getItem("role");
+      if (role === "admin") {
+        window.location.href = "admin-dashboard.html";
+      } else {
+        window.location.href = "user-home.html";
+      }
     }
 
     loadOrders();
