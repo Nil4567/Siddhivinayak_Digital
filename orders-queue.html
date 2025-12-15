@@ -9,8 +9,16 @@
     h1 { color:#2c3e50; margin:0; }
     button.nav { padding:8px 14px; margin-left:10px; background:#0073ff; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:600; }
     button.nav:hover { background:#0056b3; }
-    .summary { background:#fff; padding:10px; border:1px solid #ccc; margin-bottom:20px; }
-    .summary span { margin-right:20px; font-weight:bold; }
+
+    /* Summary boxes */
+    .summary { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px; }
+    .box { flex:1; min-width:120px; padding:10px; border-radius:6px; color:#fff; font-weight:bold; text-align:center; }
+    .pending { background:#f39c12; }
+    .process { background:#3498db; }
+    .hold { background:#9b59b6; }
+    .completed { background:#2ecc71; }
+    .assigned { background:#e74c3c; }
+
     table { width:100%; border-collapse:collapse; background:#fff; }
     th, td { border:1px solid #ccc; padding:10px; text-align:left; vertical-align:top; }
     th { background:#0073ff; color:#fff; }
@@ -18,14 +26,6 @@
     select, button.updateBtn { padding:6px; }
     button.updateBtn { background:#0073ff; color:#fff; border:none; border-radius:4px; cursor:pointer; }
     button.updateBtn:hover { background:#0056b3; }
-    .sheet { border:2px solid #000; padding:20px; margin-top:20px; background:#fff; max-width:480px; }
-    .sheet h2 { margin:0; text-align:center; }
-    .sheet p { margin:5px 0; }
-    .sheet table { width:100%; border-collapse:collapse; margin-top:10px; }
-    .sheet th, .sheet td { text-align:left; padding:6px; border-bottom:1px dashed #ddd; }
-    .sheet th { width:42%; }
-    .sheet .actions { display:flex; gap:10px; margin-top:12px; }
-    .hidden { display:none; }
   </style>
 </head>
 <body>
@@ -37,13 +37,16 @@
     </div>
   </header>
 
-  <!-- Summary Section -->
+  <!-- Status Summary -->
   <div class="summary">
-    <span id="pendingCount">Pending: 0</span>
-    <span id="processCount">In Process: 0</span>
-    <span id="holdCount">Hold: 0</span>
-    <span id="completedCount">Completed: 0</span>
+    <div class="box pending" id="pendingCount">Pending: 0</div>
+    <div class="box process" id="processCount">In Process: 0</div>
+    <div class="box hold" id="holdCount">Hold: 0</div>
+    <div class="box completed" id="completedCount">Completed: 0</div>
   </div>
+
+  <!-- Assigned To Summary -->
+  <div class="summary" id="assignedSummary"></div>
 
   <table id="ordersTable">
     <thead>
@@ -64,50 +67,21 @@
     <tbody></tbody>
   </table>
 
-  <!-- Order Token Template -->
-  <div id="orderSheet" class="sheet hidden">
-    <h2>Siddhivinayak Digital</h2>
-    <p><strong>Address:</strong> Shop No. 12, Main Road, Mumbai</p>
-    <hr>
-    <table>
-      <tr><th>Order Code</th><td id="sheetCode"></td></tr>
-      <tr><th>Customer</th><td id="sheetCustomer"></td></tr>
-      <tr><th>Job Description</th><td id="sheetJob"></td></tr>
-      <tr><th>Total</th><td id="sheetTotal"></td></tr>
-      <tr><th>Advance</th><td id="sheetAdvance"></td></tr>
-      <tr><th>Pending</th><td id="sheetPending"></td></tr>
-      <tr><th>Order Date</th><td id="sheetDate"></td></tr>
-      <tr><th>TAT (Days)</th><td id="sheetTat"></td></tr>
-    </table>
-    <div class="actions">
-      <button onclick="printToken()">Print / Save PDF</button>
-      <button onclick="downloadToken()">Download PNG</button>
-      <button onclick="hideSheet()">Close</button>
-    </div>
-  </div>
-
-  <!-- Supabase SDK + Config + html2canvas -->
+  <!-- Supabase SDK + Config -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="js/supabase-config.js"></script>
 
   <script>
     let users = [];
 
-    // Load staff users for Assigned To dropdown
     async function loadUsers() {
       const { data, error } = await supabaseClient
         .from("profiles")
         .select("id, display_name")
         .eq("role", "user");
-      if (error) {
-        alert("Error loading users: " + error.message);
-        return;
-      }
-      users = data || [];
+      if (!error) users = data;
     }
 
-    // Load all active orders (including Completed for summary)
     async function loadOrders() {
       const { data, error } = await supabaseClient
         .from("orders")
@@ -118,20 +92,36 @@
         return;
       }
 
-      // Summary counts
+      // Status summary
       let pending=0, process=0, hold=0, completed=0;
+      const assignedCounts = {};
       (data || []).forEach(o => {
-        if (o.status === "Pending") pending++;
-        else if (o.status === "In Process") process++;
-        else if (o.status === "Hold") hold++;
-        else if (o.status === "Completed") completed++;
+        if(o.status==="Pending") pending++;
+        else if(o.status==="In Process") process++;
+        else if(o.status==="Hold") hold++;
+        else if(o.status==="Completed") completed++;
+
+        if(o.assigned_to){
+          assignedCounts[o.assigned_to] = (assignedCounts[o.assigned_to]||0)+1;
+        }
       });
       document.getElementById("pendingCount").textContent = "Pending: " + pending;
       document.getElementById("processCount").textContent = "In Process: " + process;
       document.getElementById("holdCount").textContent = "Hold: " + hold;
       document.getElementById("completedCount").textContent = "Completed: " + completed;
 
-      // Render table with non-completed orders
+      // Assigned summary boxes
+      const assignedDiv = document.getElementById("assignedSummary");
+      assignedDiv.innerHTML = "";
+      users.forEach(u => {
+        const count = assignedCounts[u.id] || 0;
+        const box = document.createElement("div");
+        box.className = "box assigned";
+        box.textContent = u.display_name + ": " + count;
+        assignedDiv.appendChild(box);
+      });
+
+      // Render table
       const tbody = document.querySelector("#ordersTable tbody");
       tbody.innerHTML = "";
       (data || []).filter(o => o.status !== "Completed").forEach(order => {
@@ -168,7 +158,7 @@
           </td>
           <td>
             <button data-id="${order.order_id}" class="updateBtn">Update</button>
-            <button onclick="showSheet(${JSON.stringify(order).replace(/\"/g, '&quot;')})">Token</button>
+            <button onclick="window.open('order-token.html?code=${order.order_code}','_blank')">Token</button>
           </td>
         `;
         tbody.appendChild(row);
@@ -177,7 +167,6 @@
       attachEvents();
     }
 
-    // Update handlers
     function attachEvents() {
       document.querySelectorAll(".updateBtn").forEach(btn => {
         btn.addEventListener("click", async function() {
@@ -205,66 +194,6 @@
       });
     }
 
-    // Token slip controls
-    function showSheet(order) {
-      document.getElementById("sheetCode").textContent = order.order_code;
-      document.getElementById("sheetCustomer").textContent = order.customer_name;
-      document.getElementById("sheetJob").textContent = order.job_description || "";
-      document.getElementById("sheetTotal").textContent = order.total_amount ?? 0;
-      document.getElementById("sheetAdvance").textContent = order.advance_amount ?? 0;
-      document.getElementById("sheetPending").textContent = order.pending_amount ?? 0;
-      const dateStr = (order.created_at || "").split("T")[0];
-      document.getElementById("sheetDate").textContent = dateStr;
-
-      const orderDate = new Date(order.created_at);
-      const today = new Date();
-      const tatDays = Math.floor((today - orderDate) / (1000*60*60*24));
-      document.getElementById("sheetTat").textContent = isNaN(tatDays) ? 0 : tatDays;
-
-      document.getElementById("orderSheet").classList.remove("hidden");
-      // Scroll to sheet for convenience
-      document.getElementById("orderSheet").scrollIntoView({ behavior: "smooth" });
-    }
-
-    function hideSheet() {
-      document.getElementById("orderSheet").classList.add("hidden");
-    }
-
-    function printToken() {
-      const sheet = document.getElementById("orderSheet");
-      const wasHidden = sheet.classList.contains("hidden");
-      if (wasHidden) sheet.classList.remove("hidden");
-
-      const printContents = sheet.innerHTML;
-      const original = document.body.innerHTML;
-      document.body.innerHTML = printContents;
-      window.print();
-      document.body.innerHTML = original;
-
-      if (wasHidden) sheet.classList.add("hidden");
-      // Reattach script behavior after restore
-      window.location.reload();
-    }
-
-    async function downloadToken() {
-      const sheet = document.getElementById("orderSheet");
-      const wasHidden = sheet.classList.contains("hidden");
-      if (wasHidden) sheet.classList.remove("hidden");
-
-      try {
-        const canvas = await html2canvas(sheet, { scale: 2, useCORS: true });
-        const link = document.createElement("a");
-        link.download = (document.getElementById("sheetCode").textContent || "order-token") + ".png";
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-      } catch (e) {
-        alert("Unable to generate image: " + e.message);
-      } finally {
-        if (wasHidden) sheet.classList.add("hidden");
-      }
-    }
-
-    // Navigation
     function logout() {
       localStorage.clear();
       window.location.href = "login.html";
@@ -273,14 +202,3 @@
     function goHome() {
       const role = localStorage.getItem("role");
       if (role === "admin") {
-        window.location.href = "admin-dashboard.html";
-      } else {
-        window.location.href = "user-home.html";
-      }
-    }
-
-    // Bootstrap: load users first, then orders
-    loadUsers().then(loadOrders);
-  </script>
-</body>
-</html>
