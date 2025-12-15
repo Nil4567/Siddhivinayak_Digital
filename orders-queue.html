@@ -17,7 +17,6 @@
     .pending { background:#f39c12; }
     .process { background:#3498db; }
     .hold { background:#9b59b6; }
-    .completed { background:#2ecc71; }
     .assigned { background:#e74c3c; }
 
     table { width:100%; border-collapse:collapse; background:#fff; }
@@ -45,7 +44,7 @@
     <div class="box pending" id="pendingCount">Pending: 0</div>
     <div class="box process" id="processCount">In Process: 0</div>
     <div class="box hold" id="holdCount">Hold: 0</div>
-    <div class="box completed" id="completedCount">Completed: 0</div>
+    <!-- Completed box removed -->
   </div>
 
   <!-- Assigned To Summary -->
@@ -75,35 +74,19 @@
   <script src="js/supabase-config.js"></script>
 
   <script>
-    // Guard: ensure supabaseClient exists
     if (typeof supabaseClient === "undefined") {
       alert("Supabase client not initialized. Check js/supabase-config.js is loaded correctly.");
     }
 
     let users = [];
 
-    // Wire Home and Logout buttons (ensure these always work)
     document.getElementById("homeBtn").addEventListener("click", () => {
-      try {
-        const role = localStorage.getItem("role");
-        if (role === "admin") {
-          window.location.href = "admin-dashboard.html";
-        } else {
-          window.location.href = "user-home.html";
-        }
-      } catch (e) {
-        console.error("Home navigation error:", e);
-        window.location.href = "admin-dashboard.html";
-      }
+      const role = localStorage.getItem("role");
+      window.location.href = role === "admin" ? "admin-dashboard.html" : "user-home.html";
     });
 
     document.getElementById("logoutBtn").addEventListener("click", async () => {
-      try {
-        // Optional: sign out Supabase auth if used
-        if (supabaseClient && supabaseClient.auth) {
-          await supabaseClient.auth.signOut().catch(() => {});
-        }
-      } catch (_) {}
+      try { if (supabaseClient && supabaseClient.auth) await supabaseClient.auth.signOut(); } catch(_) {}
       localStorage.clear();
       window.location.href = "login.html";
     });
@@ -113,13 +96,8 @@
         .from("profiles")
         .select("id, display_name")
         .eq("role", "user");
-      if (error) {
-        console.error("loadUsers error:", error);
-        alert("Error loading users: " + error.message);
-        return;
-      }
+      if (error) { alert("Error loading users: " + error.message); return; }
       users = data || [];
-      console.log("Users loaded:", users.length);
     }
 
     async function loadOrders() {
@@ -127,21 +105,15 @@
         .from("orders")
         .select("order_id, order_code, customer_name, job_description, total_amount, advance_amount, pending_amount, status, assigned_to, created_at");
 
-      console.log("Orders query:", { dataLen: (data || []).length, error });
-      if (error) {
-        alert("Error loading orders: " + error.message);
-        return;
-      }
+      if (error) { alert("Error loading orders: " + error.message); return; }
 
-      // Status summary
-      let pending=0, process=0, hold=0, completed=0;
+      // Status summary (no completed count)
+      let pending=0, process=0, hold=0;
       const assignedCounts = {};
       (data || []).forEach(o => {
         if (o.status === "Pending") pending++;
         else if (o.status === "In Process") process++;
         else if (o.status === "Hold") hold++;
-        else if (o.status === "Completed") completed++;
-
         if (o.assigned_to) {
           assignedCounts[o.assigned_to] = (assignedCounts[o.assigned_to] || 0) + 1;
         }
@@ -149,7 +121,6 @@
       document.getElementById("pendingCount").textContent = "Pending: " + pending;
       document.getElementById("processCount").textContent = "In Process: " + process;
       document.getElementById("holdCount").textContent = "Hold: " + hold;
-      document.getElementById("completedCount").textContent = "Completed: " + completed;
 
       // Assigned summary boxes
       const assignedDiv = document.getElementById("assignedSummary");
@@ -170,7 +141,6 @@
         const today = new Date();
         const tatDays = Math.floor((today - orderDate) / (1000 * 60 * 60 * 24));
 
-        // Assigned To dropdown
         let assignOptions = `<option value="">Unassigned</option>`;
         users.forEach(u => {
           assignOptions += `<option value="${u.id}" ${order.assigned_to === u.id ? "selected" : ""}>${u.display_name}</option>`;
@@ -209,43 +179,4 @@
     }
 
     function attachEvents() {
-      document.querySelectorAll(".updateBtn").forEach(btn => {
-        btn.addEventListener("click", async function() {
-          const id = this.getAttribute("data-id");
-          const status = document.querySelector(`.statusSelect[data-id="${id}"]`).value;
-          const assigned = document.querySelector(`.assignSelect[data-id="${id}"]`).value || null;
-          const jobDesc = document.querySelector(`input.editable[data-id="${id}"]`).value;
-
-          const { error } = await supabaseClient
-            .from("orders")
-            .update({ status, assigned_to: assigned, job_description: jobDesc })
-            .eq("order_id", id);
-
-          if (error) {
-            console.error("Update error:", error);
-            alert("Error updating order: " + error.message);
-          } else {
-            if (status === "Completed") {
-              alert("Order marked Completed! It will be moved to archive.");
-            } else {
-              alert("Order updated successfully!");
-            }
-            loadOrders();
-          }
-        });
-      });
-    }
-
-    // Bootstrap: load users first, then orders
-    (async function init() {
-      try {
-        await loadUsers();
-        await loadOrders();
-      } catch (e) {
-        console.error("Init error:", e);
-        alert("Initialization error. Check console for details.");
-      }
-    })();
-  </script>
-</body>
-</html>
+      document
