@@ -8,7 +8,7 @@
     h1 { color:#2c3e50; }
     form { background:#fff; padding:20px; border-radius:8px; max-width:500px; margin:auto; }
     label { display:block; margin-top:10px; font-weight:bold; }
-    input, textarea, select { width:100%; padding:8px; margin-top:5px; border:1px solid #ccc; border-radius:4px; }
+    input, textarea { width:100%; padding:8px; margin-top:5px; border:1px solid #ccc; border-radius:4px; }
     button { margin-top:15px; padding:10px 18px; background:#0073ff; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:600; }
     button:hover { background:#0056b3; }
   </style>
@@ -32,12 +32,18 @@
     <label>Advance Amount</label>
     <input type="number" id="advanceAmount" step="0.01" />
 
+    <label>Turnaround Time (TAT)</label>
+    <input type="text" id="tat" placeholder="e.g. 3 days" />
+
+    <label>Order Token</label>
+    <input type="text" id="orderToken" placeholder="optional unique token" />
+
     <button type="submit">Submit Order</button>
   </form>
 
   <!-- Supabase SDK + Config -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="../js/supabase-config.js"></script>
+  <script src="js/supabase-config.js"></script>
 
   <script>
     document.getElementById("orderForm").addEventListener("submit", async function(e) {
@@ -49,6 +55,8 @@
         job_description: document.getElementById("jobDesc").value,
         total_amount: parseFloat(document.getElementById("totalAmount").value) || 0,
         advance_amount: parseFloat(document.getElementById("advanceAmount").value) || 0,
+        tat: document.getElementById("tat").value || null,
+        order_token: document.getElementById("orderToken").value || null,
         created_by: localStorage.getItem("uid"),
         status: "Pending"
       };
