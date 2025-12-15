@@ -12,20 +12,20 @@
     .summary { background:#fff; padding:10px; border:1px solid #ccc; margin-bottom:20px; }
     .summary span { margin-right:20px; font-weight:bold; }
     table { width:100%; border-collapse:collapse; background:#fff; }
-    th, td { border:1px solid #ccc; padding:10px; text-align:left; }
+    th, td { border:1px solid #ccc; padding:10px; text-align:left; vertical-align:top; }
     th { background:#0073ff; color:#fff; }
     input.editable { width:100%; border:1px solid #ccc; padding:4px; }
     select, button.updateBtn { padding:6px; }
     button.updateBtn { background:#0073ff; color:#fff; border:none; border-radius:4px; cursor:pointer; }
     button.updateBtn:hover { background:#0056b3; }
-    .sheet { border:2px solid #000; padding:20px; margin-top:20px; background:#fff; max-width:400px; }
+    .sheet { border:2px solid #000; padding:20px; margin-top:20px; background:#fff; max-width:480px; }
     .sheet h2 { margin:0; text-align:center; }
     .sheet p { margin:5px 0; }
     .sheet table { width:100%; border-collapse:collapse; margin-top:10px; }
-    .sheet th, .sheet td { text-align:left; padding:6px; }
-    .sheet th { width:40%; }
-    .sheet button { margin-top:10px; padding:8px 12px; background:#0073ff; color:#fff; border:none; border-radius:4px; cursor:pointer; }
-    .sheet button:hover { background:#0056b3; }
+    .sheet th, .sheet td { text-align:left; padding:6px; border-bottom:1px dashed #ddd; }
+    .sheet th { width:42%; }
+    .sheet .actions { display:flex; gap:10px; margin-top:12px; }
+    .hidden { display:none; }
   </style>
 </head>
 <body>
@@ -65,7 +65,7 @@
   </table>
 
   <!-- Order Token Template -->
-  <div id="orderSheet" class="sheet" style="display:none;">
+  <div id="orderSheet" class="sheet hidden">
     <h2>Siddhivinayak Digital</h2>
     <p><strong>Address:</strong> Shop No. 12, Main Road, Mumbai</p>
     <hr>
@@ -79,11 +79,14 @@
       <tr><th>Order Date</th><td id="sheetDate"></td></tr>
       <tr><th>TAT (Days)</th><td id="sheetTat"></td></tr>
     </table>
-    <button onclick="printToken()">Print / Save as PDF</button>
-    <button onclick="downloadToken()">Download as PNG</button>
+    <div class="actions">
+      <button onclick="printToken()">Print / Save PDF</button>
+      <button onclick="downloadToken()">Download PNG</button>
+      <button onclick="hideSheet()">Close</button>
+    </div>
   </div>
 
-  <!-- Supabase SDK + Config -->
+  <!-- Supabase SDK + Config + html2canvas -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="js/supabase-config.js"></script>
@@ -91,14 +94,20 @@
   <script>
     let users = [];
 
+    // Load staff users for Assigned To dropdown
     async function loadUsers() {
       const { data, error } = await supabaseClient
         .from("profiles")
         .select("id, display_name")
         .eq("role", "user");
-      if (!error) users = data;
+      if (error) {
+        alert("Error loading users: " + error.message);
+        return;
+      }
+      users = data || [];
     }
 
+    // Load all active orders (including Completed for summary)
     async function loadOrders() {
       const { data, error } = await supabaseClient
         .from("orders")
@@ -109,23 +118,23 @@
         return;
       }
 
-      // Update summary counts
+      // Summary counts
       let pending=0, process=0, hold=0, completed=0;
-      data.forEach(o => {
-        if(o.status==="Pending") pending++;
-        else if(o.status==="In Process") process++;
-        else if(o.status==="Hold") hold++;
-        else if(o.status==="Completed") completed++;
+      (data || []).forEach(o => {
+        if (o.status === "Pending") pending++;
+        else if (o.status === "In Process") process++;
+        else if (o.status === "Hold") hold++;
+        else if (o.status === "Completed") completed++;
       });
       document.getElementById("pendingCount").textContent = "Pending: " + pending;
       document.getElementById("processCount").textContent = "In Process: " + process;
       document.getElementById("holdCount").textContent = "Hold: " + hold;
       document.getElementById("completedCount").textContent = "Completed: " + completed;
 
+      // Render table with non-completed orders
       const tbody = document.querySelector("#ordersTable tbody");
       tbody.innerHTML = "";
-
-      data.forEach(order => {
+      (data || []).filter(o => o.status !== "Completed").forEach(order => {
         const orderDate = new Date(order.created_at);
         const today = new Date();
         const tatDays = Math.floor((today - orderDate) / (1000*60*60*24));
@@ -140,10 +149,10 @@
         row.innerHTML = `
           <td>${order.order_code}</td>
           <td>${order.customer_name}</td>
-          <td><input type="text" class="editable" data-id="${order.order_id}" value="${order.job_description}"></td>
-          <td>${order.total_amount || 0}</td>
-          <td>${order.advance_amount || 0}</td>
-          <td>${order.pending_amount || 0}</td>
+          <td><input type="text" class="editable" data-id="${order.order_id}" value="${order.job_description || ""}"></td>
+          <td>${order.total_amount ?? 0}</td>
+          <td>${order.advance_amount ?? 0}</td>
+          <td>${order.pending_amount ?? 0}</td>
           <td>${orderDate.toISOString().split("T")[0]}</td>
           <td>${tatDays}</td>
           <td>
@@ -159,9 +168,119 @@
           </td>
           <td>
             <button data-id="${order.order_id}" class="updateBtn">Update</button>
-            <button onclick="showSheet(${JSON.stringify(order).replace(/"/g,'&quot;')})">Token</button>
+            <button onclick="showSheet(${JSON.stringify(order).replace(/\"/g, '&quot;')})">Token</button>
           </td>
         `;
         tbody.appendChild(row);
       });
 
+      attachEvents();
+    }
+
+    // Update handlers
+    function attachEvents() {
+      document.querySelectorAll(".updateBtn").forEach(btn => {
+        btn.addEventListener("click", async function() {
+          const id = this.getAttribute("data-id");
+          const status = document.querySelector(`.statusSelect[data-id="${id}"]`).value;
+          const assigned = document.querySelector(`.assignSelect[data-id="${id}"]`).value || null;
+          const jobDesc = document.querySelector(`input.editable[data-id="${id}"]`).value;
+
+          const { error } = await supabaseClient
+            .from("orders")
+            .update({ status, assigned_to: assigned, job_description: jobDesc })
+            .eq("order_id", id);
+
+          if (error) {
+            alert("Error updating order: " + error.message);
+          } else {
+            if (status === "Completed") {
+              alert("Order marked Completed! It will be moved to archive.");
+            } else {
+              alert("Order updated successfully!");
+            }
+            loadOrders();
+          }
+        });
+      });
+    }
+
+    // Token slip controls
+    function showSheet(order) {
+      document.getElementById("sheetCode").textContent = order.order_code;
+      document.getElementById("sheetCustomer").textContent = order.customer_name;
+      document.getElementById("sheetJob").textContent = order.job_description || "";
+      document.getElementById("sheetTotal").textContent = order.total_amount ?? 0;
+      document.getElementById("sheetAdvance").textContent = order.advance_amount ?? 0;
+      document.getElementById("sheetPending").textContent = order.pending_amount ?? 0;
+      const dateStr = (order.created_at || "").split("T")[0];
+      document.getElementById("sheetDate").textContent = dateStr;
+
+      const orderDate = new Date(order.created_at);
+      const today = new Date();
+      const tatDays = Math.floor((today - orderDate) / (1000*60*60*24));
+      document.getElementById("sheetTat").textContent = isNaN(tatDays) ? 0 : tatDays;
+
+      document.getElementById("orderSheet").classList.remove("hidden");
+      // Scroll to sheet for convenience
+      document.getElementById("orderSheet").scrollIntoView({ behavior: "smooth" });
+    }
+
+    function hideSheet() {
+      document.getElementById("orderSheet").classList.add("hidden");
+    }
+
+    function printToken() {
+      const sheet = document.getElementById("orderSheet");
+      const wasHidden = sheet.classList.contains("hidden");
+      if (wasHidden) sheet.classList.remove("hidden");
+
+      const printContents = sheet.innerHTML;
+      const original = document.body.innerHTML;
+      document.body.innerHTML = printContents;
+      window.print();
+      document.body.innerHTML = original;
+
+      if (wasHidden) sheet.classList.add("hidden");
+      // Reattach script behavior after restore
+      window.location.reload();
+    }
+
+    async function downloadToken() {
+      const sheet = document.getElementById("orderSheet");
+      const wasHidden = sheet.classList.contains("hidden");
+      if (wasHidden) sheet.classList.remove("hidden");
+
+      try {
+        const canvas = await html2canvas(sheet, { scale: 2, useCORS: true });
+        const link = document.createElement("a");
+        link.download = (document.getElementById("sheetCode").textContent || "order-token") + ".png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      } catch (e) {
+        alert("Unable to generate image: " + e.message);
+      } finally {
+        if (wasHidden) sheet.classList.add("hidden");
+      }
+    }
+
+    // Navigation
+    function logout() {
+      localStorage.clear();
+      window.location.href = "login.html";
+    }
+
+    function goHome() {
+      const role = localStorage.getItem("role");
+      if (role === "admin") {
+        window.location.href = "admin-dashboard.html";
+      } else {
+        window.location.href = "user-home.html";
+      }
+    }
+
+    // Bootstrap: load users first, then orders
+    loadUsers().then(loadOrders);
+  </script>
+</body>
+</html>
