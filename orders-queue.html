@@ -9,9 +9,12 @@
     h1 { color:#2c3e50; margin:0; }
     button.nav { padding:8px 14px; margin-left:10px; background:#0073ff; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:600; }
     button.nav:hover { background:#0056b3; }
+    .summary { background:#fff; padding:10px; border:1px solid #ccc; margin-bottom:20px; }
+    .summary span { margin-right:20px; font-weight:bold; }
     table { width:100%; border-collapse:collapse; background:#fff; }
     th, td { border:1px solid #ccc; padding:10px; text-align:left; }
     th { background:#0073ff; color:#fff; }
+    input.editable { width:100%; border:1px solid #ccc; padding:4px; }
     select, button.updateBtn { padding:6px; }
     button.updateBtn { background:#0073ff; color:#fff; border:none; border-radius:4px; cursor:pointer; }
     button.updateBtn:hover { background:#0056b3; }
@@ -26,6 +29,14 @@
     </div>
   </header>
 
+  <!-- Summary Section -->
+  <div class="summary">
+    <span id="pendingCount">Pending: 0</span>
+    <span id="processCount">In Process: 0</span>
+    <span id="holdCount">Hold: 0</span>
+    <span id="completedCount">Completed: 0</span>
+  </div>
+
   <table id="ordersTable">
     <thead>
       <tr>
@@ -35,6 +46,8 @@
         <th>Total</th>
         <th>Advance</th>
         <th>Pending</th>
+        <th>Order Date</th>
+        <th>TAT (Days)</th>
         <th>Status</th>
         <th>Assigned To</th>
         <th>Actions</th>
@@ -48,30 +61,63 @@
   <script src="js/supabase-config.js"></script>
 
   <script>
+    let users = [];
+
+    async function loadUsers() {
+      const { data, error } = await supabaseClient
+        .from("profiles")
+        .select("id, display_name")
+        .eq("role", "user");
+      if (!error) users = data;
+    }
+
     async function loadOrders() {
       const { data, error } = await supabaseClient
         .from("orders")
-        .select("order_id, order_code, customer_name, job_description, total_amount, advance_amount, pending_amount, status, assigned_to")
-        .in("status", ["Pending", "In Process", "Hold"]);
+        .select("order_id, order_code, customer_name, job_description, total_amount, advance_amount, pending_amount, status, assigned_to, created_at");
 
       if (error) {
         alert("Error loading orders: " + error.message);
         return;
       }
 
+      // Update summary counts
+      let pending=0, process=0, hold=0, completed=0;
+      data.forEach(o => {
+        if(o.status==="Pending") pending++;
+        else if(o.status==="In Process") process++;
+        else if(o.status==="Hold") hold++;
+        else if(o.status==="Completed") completed++;
+      });
+      document.getElementById("pendingCount").textContent = "Pending: " + pending;
+      document.getElementById("processCount").textContent = "In Process: " + process;
+      document.getElementById("holdCount").textContent = "Hold: " + hold;
+      document.getElementById("completedCount").textContent = "Completed: " + completed;
+
       const tbody = document.querySelector("#ordersTable tbody");
       tbody.innerHTML = "";
 
       data.forEach(order => {
-        const row = document.createElement("tr");
+        const orderDate = new Date(order.created_at);
+        const today = new Date();
+        const tatDays = Math.floor((today - orderDate) / (1000*60*60*24));
 
+        // Assigned To dropdown
+        let assignOptions = `<option value="">Unassigned</option>`;
+        users.forEach(u => {
+          assignOptions += `<option value="${u.id}" ${order.assigned_to === u.id ? "selected" : ""}>${u.display_name}</option>`;
+        });
+
+        const row = document.createElement("tr");
         row.innerHTML = `
           <td>${order.order_code}</td>
           <td>${order.customer_name}</td>
-          <td>${order.job_description}</td>
+          <td><input type="text" class="editable" data-id="${order.order_id}" value="${order.job_description}"></td>
           <td>${order.total_amount || 0}</td>
           <td>${order.advance_amount || 0}</td>
           <td>${order.pending_amount || 0}</td>
+          <td>${orderDate.toISOString().split("T")[0]}</td>
+          <td>${tatDays}</td>
           <td>
             <select data-id="${order.order_id}" class="statusSelect">
               <option ${order.status === "Pending" ? "selected" : ""}>Pending</option>
@@ -80,22 +126,30 @@
               <option ${order.status === "Completed" ? "selected" : ""}>Completed</option>
             </select>
           </td>
-          <td>${order.assigned_to || "Unassigned"}</td>
-          <td><button data-id="${order.order_id}" class="updateBtn">Update</button></td>
+          <td>
+            <select data-id="${order.order_id}" class="assignSelect">${assignOptions}</select>
+          </td>
+          <td>
+            <button data-id="${order.order_id}" class="updateBtn">Update</button>
+          </td>
         `;
-
         tbody.appendChild(row);
       });
 
-      // Attach event listeners
+      attachEvents();
+    }
+
+    function attachEvents() {
       document.querySelectorAll(".updateBtn").forEach(btn => {
         btn.addEventListener("click", async function() {
           const id = this.getAttribute("data-id");
           const status = document.querySelector(`.statusSelect[data-id="${id}"]`).value;
+          const assigned = document.querySelector(`.assignSelect[data-id="${id}"]`).value || null;
+          const jobDesc = document.querySelector(`input.editable[data-id="${id}"]`).value;
 
           const { error } = await supabaseClient
             .from("orders")
-            .update({ status })
+            .update({ status, assigned_to: assigned, job_description: jobDesc })
             .eq("order_id", id);
 
           if (error) {
@@ -104,15 +158,14 @@
             if (status === "Completed") {
               alert("Order marked Completed! It will be moved to archive.");
             } else {
-              alert("Order status updated successfully!");
+              alert("Order updated successfully!");
             }
-            loadOrders(); // reload table
+            loadOrders();
           }
         });
       });
     }
 
-    // Navigation
     function logout() {
       localStorage.clear();
       window.location.href = "login.html";
@@ -127,7 +180,8 @@
       }
     }
 
-    loadOrders();
+    // Load users first, then orders
+    loadUsers().then(loadOrders);
   </script>
 </body>
 </html>
