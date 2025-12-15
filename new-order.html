@@ -1,46 +1,31 @@
 <script>
-  document.getElementById("orderForm").addEventListener("submit", async function (e) {
+  document.getElementById("orderForm").addEventListener("submit", async function(e) {
     e.preventDefault();
 
-    // 1) Collect values
-    const order_date = document.getElementById("orderDate").value;
-    const customer_name = document.getElementById("custName").value.trim();
-    const customer_contact = document.getElementById("custMobile").value.trim();
-    const job_description = document.getElementById("jobDesc").value.trim();
-    const total_amount = parseFloat(document.getElementById("totalAmount").value) || 0;
-    const advance_amount = parseFloat(document.getElementById("advanceAmount").value) || 0;
-
-    // 2) Build minimal order payload
     const order = {
-      order_id: crypto.randomUUID(),        // if your table has default UUID, you can remove this
-      order_date: order_date,               // date as yyyy-mm-dd
-      customer_name: customer_name,
-      customer_contact: customer_contact,
-      job_description: job_description,
-      total_amount: total_amount,
-      advance_amount: advance_amount,
-      status: "Pending",
-      created_by: localStorage.getItem("uid") || null
+      customer_name: document.getElementById("custName").value,
+      customer_contact: document.getElementById("custMobile").value,
+      job_description: document.getElementById("jobDesc").value,
+      total_amount: parseFloat(document.getElementById("totalAmount").value),
+      advance_amount: parseFloat(document.getElementById("advanceAmount").value),
+      created_by: localStorage.getItem("uid"), // must match auth.uid()
+      status: "Pending"
     };
 
-    // 3) Insert into Supabase
     try {
       const { data, error } = await supabaseClient
         .from("orders")
-        .insert(order)
-        .select("order_code"); // if you auto-generate order_code with a trigger, this returns it
+        .insert([order])
+        .select("order_code"); // fetch auto-generated order_code
 
       if (error) {
-        alert("Error creating order: " + error.message);
-        return;
+        alert("Error submitting order: " + error.message);
+      } else {
+        alert("Order created successfully! Code: " + data[0].order_code);
+        document.getElementById("orderForm").reset();
+        document.getElementById("orderDate").value = new Date().toISOString().split("T")[0];
+        document.getElementById("pendingAmount").value = "";
       }
-
-      const code = data && data.length ? data[0].order_code : "(created)";
-      alert("Order created successfully! Code: " + code);
-
-      // Reset minimal fields
-      document.getElementById("orderForm").reset();
-      document.getElementById("orderDate").value = new Date().toISOString().split("T")[0];
     } catch (err) {
       alert("Unexpected error: " + err.message);
     }
