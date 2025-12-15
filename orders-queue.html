@@ -5,115 +5,100 @@
   <title>Orders Queue - Siddhivinayak Digital</title>
   <style>
     body { font-family: Arial, sans-serif; background:#f4f6f9; margin:0; padding:20px; }
-    header { display:flex; justify-content:space-between; align-items:center; background:#2c3e50; color:#fff; padding:15px; border-radius:6px; }
-    .clock { font-weight:bold; }
-    .buttons button { margin-left:10px; padding:8px 16px; border:none; border-radius:4px; cursor:pointer; font-weight:600; }
-    .btn-back { background:#0073ff; color:#fff; }
-    .btn-logout { background:#e74c3c; color:#fff; }
-    h1 { margin-top:20px; color:#2c3e50; }
-    table { width:100%; border-collapse:collapse; margin-top:20px; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
-    th, td { padding:10px; border:1px solid #ddd; text-align:left; }
-    th { background:#2c3e50; color:#fff; }
-    button.complete { padding:6px 12px; background:#27ae60; color:#fff; border:none; border-radius:4px; cursor:pointer; }
-    button.complete:hover { background:#219150; }
+    h1 { color:#2c3e50; }
+    table { width:100%; border-collapse:collapse; margin-top:20px; background:#fff; }
+    th, td { border:1px solid #ccc; padding:10px; text-align:left; }
+    th { background:#0073ff; color:#fff; }
+    select, button { padding:6px; margin:0; }
+    button { background:#0073ff; color:#fff; border:none; border-radius:4px; cursor:pointer; }
+    button:hover { background:#0056b3; }
   </style>
 </head>
 <body>
-  <script>
-    if (localStorage.getItem("loggedIn") !== "yes") {
-      window.location.href = "home.html";
-    }
-  </script>
-
-  <header>
-    <div class="clock" id="clock"></div>
-    <div class="buttons">
-      <button class="btn-back" onclick="window.history.back()">Back</button>
-      <button class="btn-logout" onclick="logout()">Logout</button>
-    </div>
-  </header>
-
   <h1>Orders Queue</h1>
-
-  <table id="queueTable">
-    <tr>
-      <th>Order Code</th>
-      <th>Customer</th>
-      <th>Job</th>
-      <th>Total</th>
-      <th>Advance</th>
-      <th>Pending</th>
-      <th>Action</th>
-    </tr>
+  <table id="ordersTable">
+    <thead>
+      <tr>
+        <th>Order Code</th>
+        <th>Customer</th>
+        <th>Job Description</th>
+        <th>Total</th>
+        <th>Advance</th>
+        <th>Pending</th>
+        <th>Status</th>
+        <th>Assigned To</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
   </table>
 
-  <!-- Supabase library + config -->
+  <!-- Supabase SDK + Config -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
 
   <script>
-    document.addEventListener("DOMContentLoaded", async () => {
-      // Clock
-      function updateClock() {
-        const now = new Date();
-        document.getElementById("clock").textContent = now.toLocaleDateString() + " " + now.toLocaleTimeString();
+    async function loadOrders() {
+      const { data, error } = await supabaseClient
+        .from("orders")
+        .select("order_id, order_code, customer_name, job_description, total_amount, advance_amount, pending_amount, status, assigned_to")
+        .in("status", ["Pending", "In Process"]);
+
+      if (error) {
+        alert("Error loading orders: " + error.message);
+        return;
       }
-      setInterval(updateClock, 1000); updateClock();
 
-      function logout() {
-        localStorage.clear();
-        window.location.href = "home.html";
-      }
-      window.logout = logout;
+      const tbody = document.querySelector("#ordersTable tbody");
+      tbody.innerHTML = "";
 
-      // Load queue orders
-      async function loadQueue() {
-        const { data, error } = await supabaseClient
-          .from("orders")
-          .select("*")
-          .eq("status", "In Process");
+      data.forEach(order => {
+        const row = document.createElement("tr");
 
-        if (error) {
-          alert("Error loading queue: " + error.message);
-          return;
-        }
+        row.innerHTML = `
+          <td>${order.order_code}</td>
+          <td>${order.customer_name}</td>
+          <td>${order.job_description}</td>
+          <td>${order.total_amount || 0}</td>
+          <td>${order.advance_amount || 0}</td>
+          <td>${order.pending_amount || 0}</td>
+          <td>
+            <select data-id="${order.order_id}" class="statusSelect">
+              <option ${order.status === "Pending" ? "selected" : ""}>Pending</option>
+              <option ${order.status === "In Process" ? "selected" : ""}>In Process</option>
+              <option ${order.status === "Completed" ? "selected" : ""}>Completed</option>
+              <option ${order.status === "Hold" ? "selected" : ""}>Hold</option>
+            </select>
+          </td>
+          <td>${order.assigned_to || "Unassigned"}</td>
+          <td><button data-id="${order.order_id}" class="updateBtn">Update</button></td>
+        `;
 
-        const table = document.getElementById("queueTable");
-        data.forEach(order => {
-          const row = table.insertRow();
-          row.insertCell().innerText = order.order_code;
-          row.insertCell().innerText = order.customer_name;
-          row.insertCell().innerText = order.job_description;
-          row.insertCell().innerText = order.total_amount;
-          row.insertCell().innerText = order.advance_amount;
-          row.insertCell().innerText = order.pending_amount;
+        tbody.appendChild(row);
+      });
 
-          const actionCell = row.insertCell();
-          const btn = document.createElement("button");
-          btn.className = "complete";
-          btn.innerText = "Complete";
-          btn.onclick = () => completeOrder(order.order_id);
-          actionCell.appendChild(btn);
+      // Attach event listeners
+      document.querySelectorAll(".updateBtn").forEach(btn => {
+        btn.addEventListener("click", async function() {
+          const id = this.getAttribute("data-id");
+          const status = document.querySelector(`.statusSelect[data-id="${id}"]`).value;
+
+          const { error } = await supabaseClient
+            .from("orders")
+            .update({ status })
+            .eq("order_id", id);
+
+          if (error) {
+            alert("Error updating order: " + error.message);
+          } else {
+            alert("Order updated successfully!");
+            loadOrders(); // reload table
+          }
         });
-      }
+      });
+    }
 
-      // Mark order as completed
-      async function completeOrder(orderId) {
-        const { error } = await supabaseClient
-          .from("orders")
-          .update({ status: "Completed" })
-          .eq("order_id", orderId);
-
-        if (error) {
-          alert("Error completing order: " + error.message);
-        } else {
-          alert("Order marked as Completed!");
-          location.reload();
-        }
-      }
-
-      loadQueue();
-    });
+    loadOrders();
   </script>
 </body>
 </html>
