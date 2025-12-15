@@ -3,20 +3,42 @@
 <head>
   <meta charset="utf-8" />
   <title>Create New Order - Siddhivinayak Digital</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: Arial, sans-serif; background:#f4f6f9; margin:0; padding:20px; }
-    h1 { color:#2c3e50; }
-    form { background:#fff; padding:20px; border-radius:8px; max-width:500px; margin:auto; }
-    label { display:block; margin-top:10px; font-weight:bold; }
-    input, textarea { width:100%; padding:8px; margin-top:5px; border:1px solid #ccc; border-radius:4px; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background:#f4f6f9; margin:0; padding:0; }
+    header { background:#0073ff; color:#fff; padding:15px 20px; display:flex; justify-content:space-between; align-items:center; }
+    header h1 { margin:0; font-size:20px; }
+    .nav { background:#fff; color:#0073ff; border:none; padding:8px 14px; margin-left:10px; border-radius:4px; cursor:pointer; font-weight:600; }
+    .nav:hover { background:#e6f0ff; }
+    .branding { text-align:center; margin:20px 0; }
+    .branding h2 { margin:0; color:#2c3e50; }
+    .branding p { margin:4px 0; color:#555; }
+
+    form { background:#fff; padding:20px; border-radius:8px; max-width:600px; margin:20px auto; box-shadow:0 4px 12px rgba(0,0,0,0.1); }
+    label { display:block; margin-top:12px; font-weight:bold; color:#2c3e50; }
+    input, textarea { width:100%; padding:10px; margin-top:6px; border:1px solid #ccc; border-radius:6px; font-size:14px; }
     input[readonly] { background:#eee; }
-    button { margin-top:15px; padding:10px 18px; background:#0073ff; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:600; }
-    button:hover { background:#0056b3; }
+    button.submitBtn { margin-top:20px; padding:12px 20px; background:#0073ff; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:600; width:100%; font-size:16px; }
+    button.submitBtn:hover { background:#0056b3; }
   </style>
 </head>
 <body>
-  <h1>Create New Order</h1>
+  <!-- Header -->
+  <header>
+    <h1>Siddhivinayak Digital</h1>
+    <div>
+      <button class="nav" id="homeBtn">Home</button>
+      <button class="nav" id="logoutBtn">Logout</button>
+    </div>
+  </header>
 
+  <!-- Branding -->
+  <div class="branding">
+    <h2>Create New Order</h2>
+    <p>Shop No. 12, Main Road, Mumbai</p>
+  </div>
+
+  <!-- Order Form -->
   <form id="orderForm">
     <label>Customer Name *</label>
     <input type="text" id="custName" required />
@@ -39,7 +61,7 @@
     <label>Order Date</label>
     <input type="date" id="orderDate" />
 
-    <button type="submit">Submit Order</button>
+    <button type="submit" class="submitBtn">Submit Order</button>
   </form>
 
   <!-- Supabase SDK + Config -->
@@ -59,6 +81,26 @@
     document.getElementById("totalAmount").addEventListener("input", updatePending);
     document.getElementById("advanceAmount").addEventListener("input", updatePending);
 
+    // Home + Logout buttons
+    document.getElementById("homeBtn").addEventListener("click", () => {
+      const role = localStorage.getItem("role");
+      if (role === "admin") {
+        window.location.href = "admin-dashboard.html";
+      } else {
+        window.location.href = "user-home.html";
+      }
+    });
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      try {
+        if (supabaseClient && supabaseClient.auth) {
+          await supabaseClient.auth.signOut().catch(() => {});
+        }
+      } catch (_) {}
+      localStorage.clear();
+      window.location.href = "login.html";
+    });
+
+    // Submit order
     document.getElementById("orderForm").addEventListener("submit", async function(e) {
       e.preventDefault();
 
@@ -70,7 +112,7 @@
         advance_amount: parseFloat(document.getElementById("advanceAmount").value) || 0,
         created_by: localStorage.getItem("uid"),
         status: "Pending",
-        created_at: document.getElementById("orderDate").value // allow override
+        created_at: document.getElementById("orderDate").value
       };
 
       try {
@@ -83,7 +125,7 @@
           alert("Error submitting order: " + error.message);
         } else {
           alert(
-            "Order created successfully!\n" +
+            "✅ Order created successfully!\n" +
             "Code: " + data[0].order_code + "\n" +
             "ID: " + data[0].order_id + "\n" +
             "Pending: " + data[0].pending_amount
