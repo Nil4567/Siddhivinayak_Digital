@@ -140,6 +140,32 @@
           <td><button class="tokenBtn" onclick="window.open('bill-token.html?code=${order.order_code}','_blank')">Bill Token</button></td>
         `;
         tbody.appendChild(tr);
+
+        const tr = document.createElement("tr");
+tr.innerHTML = `
+  <td>${order.order_code || ""}</td>
+  <td>${order.customer_name || ""}</td>
+  <td>${order.customer_contact || ""}</td>
+  <td>${order.job_description || ""}</td>
+  <td>${order.total_amount ?? 0}</td>
+  <td>${order.advance_amount ?? 0}</td>
+  <td>${order.pending_amount ?? 0}</td>
+  <td>${orderDate.toISOString().split("T")[0]}</td>
+  <td>${completedDate ? completedDate.toISOString().split("T")[0] : ""}</td>
+  <td>${tatDays}</td>
+  <td>${users.find(u=>u.id===order.assigned_to)?.display_name || "Unassigned"}</td>
+  <td>
+    <input type="number" min="0" value="${order.pending_received ?? 0}" 
+           class="pendingInput" data-id="${order.order_id}" style="width:80px;">
+  </td>
+  <td>${(order.advance_amount ?? 0) + (order.pending_received ?? 0)}</td>
+  <td>
+    <button class="updatePendingBtn" data-id="${order.order_id}">Update Pending</button>
+    <button class="tokenBtn" onclick="window.open('bill-token.html?code=${order.order_code}','_blank')">Bill Token</button>
+  </td>
+`;
+tbody.appendChild(tr);
+
       });
     }
 
