@@ -179,4 +179,43 @@
     }
 
     function attachEvents() {
-      document
+      // Update button handler for each row
+      document.querySelectorAll(".updateBtn").forEach(btn => {
+        btn.addEventListener("click", async function() {
+          const id = this.getAttribute("data-id");
+          const status = document.querySelector(`.statusSelect[data-id="${id}"]`).value;
+          const assigned = document.querySelector(`.assignSelect[data-id="${id}"]`).value || null;
+          const jobDesc = document.querySelector(`input.editable[data-id="${id}"]`).value;
+
+          const { error } = await supabaseClient
+            .from("orders")
+            .update({ status, assigned_to: assigned, job_description: jobDesc })
+            .eq("order_id", id);
+
+          if (error) {
+            alert("Error updating order: " + error.message);
+          } else {
+            if (status === "Completed") {
+              alert("Order marked Completed! It will be moved to archive.");
+            } else {
+              alert("Order updated successfully!");
+            }
+            // Reload to reflect changes and let the trigger move completed orders out
+            loadOrders();
+          }
+        });
+      });
+    }
+
+    // Bootstrap: load users first, then orders
+    (async function init() {
+      try {
+        await loadUsers();
+        await loadOrders();
+      } catch (e) {
+        alert("Initialization error. Check console for details.");
+      }
+    })();
+  </script>
+</body>
+</html>
