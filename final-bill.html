@@ -1,84 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Final Bill</title>
+<meta charset="utf-8">
+<title>Final Bill - Siddhivinayak Digital</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
 body{
-  margin:0;
-  padding:25px;
   background:#f4f6f9;
-  font-family:"Segoe UI", Arial, sans-serif;
+  font-family:'Segoe UI',Arial,sans-serif;
+  padding:30px;
 }
-.invoice{
-  max-width:760px;
+.bill{
+  max-width:750px;
   margin:auto;
   background:#fff;
+  padding:25px;
   border-radius:10px;
-  box-shadow:0 8px 25px rgba(0,0,0,.12);
-  padding:28px;
+  box-shadow:0 6px 20px rgba(0,0,0,.15);
 }
 .header{
   display:flex;
   align-items:center;
   gap:15px;
-  border-bottom:2px solid #e0e0e0;
-  padding-bottom:14px;
+  border-bottom:2px solid #ddd;
+  padding-bottom:10px;
 }
 .logo{
   width:70px;
   height:70px;
   object-fit:contain;
 }
-.company h1{margin:0;font-size:26px}
+h1{margin:0;font-size:26px}
 table{
   width:100%;
   border-collapse:collapse;
-  margin-top:18px;
+  margin-top:15px;
 }
 td{
-  padding:10px 6px;
-  border-bottom:1px solid #e0e0e0;
+  padding:9px 6px;
+  border-bottom:1px solid #ddd;
 }
-.label{width:40%;font-weight:600}
+.label{font-weight:600;width:40%}
 .value{text-align:right}
-.total{font-size:17px;font-weight:700}
-.pending{color:#e67e22}
-.received{color:#27ae60}
+.total{font-weight:700;font-size:16px}
 .actions{
   display:flex;
+  gap:10px;
   justify-content:center;
-  gap:12px;
-  margin-top:22px;
+  margin-top:20px;
 }
 .actions button{
   background:#2ecc71;
   color:#fff;
   border:none;
-  padding:10px 20px;
+  padding:10px 18px;
   border-radius:6px;
   font-weight:600;
   cursor:pointer;
 }
 @media print{
   .actions{display:none}
-  body{background:#fff;padding:0}
-  .invoice{box-shadow:none}
+  body{padding:0;background:#fff}
+  .bill{box-shadow:none}
 }
 </style>
 </head>
 
 <body>
 
-<div class="invoice" id="billCard">
+<div class="bill" id="billCard">
 
   <div class="header">
     <img src="logo.png" class="logo">
-    <div class="company">
-      <h1>Siddhivinayak Digital</h1>
-    </div>
+    <h1>Siddhivinayak Digital</h1>
   </div>
 
   <table>
@@ -93,18 +88,18 @@ td{
     <tr><td class="label">Advance Paid</td><td class="value">₹<span id="advanceAmt">0.00</span></td></tr>
     <tr><td class="label">Pending Received</td><td class="value">₹<span id="pendingRecv">0.00</span></td></tr>
 
-    <tr class="total received">
+    <tr class="total">
       <td class="label">Total Received</td>
       <td class="value">₹<span id="totalRecv">0.00</span></td>
     </tr>
 
-    <tr class="total pending">
+    <tr class="total">
       <td class="label">Pending Balance</td>
       <td class="value">₹<span id="pendingBal">0.00</span></td>
     </tr>
   </table>
 
-  <div class="actions" id="actionBar">
+  <div class="actions" id="actions">
     <button onclick="printBill()">Print / PDF</button>
     <button onclick="downloadPNG()">Download PNG</button>
     <button onclick="sharePNG()">Share Bill</button>
@@ -112,48 +107,66 @@ td{
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="js/supabase-config.js"></script>
 
 <script>
-const bill = JSON.parse(localStorage.getItem("billData") || "{}");
+const params = new URLSearchParams(location.search);
+const code = params.get("code");
 
-const totalAmt      = Number(bill.total_amount || 0);
-const advanceAmt    = Number(bill.advance_amount || 0);
-const pendingRecv   = Number(bill.pending_received || 0);
-const totalRecv     = advanceAmt + pendingRecv;
-const pendingBal    = Math.max(0, totalAmt - totalRecv);
+async function loadBill(){
+  const { data, error } = await supabaseClient
+    .from("completed_orders")
+    .select("*")
+    .eq("order_code", code)
+    .single();
 
-document.getElementById("billNo").textContent = bill.order_code || "—";
-document.getElementById("customer").textContent = bill.customer_name || "—";
-document.getElementById("mobile").textContent = bill.customer_contact || "—";
-document.getElementById("job").textContent = bill.job_description || "—";
-document.getElementById("orderDate").textContent = bill.created_at || "—";
-document.getElementById("completedDate").textContent = bill.completed_at || "—";
+  if(error || !data){
+    alert("Bill not found");
+    return;
+  }
 
-document.getElementById("totalAmt").textContent = totalAmt.toFixed(2);
-document.getElementById("advanceAmt").textContent = advanceAmt.toFixed(2);
-document.getElementById("pendingRecv").textContent = pendingRecv.toFixed(2);
-document.getElementById("totalRecv").textContent = totalRecv.toFixed(2);
-document.getElementById("pendingBal").textContent = pendingBal.toFixed(2);
+  const total = Number(data.total_amount || 0);
+  const advance = Number(data.advance_amount || 0);
+  const pendingRecv = Number(data.pending_received || 0);
+  const totalRecv = advance + pendingRecv;
+  const pendingBal = total - totalRecv;
 
-function hideActions(h){document.getElementById("actionBar").style.display=h?"none":"flex"}
-function printBill(){hideActions(true);window.print();setTimeout(()=>hideActions(false),500)}
+  billNo.textContent = data.order_code;
+  customer.textContent = data.customer_name;
+  mobile.textContent = data.customer_contact;
+  job.textContent = data.job_description;
+  orderDate.textContent = data.created_at?.split("T")[0];
+  completedDate.textContent = data.completed_at?.split("T")[0];
+
+  totalAmt.textContent = total.toFixed(2);
+  advanceAmt.textContent = advance.toFixed(2);
+  pendingRecv.textContent = pendingRecv.toFixed(2);
+  totalRecv.textContent = totalRecv.toFixed(2);
+  pendingBal.textContent = pendingBal.toFixed(2);
+}
+
+loadBill();
+
+function hideBtns(h){actions.style.display=h?"none":"flex"}
+function printBill(){hideBtns(true);window.print();setTimeout(()=>hideBtns(false),500)}
 async function downloadPNG(){
-  hideActions(true);
-  const c=await html2canvas(document.getElementById("billCard"),{scale:2});
+  hideBtns(true);
+  const c=await html2canvas(billCard,{scale:2});
   const a=document.createElement("a");
   a.href=c.toDataURL("image/png");
-  a.download="Bill-"+bill.order_code+".png";
+  a.download="Bill-"+billNo.textContent+".png";
   a.click();
-  hideActions(false);
+  hideBtns(false);
 }
 async function sharePNG(){
   if(!navigator.share){alert("Share not supported");return}
-  hideActions(true);
-  const c=await html2canvas(document.getElementById("billCard"),{scale:2});
+  hideBtns(true);
+  const c=await html2canvas(billCard,{scale:2});
   const b=await new Promise(r=>c.toBlob(r));
   await navigator.share({files:[new File([b],"Bill.png",{type:"image/png"})]});
-  hideActions(false);
+  hideBtns(false);
 }
 </script>
 
