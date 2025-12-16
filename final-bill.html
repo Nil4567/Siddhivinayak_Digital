@@ -48,32 +48,29 @@
     .shopInfo h2 {
       margin:0;
       font-size:30px;
-      font-weight:bold;
       color:#0073ff;
     }
     .shopInfo p {
       margin:6px 0;
       font-size:14px;
       line-height:1.5;
-      color:#333;
     }
     hr {
       margin:12px 0;
       border:0;
       border-top:1px dashed #aaa;
     }
-    table.billTable {
+    table {
       width:100%;
       border-collapse:collapse;
       margin-top:10px;
     }
-    table.billTable th,
-    table.billTable td {
+    th, td {
       border:1px solid #ddd;
       padding:8px;
       font-size:14px;
     }
-    table.billTable th {
+    th {
       background:#f1f9ff;
       width:40%;
       text-align:left;
@@ -99,15 +96,12 @@
     }
     .actions button {
       flex:1;
-      padding:8px 12px;
+      padding:8px;
       background:#0073ff;
       color:#fff;
       border:none;
       border-radius:4px;
       cursor:pointer;
-    }
-    .actions button:hover {
-      background:#0056b3;
     }
     .thankyouBanner {
       margin-top:20px;
@@ -129,15 +123,16 @@
 
 <body>
   <div class="bill" id="billCard">
+
     <div class="headerRow">
       <div class="logoWrap">
-        <img src="https://qcyqjcxzytjtsikzrdyv.supabase.co/storage/v1/object/sign/logo/Screenshot%202025-12-16%20214616.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV84MjQxMmYwMC04MTBiLTQ3MGItODRjMy04YmE1MTE4YTM3ZjAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsb2dvL1NjcmVlbnNob3QgMjAyNS0xMi0xNiAyMTQ2MTYucG5nIiwiaWF0IjoxNzY1OTA4MDIzLCJleHAiOjI2Mjk5MDgwMjN9.4qaVURmH6FbKuGSY5rBD_d2SfEf56EVRAGtE3CaZhmc" alt="Shop Logo">
+        <img src="YOUR_LOGO_URL" alt="Logo">
       </div>
       <div class="shopInfo">
         <h2>Siddhivinayak Digital</h2>
         <p>
           Row House No.3, Sundarvan CHS,<br>
-          Opp Datta Meghe College, Airoli,<br>
+          OPP Datta Meghe College, Airoli,<br>
           Sector-2, Navi Mumbai - 400708<br>
           <strong>Contact:</strong> 81690 40864
         </p>
@@ -146,26 +141,26 @@
 
     <hr>
 
-    <table class="billTable">
+    <table>
       <tr><th>Bill No</th><td id="billNo">—</td></tr>
       <tr><th>Customer</th><td id="customer">—</td></tr>
       <tr><th>Mobile</th><td id="mobile">—</td></tr>
-      <tr><th>Job Description</th><td id="job">—</td></tr>
+      <tr><th>Job</th><td id="job">—</td></tr>
       <tr><th>Total Amount</th><td id="total">₹0.00</td></tr>
       <tr><th>Advance Paid</th><td id="advance">₹0.00</td></tr>
-      <tr><th>Pending Balance</th><td id="pending">₹0.00</td></tr>
       <tr><th>Total Received</th><td id="totalReceived">₹0.00</td></tr>
+      <tr><th>Pending Balance</th><td id="pending">₹0.00</td></tr>
       <tr><th>Order Date</th><td id="orderDate">—</td></tr>
       <tr><th>Completed Date</th><td id="completedDate">—</td></tr>
     </table>
 
     <div class="summaryBox">
-      <div>Pending Balance: ₹<span id="pendingBalanceSum">0.00</span></div>
-      <div>Total Received: ₹<span id="totalReceivedSum">0.00</span></div>
+      <div>Pending Balance: ₹<span id="pendingSum">0.00</span></div>
+      <div>Total Received: ₹<span id="receivedSum">0.00</span></div>
     </div>
 
     <div class="actions">
-      <button onclick="window.print()">Print / PDF</button>
+      <button id="printBtn">Print / PDF</button>
       <button id="downloadBtn">Download PNG</button>
       <button id="shareBtn">Share Bill</button>
     </div>
@@ -177,118 +172,98 @@
     <div id="errorMsg" class="error" style="display:none"></div>
   </div>
 
-  <!-- Scripts -->
+  <!-- LIBS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="js/supabase-config.js"></script>
 
   <script>
-    function formatCurrency(v) {
-      const n = parseFloat(v);
-      return isNaN(n) ? "0.00" : n.toFixed(2);
+    function hideActions() {
+      document.querySelector(".actions").style.display = "none";
     }
-    function formatDateISO(d) {
-      if (!d) return "—";
-      return new Date(d).toISOString().split("T")[0];
+    function showActions() {
+      document.querySelector(".actions").style.display = "flex";
     }
+    function money(v){ return (parseFloat(v)||0).toFixed(2); }
 
     async function loadBill() {
-      const code = new URLSearchParams(window.location.search).get("code");
-      const errorEl = document.getElementById("errorMsg");
+      const code = new URLSearchParams(location.search).get("code");
+      if (!code) return;
 
-      if (!code) {
-        errorEl.textContent = "Bill code missing in URL.";
-        errorEl.style.display = "block";
-        return;
-      }
-
-      const { data, error } = await supabaseClient
+      const { data } = await supabaseClient
         .from("completed_orders")
-        .select(`
-          order_code,
-          customer_name,
-          customer_contact,
-          job_description,
-          total_amount,
-          advance_amount,
-          pending_received,
-          created_at,
-          completed_at
-        `)
+        .select("*")
         .eq("order_code", code)
         .single();
 
-      if (error || !data) {
-        errorEl.textContent = "Unable to load bill.";
-        errorEl.style.display = "block";
-        return;
-      }
+      if (!data) return;
 
-      const totalReceived =
-        (data.advance_amount || 0) + (data.pending_received || 0);
-
-      const pendingBalance =
-        (data.total_amount || 0) - totalReceived;
+      const total = data.total || 0;
+      const advance = data.advance || 0;
+      const pendingReceived = data.pending_received || 0;
+      const totalReceived = advance + pendingReceived;
+      const pending = Math.max(0, total - totalReceived);
 
       billNo.textContent = data.order_code;
-      customer.textContent = data.customer_name;
-      mobile.textContent = data.customer_contact;
-      job.textContent = data.job_description;
-
-      total.textContent = "₹" + formatCurrency(data.total_amount);
-      advance.textContent = "₹" + formatCurrency(data.advance_amount);
-      pending.textContent = "₹" + formatCurrency(Math.max(0, pendingBalance));
-      totalReceived.textContent = "₹" + formatCurrency(totalReceived);
-
-      pendingBalanceSum.textContent = formatCurrency(Math.max(0, pendingBalance));
-      totalReceivedSum.textContent = formatCurrency(totalReceived);
-
-      orderDate.textContent = formatDateISO(data.created_at);
-      completedDate.textContent = formatDateISO(data.completed_at);
+      customer.textContent = data.customer;
+      mobile.textContent = data.mobile;
+      job.textContent = data.job;
+      total.textContent = "₹" + money(total);
+      advance.textContent = "₹" + money(advance);
+      totalReceived.textContent = "₹" + money(totalReceived);
+      pending.textContent = "₹" + money(pending);
+      pendingSum.textContent = money(pending);
+      receivedSum.textContent = money(totalReceived);
+      orderDate.textContent = data.order_date || "—";
+      completedDate.textContent = data.completed_date || "—";
     }
 
-    document.addEventListener("DOMContentLoaded", loadBill);
+    loadBill();
 
-    // Download PNG
-    document.getElementById("downloadBtn").addEventListener("click", async () => {
-      const canvas = await html2canvas(document.getElementById("billCard"), { scale: 2 });
-      const a = document.createElement("a");
-      a.href = canvas.toDataURL("image/png");
-      a.download = "Siddhivinayak-Bill.png";
-      a.click();
-    });
+    // PRINT / PDF
+    printBtn.onclick = async () => {
+      hideActions();
+      await new Promise(r => setTimeout(r, 100));
+      window.print();
+      showActions();
+    };
 
-    // Share PNG
-    document.getElementById("shareBtn").addEventListener("click", async () => {
-      const billCard = document.getElementById("billCard");
-      const canvas = await html2canvas(billCard, { scale: 2, useCORS: true });
+    // DOWNLOAD PNG
+    downloadBtn.onclick = async () => {
+      hideActions();
+      await new Promise(r => requestAnimationFrame(r));
+      const canvas = await html2canvas(billCard, { scale:2 });
+      showActions();
 
-      canvas.toBlob(async (blob) => {
-        if (!blob) return alert("Unable to generate image");
+      canvas.toBlob(blob => {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "Siddhivinayak-Bill.png";
+        a.click();
+        URL.revokeObjectURL(a.href);
+      });
+    };
 
-        const file = new File(
-          [blob],
-          "Siddhivinayak-Bill.png",
-          { type: "image/png" }
-        );
+    // SHARE PNG
+    shareBtn.onclick = async () => {
+      hideActions();
+      await new Promise(r => requestAnimationFrame(r));
+      const canvas = await html2canvas(billCard, { scale:2 });
+      showActions();
 
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            title: "Final Bill",
-            text: "🧾 Siddhivinayak Digital - Final Bill",
-            files: [file]
-          });
+      canvas.toBlob(async blob => {
+        const file = new File([blob], "Siddhivinayak-Bill.png", { type:"image/png" });
+
+        if (navigator.canShare && navigator.canShare({ files:[file] })) {
+          await navigator.share({ title:"Final Bill", files:[file] });
         } else {
-          const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
-          a.href = url;
+          a.href = URL.createObjectURL(blob);
           a.download = "Siddhivinayak-Bill.png";
           a.click();
-          URL.revokeObjectURL(url);
-          alert("Image downloaded. Please share it manually.");
         }
       });
-    });
+    };
   </script>
 </body>
 </html>
