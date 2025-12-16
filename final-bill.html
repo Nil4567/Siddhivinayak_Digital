@@ -153,21 +153,21 @@
       <tr><th>Job Description</th><td id="job">—</td></tr>
       <tr><th>Total Amount</th><td id="total">₹0.00</td></tr>
       <tr><th>Advance Paid</th><td id="advance">₹0.00</td></tr>
-      <tr><th>Pending Amount</th><td id="pending">₹0.00</td></tr>
-      <tr><th>Pending Received</th><td id="pendingReceived">₹0.00</td></tr>
+      <tr><th>Pending Balance</th><td id="pending">₹0.00</td></tr>
       <tr><th>Total Received</th><td id="totalReceived">₹0.00</td></tr>
       <tr><th>Order Date</th><td id="orderDate">—</td></tr>
       <tr><th>Completed Date</th><td id="completedDate">—</td></tr>
     </table>
 
     <div class="summaryBox">
-      <div>Pending Received: ₹<span id="pendingReceivedSum">0.00</span></div>
+      <div>Pending Balance: ₹<span id="pendingBalanceSum">0.00</span></div>
       <div>Total Received: ₹<span id="totalReceivedSum">0.00</span></div>
     </div>
 
     <div class="actions">
       <button onclick="window.print()">Print / PDF</button>
       <button id="downloadBtn">Download PNG</button>
+      <button id="shareBtn">Share Bill</button>
     </div>
 
     <div class="thankyouBanner">
@@ -211,7 +211,6 @@
           job_description,
           total_amount,
           advance_amount,
-          pending_amount,
           pending_received,
           created_at,
           completed_at
@@ -225,34 +224,70 @@
         return;
       }
 
-      document.getElementById("billNo").textContent = data.order_code;
-      document.getElementById("customer").textContent = data.customer_name;
-      document.getElementById("mobile").textContent = data.customer_contact;
-      document.getElementById("job").textContent = data.job_description;
+      const totalReceived =
+        (data.advance_amount || 0) + (data.pending_received || 0);
 
-      document.getElementById("total").textContent = "₹" + formatCurrency(data.total_amount);
-      document.getElementById("advance").textContent = "₹" + formatCurrency(data.advance_amount);
-      document.getElementById("pending").textContent = "₹" + formatCurrency(data.pending_amount);
-      document.getElementById("pendingReceived").textContent = "₹" + formatCurrency(data.pending_received);
+      const pendingBalance =
+        (data.total_amount || 0) - totalReceived;
 
-      const totalReceived = (data.advance_amount || 0) + (data.pending_received || 0);
-      document.getElementById("totalReceived").textContent = "₹" + formatCurrency(totalReceived);
+      billNo.textContent = data.order_code;
+      customer.textContent = data.customer_name;
+      mobile.textContent = data.customer_contact;
+      job.textContent = data.job_description;
 
-      document.getElementById("pendingReceivedSum").textContent = formatCurrency(data.pending_received);
-      document.getElementById("totalReceivedSum").textContent = formatCurrency(totalReceived);
+      total.textContent = "₹" + formatCurrency(data.total_amount);
+      advance.textContent = "₹" + formatCurrency(data.advance_amount);
+      pending.textContent = "₹" + formatCurrency(Math.max(0, pendingBalance));
+      totalReceived.textContent = "₹" + formatCurrency(totalReceived);
 
-      document.getElementById("orderDate").textContent = formatDateISO(data.created_at);
-      document.getElementById("completedDate").textContent = formatDateISO(data.completed_at);
+      pendingBalanceSum.textContent = formatCurrency(Math.max(0, pendingBalance));
+      totalReceivedSum.textContent = formatCurrency(totalReceived);
+
+      orderDate.textContent = formatDateISO(data.created_at);
+      completedDate.textContent = formatDateISO(data.completed_at);
     }
 
     document.addEventListener("DOMContentLoaded", loadBill);
 
+    // Download PNG
     document.getElementById("downloadBtn").addEventListener("click", async () => {
       const canvas = await html2canvas(document.getElementById("billCard"), { scale: 2 });
       const a = document.createElement("a");
       a.href = canvas.toDataURL("image/png");
-      a.download = "final-bill.png";
+      a.download = "Siddhivinayak-Bill.png";
       a.click();
+    });
+
+    // Share PNG
+    document.getElementById("shareBtn").addEventListener("click", async () => {
+      const billCard = document.getElementById("billCard");
+      const canvas = await html2canvas(billCard, { scale: 2, useCORS: true });
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) return alert("Unable to generate image");
+
+        const file = new File(
+          [blob],
+          "Siddhivinayak-Bill.png",
+          { type: "image/png" }
+        );
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: "Final Bill",
+            text: "🧾 Siddhivinayak Digital - Final Bill",
+            files: [file]
+          });
+        } else {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "Siddhivinayak-Bill.png";
+          a.click();
+          URL.revokeObjectURL(url);
+          alert("Image downloaded. Please share it manually.");
+        }
+      });
     });
   </script>
 </body>
