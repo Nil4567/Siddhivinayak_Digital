@@ -29,14 +29,15 @@
   <div class="bill" id="billCard">
     <div class="headerRow">
       <div class="logoWrap">
-        <img src="https://qcyqjcxzytjtsikzrdyv.supabase.co/storage/v1/object/sign/logo/Screenshot%202025-12-16%20214616.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV84MjQxMmYwMC04MTBiLTQ3MGItODRjMy04YmE1MTE4YTM3ZjAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsb2dvL1NjcmVlbnNob3QgMjAyNS0xMi0xNiAyMTQ2MTYucG5nIiwiaWF0IjoxNzY1OTAyNDQ2LCJleHAiOjI2Mjk5MDI0NDZ9.Z9Xy0O-adqVePn5wJmG8HBSY2TlIXJ3dBzMJJAMg93g" 
+        <img src="https://qcyqjcxzytjtsikzrdyv.supabase.co/storage/v1/object/sign/logo/Screenshot%202025-12-16%20214616.png?token=REPLACE_WITH_YOUR_TOKEN"
              alt="Shop Logo">
       </div>
       <div class="shopInfo">
         <h2>Siddhivinayak Digital</h2>
-        <!-- ✅ Updated Address -->
-        <p><strong>Address:</strong> Shop No. 12, Main Road, Mumbai, Maharashtra - 400001</p>
-        <p><strong>Contact:</strong> +91-9876543210</p>
+        <p><strong>Address:</strong> Row House No.3, Sundarvan CHS,<br>
+        OPP Datta Meghe College, Airoli,<br>
+        Sector - 2, Navi Mumbai - 400708.</p>
+        <p><strong>Contact:</strong> 81690 40864</p>
       </div>
     </div>
 
@@ -49,12 +50,12 @@
       <tr><th>Job Description</th><td id="job">—</td></tr>
       <tr><th>Total Amount</th><td id="total">₹0.00</td></tr>
       <tr><th>Advance Paid</th><td id="advance">₹0.00</td></tr>
-      <tr><th>Pending Amount</th><td id="pending">₹0.00</td></tr>
+      <tr><th>Pending Received</th><td id="pendingReceived">₹0.00</td></tr>
       <tr><th>Order Date</th><td id="orderDate">—</td></tr>
       <tr><th>Completed Date</th><td id="completedDate">—</td></tr>
     </table>
 
-    <div class="totalBox">Final Amount Paid: ₹<span id="finalPaid">0.00</span></div>
+    <div class="totalBox">Total Received: ₹<span id="sumReceived">0.00</span></div>
 
     <div class="actions">
       <button onclick="window.print()">Print / PDF</button>
@@ -67,7 +68,7 @@
     <div id="errorMsg" class="error" style="display:none"></div>
   </div>
 
-  <!-- Supabase SDK + html2canvas + config -->
+  <!-- Supabase SDK + html2canvas + your config -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="js/supabase-config.js"></script>
@@ -75,7 +76,10 @@
   <script>
     function safeText(el, value) { el.textContent = value ?? ""; }
     function formatCurrency(v) { const n = parseFloat(v); return isNaN(n) ? "0.00" : n.toFixed(2); }
-    function formatDateISO(dateStr) { if (!dateStr) return ""; try { const d = new Date(dateStr); return d.toISOString().split("T")[0]; } catch { return ""; } }
+    function formatDateISO(dateStr) {
+      if (!dateStr) return "";
+      try { const d = new Date(dateStr); return d.toISOString().split("T")[0]; } catch { return ""; }
+    }
 
     async function loadBill() {
       const params = new URLSearchParams(window.location.search);
@@ -92,7 +96,7 @@
       try {
         const { data, error } = await supabaseClient
           .from("completed_orders")
-          .select("order_id, order_code, customer_name, customer_contact, job_description, total_amount, advance_amount, pending_amount, pending_received, created_at, completed_at")
+          .select("order_code, customer_name, customer_contact, job_description, total_amount, advance_amount, pending_received, created_at, completed_at")
           .eq("order_code", decodeURIComponent(code))
           .limit(1)
           .single();
@@ -103,25 +107,69 @@
           return;
         }
 
-        safeText(document.getElementById("billNo"), data.order_code || data.order_id || "—");
+        safeText(document.getElementById("billNo"), data.order_code || "—");
         safeText(document.getElementById("customer"), data.customer_name || "—");
         safeText(document.getElementById("mobile"), data.customer_contact || "—");
         safeText(document.getElementById("job"), data.job_description || "—");
         safeText(document.getElementById("total"), "₹" + formatCurrency(data.total_amount));
         safeText(document.getElementById("advance"), "₹" + formatCurrency(data.advance_amount));
-        safeText(document.getElementById("pending"), "₹" + formatCurrency(data.pending_amount));
+        safeText(document.getElementById("pendingReceived"), "₹" + formatCurrency(data.pending_received));
         safeText(document.getElementById("orderDate"), formatDateISO(data.created_at));
         safeText(document.getElementById("completedDate"), formatDateISO(data.completed_at));
 
         const advance = parseFloat(data.advance_amount) || 0;
         const pendingReceived = parseFloat(data.pending_received) || 0;
-        const finalPaid = advance + pendingReceived;
-        safeText(document.getElementById("finalPaid"), formatCurrency(finalPaid));
+        const totalReceived = advance + pendingReceived;
+        safeText(document.getElementById("sumReceived"), formatCurrency(totalReceived));
       } catch (err) {
         errorEl.textContent = "Error loading bill.";
         errorEl.style.display = "block";
       }
     }
 
+    // Init on load
+    document.addEventListener("DOMContentLoaded", loadBill);
+
     // Download PNG
-    document.getElement
+    document.getElementById("downloadBtn").addEventListener("click", async () => {
+      const card = document.getElementById("billCard");
+      const canvas = await html2canvas(card, { scale: 2, useCORS: true });
+      canvas.toBlob(blob => {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "bill.png";
+        a.click();
+      }, "image/png");
+    });
+
+    // Share Bill (Web Share API)
+    document.getElementById("shareBtn").addEventListener("click", async () => {
+      const card = document.getElementById("billCard");
+
+      try {
+        const canvas = await html2canvas(card, { scale: 2, useCORS: true });
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+        const file = new File([blob], "bill.png", { type: "image/png" });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: "Final Bill",
+            text: "Your bill from Siddhivinayak Digital"
+          });
+        } else if (navigator.share) {
+          await navigator.share({
+            title: "Final Bill",
+            text: "Your bill from Siddhivinayak Digital",
+            url: window.location.href
+          });
+        } else {
+          alert("Sharing not supported on this device/browser.");
+        }
+      } catch (e) {
+        alert("Unable to share the bill.");
+      }
+    });
+  </script>
+</body>
+</html>
