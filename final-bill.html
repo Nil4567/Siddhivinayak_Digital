@@ -6,12 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body { font-family: 'Segoe UI', Arial, sans-serif; background:#f4f6f9; margin:0; padding:40px; display:flex; justify-content:center; }
-    .bill { border:2px solid #333; padding:20px; background:#fff; width:600px; box-shadow:0 4px 10px rgba(0,0,0,0.2); }
-    .headerRow { text-align:center; margin-bottom:20px; }
-    .logoWrap { width:120px; height:120px; margin:0 auto 10px; border:1px solid #ddd; border-radius:6px; overflow:hidden; background:#fff; }
+    .bill { border:2px solid #333; padding:20px; background:#fff; width:650px; box-shadow:0 4px 10px rgba(0,0,0,0.2); }
+    .headerRow { display:flex; align-items:center; gap:20px; margin-bottom:20px; }
+    .logoWrap { width:120px; height:120px; border:1px solid #ddd; border-radius:6px; overflow:hidden; background:#fff; flex-shrink:0; }
     .logoWrap img { width:100%; height:100%; object-fit:contain; }
-    .shopName { margin:0; font-size:30px; font-weight:bold; color:#0073ff; }
-    .shopDetails { margin:8px 0 0; font-size:14px; line-height:1.5; color:#333; }
+    .shopInfo { flex:1; text-align:center; }
+    .shopInfo h2 { margin:0; font-size:30px; font-weight:bold; color:#0073ff; }
+    .shopInfo p { margin:6px 0; font-size:14px; line-height:1.5; color:#333; }
     hr { margin:12px 0; border:0; border-top:1px dashed #aaa; }
     table.billTable { width:100%; border-collapse:collapse; margin-top:10px; }
     table.billTable th, table.billTable td { border:1px solid #ddd; padding:8px; font-size:14px; }
@@ -29,16 +30,17 @@
   <div class="bill" id="billCard">
     <div class="headerRow">
       <div class="logoWrap">
-        <img src="https://qcyqjcxzytjtsikzrdyv.supabase.co/storage/v1/object/sign/logo/Screenshot%202025-12-16%20214616.png?token=REPLACE_WITH_YOUR_TOKEN"
-             alt="Shop Logo">
+        <img src="YOUR_LOGO_URL" alt="Shop Logo">
       </div>
-      <h2 class="shopName">Siddhivinayak Digital</h2>
-      <p class="shopDetails">
-        Row House No.3, Sundarvan CHS,<br>
-        OPP Datta Meghe College, Airoli,<br>
-        Sector - 2, Navi Mumbai - 400708.<br>
-        <strong>Contact:</strong> 81690 40864
-      </p>
+      <div class="shopInfo">
+        <h2>Siddhivinayak Digital</h2>
+        <p>
+          Row House No.3, Sundarvan CHS,<br>
+          OPP Datta Meghe College, Airoli,<br>
+          Sector - 2, Navi Mumbai - 400708.<br>
+          <strong>Contact:</strong> 81690 40864
+        </p>
+      </div>
     </div>
 
     <hr>
@@ -55,7 +57,6 @@
       <tr><th>Completed Date</th><td id="completedDate">—</td></tr>
     </table>
 
-    <!-- ✅ Pending (left) and Total Received (right) -->
     <div class="summaryBox">
       <div><strong>Pending:</strong> ₹<span id="sumPending">0.00</span></div>
       <div><strong>Total Received:</strong> ₹<span id="sumReceived">0.00</span></div>
@@ -78,11 +79,11 @@
   <script src="js/supabase-config.js"></script>
 
   <script>
-    function safeText(el, value) { el.textContent = value ?? ""; }
+    function safeText(el, value) { el.textContent = value ?? "—"; }
     function formatCurrency(v) { const n = parseFloat(v); return isNaN(n) ? "0.00" : n.toFixed(2); }
     function formatDateISO(dateStr) {
-      if (!dateStr) return "";
-      try { const d = new Date(dateStr); return d.toISOString().split("T")[0]; } catch { return ""; }
+      if (!dateStr) return "—";
+      try { const d = new Date(dateStr); return d.toISOString().split("T")[0]; } catch { return "—"; }
     }
 
     async function loadBill() {
@@ -111,17 +112,16 @@
           return;
         }
 
-        safeText(document.getElementById("billNo"), data.order_code || "—");
-        safeText(document.getElementById("customer"), data.customer_name || "—");
-        safeText(document.getElementById("mobile"), data.customer_contact || "—");
-        safeText(document.getElementById("job"), data.job_description || "—");
+        safeText(document.getElementById("billNo"), data.order_code);
+        safeText(document.getElementById("customer"), data.customer_name);
+        safeText(document.getElementById("mobile"), data.customer_contact);
+        safeText(document.getElementById("job"), data.job_description);
         safeText(document.getElementById("total"), "₹" + formatCurrency(data.total_amount));
         safeText(document.getElementById("advance"), "₹" + formatCurrency(data.advance_amount));
         safeText(document.getElementById("pendingReceived"), "₹" + formatCurrency(data.pending_received));
         safeText(document.getElementById("orderDate"), formatDateISO(data.created_at));
         safeText(document.getElementById("completedDate"), formatDateISO(data.completed_at));
 
-        // ✅ Summary: Pending (pending_received) and Total Received (advance + pending_received)
         const advance = parseFloat(data.advance_amount) || 0;
         const pendingReceived = parseFloat(data.pending_received) || 0;
         const totalReceived = advance + pendingReceived;
@@ -137,3 +137,5 @@
 
     // Download PNG
     document.getElementById("downloadBtn").addEventListener("click", async () => {
+      const card = document.getElementById("billCard");
+      const canvas = await html2canvas(card,
