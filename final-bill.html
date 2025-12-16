@@ -6,12 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body { font-family: 'Segoe UI', Arial, sans-serif; background:#f4f6f9; margin:0; padding:40px; display:flex; justify-content:center; }
-    .bill { border:2px solid #333; padding:20px; background:#fff; width:650px; box-shadow:0 4px 10px rgba(0,0,0,0.2); }
-    .headerRow { display:flex; align-items:center; gap:20px; margin-bottom:20px; }
-    .logoWrap { width:120px; height:120px; border:1px solid #ddd; border-radius:6px; overflow:hidden; background:#fff; flex-shrink:0; }
+    .bill { border:2px solid #333; padding:20px; background:#fff; width:600px; box-shadow:0 4px 10px rgba(0,0,0,0.2); }
+    .headerRow { display:flex; align-items:center; gap:15px; margin-bottom:20px; }
+    .logoWrap { width:100px; height:100px; border:1px solid #ddd; border-radius:6px; overflow:hidden; background:#fff; flex-shrink:0; }
     .logoWrap img { width:100%; height:100%; object-fit:contain; }
     .shopInfo { flex:1; text-align:center; }
-    .shopInfo h2 { margin:0; font-size:30px; font-weight:bold; color:#0073ff; }
+    .shopInfo h2 { margin:0; font-size:28px; font-weight:bold; color:#0073ff; }
     .shopInfo p { margin:6px 0; font-size:14px; line-height:1.5; color:#333; }
     hr { margin:12px 0; border:0; border-top:1px dashed #aaa; }
     table.billTable { width:100%; border-collapse:collapse; margin-top:10px; }
@@ -52,14 +52,15 @@
       <tr><th>Job Description</th><td id="job">—</td></tr>
       <tr><th>Total Amount</th><td id="total">₹0.00</td></tr>
       <tr><th>Advance Paid</th><td id="advance">₹0.00</td></tr>
-      <tr><th>Pending Received</th><td id="pendingReceived">₹0.00</td></tr>
+      <tr><th>Pending Received</th><td id="pending">₹0.00</td></tr>
+      <tr><th>Total Received</th><td id="received">₹0.00</td></tr>
       <tr><th>Order Date</th><td id="orderDate">—</td></tr>
       <tr><th>Completed Date</th><td id="completedDate">—</td></tr>
     </table>
 
     <div class="summaryBox">
-      <div><strong>Pending:</strong> ₹<span id="sumPending">0.00</span></div>
-      <div><strong>Total Received:</strong> ₹<span id="sumReceived">0.00</span></div>
+      <div><strong>Pending:</strong> ₹<span id="pending">0.00</span></div>
+      <div><strong>Total Received:</strong> ₹<span id="received">0.00</span></div>
     </div>
 
     <div class="actions">
@@ -69,73 +70,6 @@
     </div>
 
     <div class="thankyouBanner">🙏 Thank you for choosing Siddhivinayak Digital. We value your trust and support!</div>
-
-    <div id="errorMsg" class="error" style="display:none"></div>
   </div>
-
-  <!-- Supabase SDK + html2canvas + your config -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="js/supabase-config.js"></script>
-
-  <script>
-    function safeText(el, value) { el.textContent = value ?? "—"; }
-    function formatCurrency(v) { const n = parseFloat(v); return isNaN(n) ? "0.00" : n.toFixed(2); }
-    function formatDateISO(dateStr) {
-      if (!dateStr) return "—";
-      try { const d = new Date(dateStr); return d.toISOString().split("T")[0]; } catch { return "—"; }
-    }
-
-    async function loadBill() {
-      const params = new URLSearchParams(window.location.search);
-      const code = params.get("code");
-      const errorEl = document.getElementById("errorMsg");
-      errorEl.style.display = "none";
-
-      if (!code) {
-        errorEl.textContent = "No bill code provided in the URL.";
-        errorEl.style.display = "block";
-        return;
-      }
-
-      try {
-        const { data, error } = await supabaseClient
-          .from("completed_orders")
-          .select("order_code, customer_name, customer_contact, job_description, total_amount, advance_amount, pending_received, created_at, completed_at")
-          .eq("order_code", decodeURIComponent(code))
-          .limit(1)
-          .single();
-
-        if (error || !data) {
-          errorEl.textContent = "Unable to load bill.";
-          errorEl.style.display = "block";
-          return;
-        }
-
-        safeText(document.getElementById("billNo"), data.order_code);
-        safeText(document.getElementById("customer"), data.customer_name);
-        safeText(document.getElementById("mobile"), data.customer_contact);
-        safeText(document.getElementById("job"), data.job_description);
-        safeText(document.getElementById("total"), "₹" + formatCurrency(data.total_amount));
-        safeText(document.getElementById("advance"), "₹" + formatCurrency(data.advance_amount));
-        safeText(document.getElementById("pendingReceived"), "₹" + formatCurrency(data.pending_received));
-        safeText(document.getElementById("orderDate"), formatDateISO(data.created_at));
-        safeText(document.getElementById("completedDate"), formatDateISO(data.completed_at));
-
-        const advance = parseFloat(data.advance_amount) || 0;
-        const pendingReceived = parseFloat(data.pending_received) || 0;
-        const totalReceived = advance + pendingReceived;
-        safeText(document.getElementById("sumPending"), formatCurrency(pendingReceived));
-        safeText(document.getElementById("sumReceived"), formatCurrency(totalReceived));
-      } catch (err) {
-        errorEl.textContent = "Error loading bill.";
-        errorEl.style.display = "block";
-      }
-    }
-
-    document.addEventListener("DOMContentLoaded", loadBill);
-
-    // Download PNG
-    document.getElementById("downloadBtn").addEventListener("click", async () => {
-      const card = document.getElementById("billCard");
-      const canvas = await html2canvas(card,
+</body>
+</html>
