@@ -5,6 +5,35 @@
 <title>Final Bill - Siddhivinayak Digital</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
+<!-- =========================================================
+  IMPORTANT (COPY THIS TO COMPLETED ORDERS PAGE)
+  Bill Token CLICK LOGIC (Frontend Only)
+=========================================================
+
+document.querySelectorAll(".tokenBtn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const row = btn.closest("tr");
+
+    const billData = {
+      order_code: row.children[0].textContent.trim(),
+      customer_name: row.children[1].textContent.trim(),
+      customer_contact: row.children[2].textContent.trim(),
+      job_description: row.children[3].textContent.trim(),
+      total_amount: parseFloat(row.children[4].textContent) || 0,
+      advance_amount: parseFloat(row.children[5].textContent) || 0,
+      pending_received:
+        parseFloat(row.querySelector(".pendingInput")?.value) || 0,
+      created_at: row.children[7].textContent,
+      completed_at: row.children[8].textContent
+    };
+
+    localStorage.setItem("billData", JSON.stringify(billData));
+    window.open("final-bill.html", "_blank");
+  });
+});
+
+========================================================= -->
+
 <style>
 body{
   font-family:Segoe UI,Arial,sans-serif;
@@ -120,7 +149,7 @@ const hide = () => $(".actions").style.display="none";
 const show = () => $(".actions").style.display="flex";
 const money = v => (parseFloat(v)||0).toFixed(2);
 
-/* LOAD FROM FRONTEND STORAGE */
+/* LOAD DATA FROM FRONTEND */
 const data = JSON.parse(localStorage.getItem("billData") || "{}");
 
 const total = data.total_amount || 0;
@@ -139,8 +168,8 @@ $("totalReceived").textContent = "₹"+money(totalReceived);
 $("pending").textContent = "₹"+money(pending);
 $("pendingSum").textContent = money(pending);
 $("receivedSum").textContent = money(totalReceived);
-$("orderDate").textContent = (data.created_at || "").split("T")[0] || "—";
-$("completedDate").textContent = (data.completed_at || "").split("T")[0] || "—";
+$("orderDate").textContent = data.created_at || "—";
+$("completedDate").textContent = data.completed_at || "—";
 
 /* PRINT */
 $("printBtn").onclick = async ()=>{
