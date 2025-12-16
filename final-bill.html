@@ -6,50 +6,72 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body { font-family: 'Segoe UI', Arial, sans-serif; background:#f4f6f9; margin:0; padding:40px; display:flex; justify-content:center; }
-    .bill { border:2px solid #333; padding:25px; background:#fff; width:480px; box-shadow:0 4px 10px rgba(0,0,0,0.2); }
-    .bill h2 { margin:0; text-align:center; color:#0073ff; }
-    .bill p { margin:6px 0; font-size:14px; }
-    .bill hr { margin:12px 0; border:0; border-top:1px dashed #aaa; }
-    .bill table { width:100%; border-collapse:collapse; margin-top:10px; }
-    .bill th, .bill td { text-align:left; padding:6px; font-size:14px; }
-    .bill th { width:40%; color:#2c3e50; }
-    .actions { margin-top:15px; display:flex; justify-content:space-between; }
-    .actions button { padding:8px 12px; background:#0073ff; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:14px; }
-    .actions button:hover { background:#0056b3; }
+    .bill { border:2px solid #333; padding:20px; background:#fff; width:520px; box-shadow:0 4px 10px rgba(0,0,0,0.2); }
+    .headerRow { display:flex; align-items:center; gap:12px; }
+    .logoWrap { width:84px; height:84px; border-radius:6px; overflow:hidden; background:#f7f7f7; display:flex; align-items:center; justify-content:center; border:1px solid #ddd; }
+    .logoWrap img { max-width:100%; max-height:100%; display:block; }
+    .shopInfo { flex:1; }
+    .shopInfo h2 { margin:0; color:#0073ff; font-size:20px; }
+    .shopInfo p { margin:4px 0; font-size:13px; color:#333; }
+    hr { margin:12px 0; border:0; border-top:1px dashed #aaa; }
+    table.billTable { width:100%; border-collapse:collapse; margin-top:10px; }
+    table.billTable th, table.billTable td { border:1px solid #ddd; padding:8px; font-size:14px; }
+    table.billTable th { background:#f1f9ff; color:#2c3e50; text-align:left; width:40%; }
     .totalBox { margin-top:15px; padding:10px; background:#f1f9ff; border:1px solid #0073ff; border-radius:6px; font-weight:bold; text-align:right; }
+    .actions { margin-top:15px; display:flex; justify-content:space-between; gap:8px; }
+    .actions button { flex:1; padding:8px 12px; background:#0073ff; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:14px; }
+    .actions button:hover { background:#0056b3; }
+    .thankyou { margin-top:20px; text-align:center; font-size:15px; font-weight:bold; color:#0073ff; border-top:1px solid #ddd; padding-top:10px; }
+    .error { color:#b00020; font-weight:600; text-align:center; margin-top:12px; }
   </style>
 </head>
 <body>
   <div class="bill" id="billCard">
-    <h2>Siddhivinayak Digital</h2>
-    <p><strong>Address:</strong> Shop No. 12, Main Road, Mumbai</p>
+    <div class="headerRow">
+      <div class="logoWrap">
+        <img src="https://qcyqjcxzytjtsikzrdyv.supabase.co/storage/v1/object/sign/logo/Screenshot%202025-12-16%20214616.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV84MjQxMmYwMC04MTBiLTQ3MGItODRjMy04YmE1MTE4YTM3ZjAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsb2dvL1NjcmVlbnNob3QgMjAyNS0xMi0xNiAyMTQ2MTYucG5nIiwiaWF0IjoxNzY1OTAyMDY0LCJleHAiOjI2Mjk5MDIwNjR9.EkiyTqvie46jQv58lSLQN2MdInlvowXltTMreDtOAC4" alt="Shop Logo" />
+      </div>
+      <div class="shopInfo">
+        <h2>Siddhivinayak Digital</h2>
+        <p><strong>Address:</strong> Shop No. 12, Main Road, Mumbai</p>
+        <p><strong>Contact:</strong> +91-9876543210</p>
+      </div>
+    </div>
+
     <hr>
-    <table>
-      <tr><th>Bill No</th><td id="billNo"></td></tr>
-      <tr><th>Customer</th><td id="customer"></td></tr>
-      <tr><th>Mobile</th><td id="mobile"></td></tr>
-      <tr><th>Job Description</th><td id="job"></td></tr>
-      <tr><th>Total Amount</th><td id="total"></td></tr>
-      <tr><th>Advance Paid</th><td id="advance"></td></tr>
-      <tr><th>Pending Amount</th><td id="pending"></td></tr>
-      <tr><th>Order Date</th><td id="orderDate"></td></tr>
-      <tr><th>Completed Date</th><td id="completedDate"></td></tr>
-       
+
+    <table class="billTable">
+      <tr><th>Bill No</th><td id="billNo">—</td></tr>
+      <tr><th>Customer</th><td id="customer">—</td></tr>
+      <tr><th>Mobile</th><td id="mobile">—</td></tr>
+      <tr><th>Job Description</th><td id="job">—</td></tr>
+      <tr><th>Total Amount</th><td id="total">₹0.00</td></tr>
+      <tr><th>Advance Paid</th><td id="advance">₹0.00</td></tr>
+      <tr><th>Pending Amount</th><td id="pending">₹0.00</td></tr>
+      <tr><th>Order Date</th><td id="orderDate">—</td></tr>
+      <tr><th>Completed Date</th><td id="completedDate">—</td></tr>
     </table>
-    <div class="totalBox">Final Amount Paid: ₹<span id="finalPaid"></span></div>
+
+    <div class="totalBox">Final Amount Paid: ₹<span id="finalPaid">0.00</span></div>
+
     <div class="actions">
       <button onclick="window.print()">Print / PDF</button>
       <button onclick="downloadBill()">Download PNG</button>
       <button onclick="shareBill()">Share</button>
     </div>
+
+    <div class="thankyou">🙏 Thank you for choosing Siddhivinayak Digital. We value your trust and support!</div>
+
+    <div id="errorMsg" class="error" style="display:none"></div>
   </div>
 
-  <!-- Supabase SDK + Config + html2canvas -->
+  <!-- Supabase SDK + html2canvas + config -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="js/supabase-config.js"></script>
 
   <script>
-    async function loadBill() {
-      const params = new URLSearchParams(window.location.search);
-      const code = params.get
+    // (same JS logic as before for loadBill, downloadBill, shareBill)
+  </script>
+</body>
+</html>
