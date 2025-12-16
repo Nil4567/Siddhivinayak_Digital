@@ -6,40 +6,111 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-body{
-  font-family: Arial, sans-serif;
-  background:#f4f6f9;
-  margin:0;
-  padding:20px;
+:root{
+  --brand:#2ecc71;
+  --text:#2c3e50;
+  --muted:#7f8c8d;
+  --border:#e0e0e0;
 }
-.bill{
-  max-width:700px;
+
+body{
+  margin:0;
+  padding:25px;
+  background:#f4f6f9;
+  font-family:"Segoe UI", Arial, sans-serif;
+}
+
+.invoice{
+  max-width:760px;
   margin:auto;
   background:#fff;
-  padding:20px;
-  border-radius:8px;
-  box-shadow:0 2px 10px rgba(0,0,0,.15);
+  border-radius:10px;
+  box-shadow:0 8px 25px rgba(0,0,0,.12);
+  padding:28px 32px 32px;
 }
-h2{text-align:center;margin:0 0 15px}
-table{width:100%;border-collapse:collapse}
-td{padding:8px;border-bottom:1px solid #ddd}
-.label{font-weight:bold;color:#333}
-.total{font-weight:bold;font-size:18px}
+
+.header{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  border-bottom:2px solid var(--border);
+  padding-bottom:14px;
+}
+
+.logo{
+  width:70px;
+  height:70px;
+  object-fit:contain;
+}
+
+.company h1{
+  margin:0;
+  font-size:26px;
+  color:var(--text);
+}
+
+.company small{
+  color:var(--muted);
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:18px;
+}
+
+td{
+  padding:10px 6px;
+  border-bottom:1px solid var(--border);
+}
+
+.label{
+  width:40%;
+  font-weight:600;
+  color:var(--text);
+}
+
+.value{
+  text-align:right;
+}
+
+.total{
+  font-size:17px;
+  font-weight:700;
+}
+
+.pending{ color:#e67e22 }
+.received{ color:#27ae60 }
+
 .actions{
-  text-align:center;
-  margin-top:15px;
+  display:flex;
+  justify-content:center;
+  gap:12px;
+  margin-top:22px;
 }
+
 .actions button{
-  padding:8px 14px;
-  margin:5px;
-  border:none;
-  border-radius:4px;
-  background:#2ecc71;
+  background:var(--brand);
   color:#fff;
-  font-weight:bold;
+  border:none;
+  padding:10px 20px;
+  border-radius:6px;
+  font-size:14px;
+  font-weight:600;
   cursor:pointer;
 }
+
+.actions button.secondary{
+  background:#3498db;
+}
+
+.actions button.gray{
+  background:#7f8c8d;
+}
+
 @media print{
+  body{background:#fff;padding:0}
+  .invoice{box-shadow:none}
   .actions{display:none}
 }
 </style>
@@ -47,99 +118,103 @@ td{padding:8px;border-bottom:1px solid #ddd}
 
 <body>
 
-<div class="bill" id="billArea">
-  <h2>Siddhivinayak Digital</h2>
+<div class="invoice" id="billCard">
+
+  <div class="header">
+    <!-- 🔴 CHANGE LOGO PATH -->
+    <img src="logo.png" class="logo" alt="Logo">
+    <div class="company">
+      <h1>Siddhivinayak Digital</h1>
+      <small>Digital Printing & Design Solutions</small>
+    </div>
+  </div>
 
   <table>
-    <tr><td class="label">Bill No</td><td id="billNo">—</td></tr>
-    <tr><td class="label">Customer</td><td id="customer">—</td></tr>
-    <tr><td class="label">Mobile</td><td id="mobile">—</td></tr>
-    <tr><td class="label">Job</td><td id="job">—</td></tr>
-    <tr><td class="label">Order Date</td><td id="orderDate">—</td></tr>
-    <tr><td class="label">Completed Date</td><td id="completedDate">—</td></tr>
+    <tr><td class="label">Bill No</td><td class="value" id="billNo">—</td></tr>
+    <tr><td class="label">Customer</td><td class="value" id="customer">—</td></tr>
+    <tr><td class="label">Mobile</td><td class="value" id="mobile">—</td></tr>
+    <tr><td class="label">Job</td><td class="value" id="job">—</td></tr>
+    <tr><td class="label">Order Date</td><td class="value" id="orderDate">—</td></tr>
+    <tr><td class="label">Completed Date</td><td class="value" id="completedDate">—</td></tr>
 
-    <tr><td class="label">Total Amount</td><td id="totalEl">₹0.00</td></tr>
-    <tr><td class="label">Advance Paid</td><td id="advanceEl">₹0.00</td></tr>
-    <tr><td class="label">Pending Received</td><td id="pendingReceivedEl">₹0.00</td></tr>
-    <tr><td class="label total">Total Received</td><td class="total" id="totalReceivedEl">₹0.00</td></tr>
-    <tr><td class="label total">Pending Balance</td><td class="total" id="pendingEl">₹0.00</td></tr>
+    <tr><td class="label">Total Amount</td><td class="value">₹<span id="total">0.00</span></td></tr>
+    <tr><td class="label">Advance Paid</td><td class="value">₹<span id="advance">0.00</span></td></tr>
+    <tr><td class="label">Pending Received</td><td class="value">₹<span id="pendingReceived">0.00</span></td></tr>
+
+    <tr class="total received">
+      <td class="label">Total Received</td>
+      <td class="value">₹<span id="totalReceived">0.00</span></td>
+    </tr>
+
+    <tr class="total pending">
+      <td class="label">Pending Balance</td>
+      <td class="value">₹<span id="pendingBalance">0.00</span></td>
+    </tr>
   </table>
 
-  <div class="actions">
-    <button onclick="window.print()">Print / PDF</button>
+  <div class="actions" id="actionBar">
+    <button onclick="printBill()">Print / PDF</button>
+    <button class="secondary" onclick="downloadPNG()">Download PNG</button>
+    <button class="gray" onclick="sharePNG()">Share Bill</button>
   </div>
+
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase-config.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script>
-const params = new URLSearchParams(window.location.search);
-const code = params.get("code");
+/* ---------- DATA LOAD (FROM localStorage) ---------- */
+const data = JSON.parse(localStorage.getItem("billData") || "{}");
 
-const billNo = document.getElementById("billNo");
-const customer = document.getElementById("customer");
-const mobile = document.getElementById("mobile");
-const job = document.getElementById("job");
-const orderDate = document.getElementById("orderDate");
-const completedDate = document.getElementById("completedDate");
+const total = Number(data.total_amount || 0);
+const advance = Number(data.advance_amount || 0);
+const pendingRec = Number(data.pending_received || 0);
+const totalRec = advance + pendingRec;
+const pendingBal = Math.max(0, total - totalRec);
 
-const totalEl = document.getElementById("totalEl");
-const advanceEl = document.getElementById("advanceEl");
-const pendingReceivedEl = document.getElementById("pendingReceivedEl");
-const totalReceivedEl = document.getElementById("totalReceivedEl");
-const pendingEl = document.getElementById("pendingEl");
+billNo.textContent = data.order_code || "—";
+customer.textContent = data.customer_name || "—";
+mobile.textContent = data.customer_contact || "—";
+job.textContent = data.job_description || "—";
+orderDate.textContent = data.created_at || "—";
+completedDate.textContent = data.completed_at || "—";
 
-function money(v){
-  return Number(v || 0).toFixed(2);
+total.textContent = total.toFixed(2);
+advance.textContent = advance.toFixed(2);
+pendingReceived.textContent = pendingRec.toFixed(2);
+totalReceived.textContent = totalRec.toFixed(2);
+pendingBalance.textContent = pendingBal.toFixed(2);
+
+/* ---------- ACTIONS ---------- */
+function hideActions(hide=true){
+  document.getElementById("actionBar").style.display = hide ? "none" : "flex";
 }
 
-async function loadBill(){
-  if(!code) return;
-
-  const { data, error } = await supabaseClient
-    .from("completed_orders")
-    .select("*")
-    .eq("order_code", code)
-    .single();
-
-  if(error || !data){
-    alert("Bill not found");
-    return;
-  }
-
-  /* 🔒 SAFE FIELD MAPPING – NO BLANK VALUES */
-  const total = Number(
-    data.total_amount ?? data.total ?? 0
-  );
-
-  const advance = Number(
-    data.advance_amount ?? data.advance ?? 0
-  );
-
-  const pendingReceived = Number(
-    data.pending_received ?? 0
-  );
-
-  const totalReceived = advance + pendingReceived;
-  const pendingBalance = Math.max(0, total - totalReceived);
-
-  billNo.textContent = data.order_code || "—";
-  customer.textContent = data.customer_name || "—";
-  mobile.textContent = data.customer_contact || "—";
-  job.textContent = data.job_description || "—";
-
-  orderDate.textContent = (data.created_at || "").split("T")[0];
-  completedDate.textContent = (data.completed_at || "").split("T")[0];
-
-  totalEl.textContent = "₹" + money(total);
-  advanceEl.textContent = "₹" + money(advance);
-  pendingReceivedEl.textContent = "₹" + money(pendingReceived);
-  totalReceivedEl.textContent = "₹" + money(totalReceived);
-  pendingEl.textContent = "₹" + money(pendingBalance);
+function printBill(){
+  hideActions(true);
+  window.print();
+  setTimeout(()=>hideActions(false),500);
 }
 
-loadBill();
+async function downloadPNG(){
+  hideActions(true);
+  const canvas = await html2canvas(document.getElementById("billCard"),{scale:2});
+  const a = document.createElement("a");
+  a.href = canvas.toDataURL("image/png");
+  a.download = "Bill-"+billNo.textContent+".png";
+  a.click();
+  hideActions(false);
+}
+
+async function sharePNG(){
+  if(!navigator.share){ alert("Sharing not supported"); return; }
+  hideActions(true);
+  const canvas = await html2canvas(document.getElementById("billCard"),{scale:2});
+  const blob = await new Promise(r=>canvas.toBlob(r));
+  const file = new File([blob],"Bill.png",{type:"image/png"});
+  await navigator.share({files:[file],title:"Bill"});
+  hideActions(false);
+}
 </script>
 
 </body>
