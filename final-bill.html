@@ -7,17 +7,17 @@
   <style>
     body { font-family: 'Segoe UI', Arial, sans-serif; background:#f4f6f9; margin:0; padding:40px; display:flex; justify-content:center; }
     .bill { border:2px solid #333; padding:20px; background:#fff; width:600px; box-shadow:0 4px 10px rgba(0,0,0,0.2); }
-    .headerRow { display:flex; align-items:center; gap:15px; margin-bottom:20px; }
-    .logoWrap { width:100px; height:100px; border:1px solid #ddd; border-radius:6px; overflow:hidden; background:#fff; flex-shrink:0; }
+    .headerRow { text-align:center; margin-bottom:20px; }
+    .logoWrap { width:120px; height:120px; margin:0 auto 10px; border:1px solid #ddd; border-radius:6px; overflow:hidden; background:#fff; }
     .logoWrap img { width:100%; height:100%; object-fit:contain; }
-    .shopInfo { flex:1; }
-    .shopInfo h2 { margin:0; color:#0073ff; font-size:22px; }
-    .shopInfo p { margin:4px 0; font-size:13px; color:#333; }
+    .shopName { margin:0; font-size:30px; font-weight:bold; color:#0073ff; }
+    .shopDetails { margin:8px 0 0; font-size:14px; line-height:1.5; color:#333; }
     hr { margin:12px 0; border:0; border-top:1px dashed #aaa; }
     table.billTable { width:100%; border-collapse:collapse; margin-top:10px; }
     table.billTable th, table.billTable td { border:1px solid #ddd; padding:8px; font-size:14px; }
     table.billTable th { background:#f1f9ff; color:#2c3e50; text-align:left; width:40%; }
-    .totalBox { margin-top:15px; padding:10px; background:#f1f9ff; border:1px solid #0073ff; border-radius:6px; font-weight:bold; text-align:right; }
+    .summaryBox { margin-top:15px; display:flex; justify-content:space-between; background:#f1f9ff; border:1px solid #0073ff; border-radius:6px; padding:10px; font-weight:bold; }
+    .summaryBox div { flex:1; text-align:center; color:#2c3e50; }
     .actions { margin-top:15px; display:flex; justify-content:space-between; gap:8px; }
     .actions button { flex:1; padding:8px 12px; background:#0073ff; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:14px; }
     .actions button:hover { background:#0056b3; }
@@ -32,13 +32,13 @@
         <img src="https://qcyqjcxzytjtsikzrdyv.supabase.co/storage/v1/object/sign/logo/Screenshot%202025-12-16%20214616.png?token=REPLACE_WITH_YOUR_TOKEN"
              alt="Shop Logo">
       </div>
-      <div class="shopInfo">
-        <h2>Siddhivinayak Digital</h2>
-        <p><strong>Address:</strong> Row House No.3, Sundarvan CHS,<br>
+      <h2 class="shopName">Siddhivinayak Digital</h2>
+      <p class="shopDetails">
+        Row House No.3, Sundarvan CHS,<br>
         OPP Datta Meghe College, Airoli,<br>
-        Sector - 2, Navi Mumbai - 400708.</p>
-        <p><strong>Contact:</strong> 81690 40864</p>
-      </div>
+        Sector - 2, Navi Mumbai - 400708.<br>
+        <strong>Contact:</strong> 81690 40864
+      </p>
     </div>
 
     <hr>
@@ -55,7 +55,11 @@
       <tr><th>Completed Date</th><td id="completedDate">—</td></tr>
     </table>
 
-    <div class="totalBox">Total Received: ₹<span id="sumReceived">0.00</span></div>
+    <!-- ✅ Pending (left) and Total Received (right) -->
+    <div class="summaryBox">
+      <div><strong>Pending:</strong> ₹<span id="sumPending">0.00</span></div>
+      <div><strong>Total Received:</strong> ₹<span id="sumReceived">0.00</span></div>
+    </div>
 
     <div class="actions">
       <button onclick="window.print()">Print / PDF</button>
@@ -117,9 +121,11 @@
         safeText(document.getElementById("orderDate"), formatDateISO(data.created_at));
         safeText(document.getElementById("completedDate"), formatDateISO(data.completed_at));
 
+        // ✅ Summary: Pending (pending_received) and Total Received (advance + pending_received)
         const advance = parseFloat(data.advance_amount) || 0;
         const pendingReceived = parseFloat(data.pending_received) || 0;
         const totalReceived = advance + pendingReceived;
+        safeText(document.getElementById("sumPending"), formatCurrency(pendingReceived));
         safeText(document.getElementById("sumReceived"), formatCurrency(totalReceived));
       } catch (err) {
         errorEl.textContent = "Error loading bill.";
@@ -127,49 +133,7 @@
       }
     }
 
-    // Init on load
     document.addEventListener("DOMContentLoaded", loadBill);
 
     // Download PNG
     document.getElementById("downloadBtn").addEventListener("click", async () => {
-      const card = document.getElementById("billCard");
-      const canvas = await html2canvas(card, { scale: 2, useCORS: true });
-      canvas.toBlob(blob => {
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "bill.png";
-        a.click();
-      }, "image/png");
-    });
-
-    // Share Bill (Web Share API)
-    document.getElementById("shareBtn").addEventListener("click", async () => {
-      const card = document.getElementById("billCard");
-
-      try {
-        const canvas = await html2canvas(card, { scale: 2, useCORS: true });
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
-        const file = new File([blob], "bill.png", { type: "image/png" });
-
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: "Final Bill",
-            text: "Your bill from Siddhivinayak Digital"
-          });
-        } else if (navigator.share) {
-          await navigator.share({
-            title: "Final Bill",
-            text: "Your bill from Siddhivinayak Digital",
-            url: window.location.href
-          });
-        } else {
-          alert("Sharing not supported on this device/browser.");
-        }
-      } catch (e) {
-        alert("Unable to share the bill.");
-      }
-    });
-  </script>
-</body>
-</html>
