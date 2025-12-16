@@ -222,7 +222,7 @@
       document.querySelectorAll(".tokenBtn").forEach(btn => {
         btn.addEventListener("click", () => {
           const code = decodeURIComponent(btn.getAttribute("data-code") || "");
-          const url = "bill-token.html?code=" + encodeURIComponent(code || "");
+          const url = "final-bill.html?code=" + encodeURIComponent(code || "");
           window.open(url, "_blank");
         });
       });
