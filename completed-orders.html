@@ -105,7 +105,7 @@
       users = data || [];
     }
 
-    // Load completed orders with optional From date (to today)
+    // Load completed orders with optional From date (to now inclusive)
     async function loadCompleted() {
       const start = document.getElementById("startDate").value;
 
@@ -114,8 +114,10 @@
         .select("order_id, order_code, customer_name, customer_contact, job_description, total_amount, advance_amount, pending_amount, pending_received, assigned_to, created_at, completed_at");
 
       if (start) {
-        const today = new Date().toISOString().split("T")[0];
-        query = query.gte("completed_at", start).lte("completed_at", today);
+        const now = new Date().toISOString(); // current timestamp
+        query = query
+          .gte("completed_at", start + "T00:00:00")
+          .lte("completed_at", now);
       }
 
       const { data, error } = await query.order("completed_at", { ascending: false });
@@ -149,155 +151,4 @@
           <td>${completedDate ? completedDate.toISOString().split("T")[0] : ""}</td>
           <td>${tatDays}</td>
           <td>${users.find(u=>u.id===order.assigned_to)?.display_name || "Unassigned"}</td>
-          <td>
-            <input type="number" min="0" step="0.01" value="${order.pending_received ?? 0}"
-                   class="pendingInput" data-id="${order.order_id}">
-          </td>
-          <td>${((order.advance_amount ?? 0) + (order.pending_received ?? 0)).toFixed(2)}</td>
-          <td>
-            <button class="updatePendingBtn" data-id="${order.order_id}">Update Pending</button>
-            <button class="tokenBtn" data-code="${order.order_code || ''}">Bill Token</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      attachPendingEvents();
-      attachTokenEvents();
-    }
-
-    // Inline update for pending_received and total received + summary
-    function attachPendingEvents() {
-      document.querySelectorAll(".updatePendingBtn").forEach(btn => {
-        btn.addEventListener("click", async function() {
-          const id = this.getAttribute("data-id");
-          const input = document.querySelector(`.pendingInput[data-id="${id}"]`);
-          const amount = parseFloat(input.value);
-          const sanitized = isNaN(amount) || amount < 0 ? 0 : amount;
-
-          const { error } = await supabaseClient
-            .from("completed_orders")
-            .update({ pending_received: sanitized })
-            .eq("order_id", id);
-
-          if (error) {
-            alert("Error updating pending: " + error.message);
-          } else {
-            const row = input.closest("tr");
-            input.value = sanitized.toFixed(2);
-            const adv = parseFloat(row.children[5].textContent) || 0;
-            row.children[12].textContent = (adv + sanitized).toFixed(2);
-            alert("Pending updated successfully!");
-            recalcSummary();
-          }
-        });
-      });
-    }
-
-    // Open bill token in new tab
-    function attachTokenEvents() {
-      document.querySelectorAll(".tokenBtn").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const code = btn.getAttribute("data-code");
-          const url = "bill-token.html?code=" + encodeURIComponent(code || "");
-          window.open(url, "_blank");
-        });
-      });
-    }
-
-    // Populate dropdowns with unique values from table
-    function populateDropdowns() {
-      const rows = document.querySelectorAll("#completedTable tbody tr");
-      const selects = document.querySelectorAll(".filterSelect");
-
-      selects.forEach(sel => {
-        const colIndex = parseInt(sel.getAttribute("data-col"));
-        const values = new Set();
-
-        rows.forEach(row => {
-          const text = row.children[colIndex]?.textContent.trim();
-          if (text) values.add(text);
-        });
-
-        // Clear old options except "All"
-        sel.querySelectorAll("option:not([value=''])").forEach(opt => opt.remove());
-
-        // Add unique values
-        values.forEach(v => {
-          const opt = document.createElement("option");
-          opt.value = v;
-          opt.textContent = v;
-          sel.appendChild(opt);
-        });
-      });
-    }
-
-    // Attach dropdown filter logic
-    function attachDropdownFilters() {
-      document.querySelectorAll(".filterSelect").forEach(sel => {
-        sel.addEventListener("change", () => {
-          const activeFilters = Array.from(document.querySelectorAll(".filterSelect"))
-            .map(s => ({ col: parseInt(s.getAttribute("data-col")), val: s.value }));
-
-          document.querySelectorAll("#completedTable tbody tr").forEach(tr => {
-            // A row is shown only if it matches all active (non-empty) filters
-            const show = activeFilters.every(f => {
-              if (!f.val) return true;
-              const cellText = tr.children[f.col]?.textContent || "";
-              return cellText === f.val;
-            });
-            tr.style.display = show ? "" : "none";
-          });
-          recalcSummary(); // summary reflects visible rows
-        });
-      });
-    }
-
-    // Recalculate summary totals based on visible rows
-    function recalcSummary() {
-      let totalPaid = 0;
-      let totalPending = 0;
-      let visibleCount = 0;
-      const rows = document.querySelectorAll("#completedTable tbody tr");
-
-      rows.forEach(row => {
-        if (row.style.display === "none") return;
-        visibleCount++;
-        const adv = parseFloat(row.children[5].textContent) || 0;
-        const pendAmt = parseFloat(row.children[6].textContent) || 0;
-        const pendRecv = parseFloat(row.querySelector(".pendingInput").value) || 0;
-        totalPaid += adv + pendRecv;
-        totalPending += Math.max(0, pendAmt - pendRecv);
-      });
-
-      document.getElementById("totalPaid").textContent = "Total Paid: ₹" + totalPaid.toFixed(2);
-      document.getElementById("pendingTotal").textContent = "Total Pending: ₹" + totalPending.toFixed(2);
-      document.getElementById("completedCount").textContent = "Completed Orders: " + visibleCount;
-    }
-
-    // Set default From date to first day of current month
-    function setDefaultStartDate() {
-      const d = new Date();
-      const first = new Date(d.getFullYear(), d.getMonth(), 1);
-      document.getElementById("startDate").value = first.toISOString().split("T")[0];
-    }
-
-    // Apply filter clicks
-    document.getElementById("applyFilterBtn").addEventListener("click", loadCompleted);
-
-    // Clear filters: reset date + dropdowns + reload
-    document.getElementById("clearFilterBtn").addEventListener("click", async () => {
-      setDefaultStartDate();
-      document.querySelectorAll(".filterSelect").forEach(sel => sel.value = "");
-      await loadCompleted();
-    });
-
-    // Init
-    (async function init(){
-      setDefaultStartDate();
-      await loadUsers();
-      await loadCompleted();
-    })();
-  </script>
-</body>
-</html>
+          <td><input type="number" min="0" step="0.01" value="${order
