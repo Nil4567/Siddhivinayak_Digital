@@ -5,14 +5,17 @@
   <title>Final Bill - Siddhivinayak Digital</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    :root { --brand:#0073ff; --muted:#666; --paper:#fff; }
+    :root { --brand:#0073ff; --muted:#666; --paper:#fff; --accent-paid: rgba(46,204,113,0.18); }
     body { font-family: "Segoe UI", Arial, sans-serif; background:#f4f6f9; margin:0; padding:24px; display:flex; justify-content:center; }
     .container { width:760px; background:var(--paper); border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,0.08); padding:20px; position:relative; }
     header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
     .brand { color:var(--brand); }
-    .brand h1 { margin:0; font-size:20px; }
+    .brand h1 { margin:0; font-size:22px; }
+    .brand .address { margin-top:6px; color:var(--muted); font-size:13px; }
     .meta { text-align:right; font-size:13px; color:#222; }
-    .meta .small { color:var(--muted); font-size:12px; }
+    .meta .small { color:var(--muted); font-size:12px; display:block; }
+    .meta .bill-no { font-size:18px; font-weight:800; } /* bigger */
+    .meta .bill-date { font-size:18px; font-weight:800; } /* bigger */
     .grid { display:flex; gap:12px; margin-top:14px; flex-wrap:wrap; }
     .box { flex:1 1 220px; background:#fafafa; padding:12px; border-radius:6px; border:1px solid #eee; }
     table.items { width:100%; border-collapse:collapse; margin-top:14px; }
@@ -29,23 +32,45 @@
     .small { font-size:12px; color:var(--muted); }
     .paid-stamp {
       position: absolute;
-      top: 40%;
-      left: 50%;
-      transform: translate(-50%, -50%) rotate(-18deg);
-      font-size:96px;
-      color: rgba(46, 204, 113, 0.18);
+      bottom: 18px;
+      right: 18px;
+      transform: rotate(-6deg);
+      font-size:72px;
+      color: var(--accent-paid);
       font-weight:900;
       letter-spacing:6px;
       pointer-events:none;
       display:none;
       z-index: 30;
       text-shadow: 0 2px 6px rgba(0,0,0,0.06);
+      border: 6px solid rgba(46,204,113,0.12);
+      padding: 8px 18px;
+      border-radius: 8px;
+      background: rgba(46,204,113,0.03);
     }
     .paid-stamp.visible { display:block; }
+
+    /* Thank you note at bottom */
+    .thankyou-note {
+      margin-top:18px;
+      text-align:center;
+      font-size:18px;
+      font-weight:700;
+      color:#2ecc71;
+      padding:12px;
+      border-radius:8px;
+      background: linear-gradient(90deg, rgba(46,204,113,0.06), rgba(46,204,113,0.02));
+      box-shadow: 0 4px 12px rgba(46,204,113,0.06);
+    }
+
+    /* emphasize total received */
+    .bold-amount { font-weight:800; }
+
     @media print {
       .actions { display:none; }
       .container { box-shadow:none; border-radius:0; margin:0; }
       .paid-stamp { display:none !important; }
+      .thankyou-note { box-shadow:none; background:transparent; color:#2ecc71; }
     }
   </style>
 </head>
@@ -56,11 +81,12 @@
     <header>
       <div class="brand">
         <h1>Siddhivinayak Digital</h1>
+        <div class="address">Airoli</div>
       </div>
       <div class="meta">
         <div><strong>Final Bill</strong></div>
-        <div class="small" id="billCode">Bill Code: —</div>
-        <div class="small" id="billDate">Date: —</div>
+        <div class="bill-no" id="billCode">Bill Code: —</div>
+        <div class="bill-date" id="billDate">Date: —</div>
       </div>
     </header>
 
@@ -75,8 +101,8 @@
         <div id="jobDesc" class="muted">—</div>
       </div>
       <div class="box">
-        <strong>Reference</strong>
-        <div id="refInfo" class="muted">—</div>
+        <strong>Notes</strong>
+        <div id="notes" class="muted">—</div>
       </div>
     </div>
 
@@ -115,7 +141,7 @@
         </tr>
         <tr>
           <td class="label">Total Received</td>
-          <td class="right" id="totalReceived">0.00</td>
+          <td class="right bold-amount" id="totalReceived">0.00</td>
         </tr>
         <tr>
           <td class="label">Pending Balance</td>
@@ -132,6 +158,8 @@
       <button class="primary" id="printBtn">Print / Save as PDF</button>
       <button class="ghost" id="shareImageBtn">Share Bill Image</button>
     </div>
+
+    <div class="thankyou-note" id="thankyouNote">We sincerely thank you for your business with Siddhivinayak Digital. It’s a pleasure serving you. 🙏</div>
 
     <div class="muted" id="debugMsg" style="margin-top:12px;"></div>
   </div>
@@ -200,11 +228,13 @@
           const totalReceived = totalReceivedDB !== null ? totalReceivedDB : (advance + pendingReceived);
           const pendingBalance = pendingBalanceDB !== null ? pendingBalanceDB : Math.max(0, dbTotal - totalReceived);
 
-          $("billCode").textContent = data.order_code || "—";
+          $("billCode").textContent = data.order_code ? ("Bill Code: " + data.order_code) : "Bill Code: —";
+          $("billDate").textContent = data.completed_at ? new Date(data.completed_at).toISOString().split("T")[0] : (data.created_at ? new Date(data.created_at).toISOString().split("T")[0] : "Date: —");
+
           $("custName").textContent = data.customer_name || "—";
           $("custContact").textContent = data.customer_contact || "—";
           $("jobDesc").textContent = data.job_description || "—";
-          $("refInfo").textContent = data.order_serial ? ("Ref: " + data.order_serial) : "—";
+          $("notes").textContent = ""; // no reference field as requested
 
           $("itemDesc").textContent = data.job_description || "—";
           $("itemRate").textContent = fmt(dbTotal);
@@ -217,10 +247,12 @@
           $("pendingBalance").textContent = fmt(pendingBalance);
           $("grandTotal").textContent = fmt(pendingBalance);
 
-          $("billDate").textContent = data.completed_at ? new Date(data.completed_at).toISOString().split("T")[0] : (data.created_at ? new Date(data.created_at).toISOString().split("T")[0] : "—");
-
           const paidStamp = $("paidStamp");
-          if (Number(pendingBalance) <= 0.0001) paidStamp.classList.add("visible"); else paidStamp.classList.remove("visible");
+          if (Number(pendingBalance) <= 0.0001) {
+            paidStamp.classList.add("visible");
+          } else {
+            paidStamp.classList.remove("visible");
+          }
 
           if (dbTotal === 0 && advance === 0 && totalReceived === 0) {
             $("debugMsg").textContent = "All amounts are zero. Check DB fields: total_amount, total_received, pending_balance.";
