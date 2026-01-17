@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Attendance Approval</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <h1>Admin Attendance Approval</h1>
+    <button onclick="window.location.href='admin-dashboard.html'">Back to Dashboard</button>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <!-- Attendance Requests Table -->
+  <div class="attendanceRequests">
+    <h2>Pending Attendance Requests</h2>
+    <table id="adminAttendanceTable">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Date</th>
+          <th>Request Type</th>
+          <th>Request Time</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/auth.js"></script>
+  <script>
+    // Load all attendance requests
+    async function loadAttendanceRequests() {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user) {
+        alert("Not logged in.");
+        window.location.href = "login.html";
+        return;
+      }
+
+      // Only admins should access this page
+      const { data: profile } = await supabaseClient
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      if (!profile || profile.role !== "admin") {
+        alert("Access denied. Admins only.");
+        window.location.href = "user-home.html";
+        return;
+      }
+
+      const { data, error } = await supabaseClient
+        .from("attendance_requests")
+        .select("id, user_id, date, request_type, request_time, status")
+        .order("date", { ascending: false });
+
+      if (error) {
+        alert("Error loading attendance requests: " + error.message);
+        return;
+      }
+
+      const tbody = document.querySelector("#adminAttendanceTable tbody");
+      tbody.innerHTML = "";
+      (data || []).forEach(record => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${record.user_id}</td>
+          <td>${record.date || ""}</td>
+          <td>${record.request_type || ""}</td>
+          <td>${record.request_time ? new Date(record.request_time).toLocaleString() : ""}</td>
+          <td>${record.status}</td>
+          <td>
+            <button onclick="approveRequest('${record.id}')">Approve</button>
+            <button onclick="rejectRequest('${record.id}')">Reject</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Approve request
+    async function approveRequest(id) {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      const { error } = await supabaseClient
+        .from("attendance_requests")
+        .update({
+          status: "approved",
+          approved_by: user.id,
+          approved_at: new Date().toISOString()
+        })
+        .eq("id", id);
+
+      if (error) {
+        alert("Error approving request: " + error.message);
+        return;
+      }
+
+      alert("Request approved.");
+      loadAttendanceRequests();
+    }
+
+    // Reject request
+    async function rejectRequest(id) {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      const { error } = await supabaseClient
+        .from("attendance_requests")
+        .update({
+          status: "rejected",
+          approved_by: user.id,
+          approved_at: new Date().toISOString()
+        })
+        .eq("id", id);
+
+      if (error) {
+        alert("Error rejecting request: " + error.message);
+        return;
+      }
+
+      alert("Request rejected.");
+      loadAttendanceRequests();
+    }
+
+    async function logout() {
+      await supabaseClient.auth.signOut();
+      window.location.href = "home.html";
+    }
+
+    // Load requests on page load
+    loadAttendanceRequests();
+  </script>
+</body>
+</html>
