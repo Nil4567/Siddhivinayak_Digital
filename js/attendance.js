@@ -17,8 +17,6 @@ async function getCurrentUser() {
 }
 
 // -------------------- User Functions --------------------
-
-// Load attendance records for the logged-in user
 async function loadAttendance() {
   const user = await getCurrentUser();
   if (!user) return;
@@ -51,7 +49,6 @@ async function loadAttendance() {
   });
 }
 
-// Submit a new attendance request
 async function requestAttendance(type) {
   const user = await getCurrentUser();
   if (!user) return;
@@ -71,12 +68,10 @@ async function requestAttendance(type) {
   }
 
   alert("Your " + type + " request has been submitted.");
-  loadAttendance(); // refresh table
+  loadAttendance();
 }
 
 // -------------------- Admin Functions --------------------
-
-// Load all pending attendance requests for admin approval
 async function loadPendingAttendance() {
   const { data, error } = await supabaseClient
     .from("attendance_requests")
@@ -87,7 +82,7 @@ async function loadPendingAttendance() {
       request_time,
       status,
       date,
-      profiles(email)
+      profiles(email, display_name)
     `)
     .eq("status", "pending")
     .order("date", { ascending: false });
@@ -104,7 +99,7 @@ async function loadPendingAttendance() {
   (data || []).forEach(req => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${req.profiles?.email || req.user_id}</td>
+      <td>${req.profiles?.display_name || req.profiles?.email || req.user_id}</td>
       <td>${req.date || ""}</td>
       <td>${req.request_type}</td>
       <td>${req.request_time ? new Date(req.request_time).toLocaleString() : ""}</td>
@@ -118,12 +113,9 @@ async function loadPendingAttendance() {
   });
 }
 
-// Approve a request (store admin user UUID in approved_by)
 async function approveAttendance(id) {
   const admin = await getCurrentUser();
   if (!admin) return;
-
-  console.log("Approving with admin.id:", admin.id);
 
   const { error } = await supabaseClient
     .from("attendance_requests")
@@ -143,12 +135,9 @@ async function approveAttendance(id) {
   loadPendingAttendance();
 }
 
-// Reject a request (store admin user UUID in approved_by)
 async function rejectAttendance(id) {
   const admin = await getCurrentUser();
   if (!admin) return;
-
-  console.log("Rejecting with admin.id:", admin.id);
 
   const { error } = await supabaseClient
     .from("attendance_requests")
@@ -167,3 +156,10 @@ async function rejectAttendance(id) {
   alert("Request rejected.");
   loadPendingAttendance();
 }
+
+// -------------------- Expose to Window --------------------
+window.loadAttendance = loadAttendance;
+window.requestAttendance = requestAttendance;
+window.loadPendingAttendance = loadPendingAttendance;
+window.approveAttendance = approveAttendance;
+window.rejectAttendance = rejectAttendance;
