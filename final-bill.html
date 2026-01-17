@@ -1,82 +1,346 @@
-async function loadBill(orderCode) {
-  $("debugMsg").textContent = "Loading bill...";
-  try {
-    const { data, error } = await supabaseClient
-      .from("completed_orders")
-      .select(`
-        order_id,
-        order_code,
-        customer_name,
-        customer_contact,
-        job_description,
-        total_amount,
-        advance_amount,
-        pending_received,
-        total_received,
-        pending_balance,
-        created_at,
-        completed_at
-      `)
-      .eq("order_code", orderCode)
-      .limit(1)
-      .single();
-
-    if (error) {
-      console.error("Supabase error:", error);
-      $("debugMsg").textContent = "Bill not found or permission denied. Check console.";
-      return;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Final Bill - Siddhivinayak Digital</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --brand:#0073ff; --muted:#666; --paper:#fff; }
+    body { font-family: "Segoe UI", Arial, sans-serif; background:#f4f6f9; margin:0; padding:24px; display:flex; justify-content:center; }
+    .container { width:760px; background:var(--paper); border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,0.08); padding:20px; position:relative; }
+    header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+    .brand { color:var(--brand); }
+    .brand h1 { margin:0; font-size:20px; }
+    .meta { text-align:right; font-size:13px; color:#222; }
+    .meta .small { color:var(--muted); font-size:12px; }
+    .grid { display:flex; gap:12px; margin-top:14px; flex-wrap:wrap; }
+    .box { flex:1 1 220px; background:#fafafa; padding:12px; border-radius:6px; border:1px solid #eee; }
+    table.items { width:100%; border-collapse:collapse; margin-top:14px; }
+    table.items th, table.items td { border:1px solid #e6e6e6; padding:10px; text-align:left; vertical-align:top; }
+    table.items th { background:var(--brand); color:#fff; font-weight:700; }
+    .right { text-align:right; }
+    .totals { width:100%; margin-top:12px; border-collapse:collapse; }
+    .totals td { padding:8px; border-top:1px solid #eee; }
+    .totals .label { color:var(--muted); }
+    .actions { margin-top:18px; display:flex; gap:10px; }
+    button.primary { background:var(--brand); color:#fff; border:none; padding:10px 14px; border-radius:6px; cursor:pointer; font-weight:700; }
+    button.ghost { background:#fff; color:var(--brand); border:1px solid var(--brand); padding:10px 14px; border-radius:6px; cursor:pointer; font-weight:700; }
+    .muted { color:var(--muted); font-size:13px; }
+    .small { font-size:12px; color:var(--muted); }
+    /* PAID stamp */
+    .paid-stamp {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-18deg);
+      font-size:96px;
+      color: rgba(46, 204, 113, 0.18);
+      font-weight:900;
+      letter-spacing:6px;
+      pointer-events:none;
+      display:none;
+      z-index: 30;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.06);
     }
-    if (!data) {
-      $("debugMsg").textContent = "No data returned for this code.";
-      return;
+    .paid-stamp.visible { display:block; }
+    /* color dots for small legend if needed */
+    .color-dot { width:12px; height:12px; border-radius:50%; display:inline-block; margin-right:6px; vertical-align:middle; }
+    .dot-blue { background:#0073ff; }
+    .dot-red { background:#e74c3c; }
+    .dot-green { background:#2ecc71; }
+    @media print {
+      .actions { display:none; }
+      .container { box-shadow:none; border-radius:0; margin:0; }
+      .paid-stamp { display:none !important; }
     }
+  </style>
+</head>
+<body>
+  <div class="container" id="billContainer">
+    <div class="paid-stamp" id="paidStamp">PAID</div>
 
-    // Base values from DB
-    const total = Number(data.total_amount ?? 0);
-    const advance = Number(data.advance_amount ?? 0);
-    const pendingReceived = Number(data.pending_received ?? 0);
+    <header>
+      <div class="brand">
+        <h1>Siddhivinayak Digital</h1>
+        <div class="small">Shop No. X, Example Road, Mumbai • Phone: 9000000000</div>
+      </div>
+      <div class="meta">
+        <div><strong>Final Bill</strong></div>
+        <div class="small" id="billCode">Bill Code: —</div>
+        <div class="small" id="billDate">Date: —</div>
+      </div>
+    </header>
 
-    // Prefer DB-derived values if present
-    const totalReceivedDB = (data.total_received !== null && data.total_received !== undefined) ? Number(data.total_received) : null;
-    const pendingBalanceDB = (data.pending_balance !== null && data.pending_balance !== undefined) ? Number(data.pending_balance) : null;
+    <div class="grid">
+      <div class="box">
+        <strong>Customer</strong>
+        <div id="custName" class="muted">—</div>
+        <div id="custContact" class="muted">—</div>
+      </div>
+      <div class="box">
+        <strong>Job</strong>
+        <div id="jobDesc" class="muted">—</div>
+      </div>
+      <div class="box">
+        <strong>Address</strong>
+        <div class="muted">Shop No. X, Example Road, Mumbai</div>
+      </div>
+    </div>
 
-    // Compute fallback values
-    const totalReceived = totalReceivedDB !== null ? totalReceivedDB : (advance + pendingReceived);
-    const pendingBalance = pendingBalanceDB !== null ? pendingBalanceDB : Math.max(0, total - totalReceived);
+    <table class="items" id="itemsTable" aria-label="Bill items">
+      <thead>
+        <tr>
+          <th style="width:60%;">Description</th>
+          <th style="width:10%;">Qty</th>
+          <th style="width:15%;" class="right">Rate</th>
+          <th style="width:15%;" class="right">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td id="itemDesc">—</td>
+          <td class="right">1</td>
+          <td class="right" id="itemRate">0.00</td>
+          <td class="right" id="itemAmount">0.00</td>
+        </tr>
+      </tbody>
+    </table>
 
-    // Fill UI fields
-    $("billCode").textContent = "Bill Code: " + (data.order_code || "—");
-    const completedAt = data.completed_at ? new Date(data.completed_at) : new Date();
-    $("billDate").textContent = "Date: " + completedAt.toISOString().split("T")[0];
+    <!-- Color totals rows (three colors) -->
+    <table style="width:100%; border-collapse:collapse; margin-top:12px;">
+      <tbody>
+        <tr>
+          <th style="width:40%;">Blue Total</th>
+          <td id="blueTotal">₹0.00 <span class="color-dot dot-blue" aria-hidden="true"></span></td>
+        </tr>
+        <tr>
+          <th>Red Total</th>
+          <td id="redTotal">₹0.00 <span class="color-dot dot-red" aria-hidden="true"></span></td>
+        </tr>
+        <tr>
+          <th>Green Total</th>
+          <td id="greenTotal">₹0.00 <span class="color-dot dot-green" aria-hidden="true"></span></td>
+        </tr>
+      </tbody>
+    </table>
 
-    $("custName").textContent = data.customer_name || "—";
-    $("custContact").textContent = data.customer_contact || "—";
-    $("jobDesc").textContent = data.job_description || "—";
+    <table class="totals" aria-hidden="false">
+      <tbody>
+        <tr>
+          <td class="label">Total Amount</td>
+          <td class="right" id="totalAmount">0.00</td>
+        </tr>
+        <tr>
+          <td class="label">Advance Received</td>
+          <td class="right" id="advanceAmount">0.00</td>
+        </tr>
+        <tr>
+          <td class="label">Pending Received</td>
+          <td class="right" id="pendingReceived">0.00</td>
+        </tr>
+        <tr>
+          <td class="label">Total Received</td>
+          <td class="right" id="totalReceived">0.00</td>
+        </tr>
+        <tr>
+          <td class="label">Pending Balance</td>
+          <td class="right" id="pendingBalance">0.00</td>
+        </tr>
+        <tr style="font-weight:800;">
+          <td>Total Payable</td>
+          <td class="right" id="grandTotal">0.00</td>
+        </tr>
+      </tbody>
+    </table>
 
-    $("itemDesc").textContent = data.job_description || "—";
-    $("itemRate").textContent = fmt(total);
-    $("itemAmount").textContent = fmt(total);
+    <div class="actions">
+      <button class="primary" id="printBtn">Print / Save as PDF</button>
+      <button class="ghost" id="shareImageBtn">Share Bill Image</button>
+    </div>
 
-    $("totalAmount").textContent = fmt(total);
-    $("advanceAmount").textContent = fmt(advance);
-    $("pendingReceived").textContent = fmt(pendingReceived);
-    $("totalReceived").textContent = fmt(totalReceived);
-    $("pendingBalance").textContent = fmt(pendingBalance);
+    <div class="muted" id="debugMsg" style="margin-top:12px;"></div>
+  </div>
 
-    // === CORRECT: Total Payable is the pending balance ===
-    $("grandTotal").textContent = fmt(pendingBalance);
+  <!-- libs -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
-    // Show PAID stamp if payable is zero (or effectively zero)
-    const paidStamp = $("paidStamp");
-    if (Number(pendingBalance) <= 0.0001) {
-      paidStamp.classList.add("visible");
-    } else {
-      paidStamp.classList.remove("visible");
-    }
+  <script>
+    (function () {
+      const $ = id => document.getElementById(id);
+      const fmt = v => (Number(v) || 0).toFixed(2);
 
-    $("debugMsg").textContent = "";
-  } catch (err) {
-    console.error("loadBill exception:", err);
-    $("debugMsg").textContent = "Error loading bill. See console for details.";
-  }
-}
+      function whenSupabaseReady(timeout = 3000) {
+        return new Promise((resolve, reject) => {
+          const start = Date.now();
+          (function check() {
+            if (typeof supabaseClient !== 'undefined' && supabaseClient) return resolve();
+            if (Date.now() - start > timeout) return reject(new Error('supabaseClient not available'));
+            setTimeout(check, 50);
+          })();
+        });
+      }
+
+      // Load bill and color totals. Uses DB fields if present:
+      // total_amount, advance_amount, pending_received, total_received, pending_balance
+      // optional color fields: blue_total, red_total, green_total
+      async function loadBill(orderCode) {
+        $("debugMsg").textContent = "Loading bill...";
+        try {
+          const { data, error } = await supabaseClient
+            .from("completed_orders")
+            .select(`
+              order_id,
+              order_code,
+              customer_name,
+              customer_contact,
+              job_description,
+              total_amount,
+              advance_amount,
+              pending_received,
+              total_received,
+              pending_balance,
+              blue_total,
+              red_total,
+              green_total,
+              created_at,
+              completed_at
+            `)
+            .eq("order_code", orderCode)
+            .limit(1)
+            .single();
+
+          if (error) {
+            console.error("Supabase error:", error);
+            $("debugMsg").textContent = "Bill not found or permission denied. Check console.";
+            return;
+          }
+          if (!data) {
+            $("debugMsg").textContent = "No data returned for this code.";
+            return;
+          }
+
+          // Base amounts
+          const dbTotal = Number(data.total_amount ?? 0);
+          const advance = Number(data.advance_amount ?? 0);
+          const pendingReceived = Number(data.pending_received ?? 0);
+
+          // Color totals from DB if present; fallback to 0
+          const blue = Number(data.blue_total ?? 0);
+          const red = Number(data.red_total ?? 0);
+          const green = Number(data.green_total ?? 0);
+
+          // If color totals sum > 0, prefer that as total amount
+          const colorSum = blue + red + green;
+          const totalAmount = colorSum > 0 ? colorSum : dbTotal;
+
+          // Prefer DB-derived total_received / pending_balance if present
+          const totalReceivedDB = (data.total_received !== null && data.total_received !== undefined) ? Number(data.total_received) : null;
+          const pendingBalanceDB = (data.pending_balance !== null && data.pending_balance !== undefined) ? Number(data.pending_balance) : null;
+
+          const totalReceived = totalReceivedDB !== null ? totalReceivedDB : (advance + pendingReceived);
+          const pendingBalance = pendingBalanceDB !== null ? pendingBalanceDB : Math.max(0, totalAmount - totalReceived);
+
+          // Fill UI
+          $("billCode").textContent = data.order_code || "—";
+          $("custName").textContent = data.customer_name || "—";
+          $("custContact").textContent = data.customer_contact || "—";
+          $("jobDesc").textContent = data.job_description || "—";
+
+          $("itemDesc").textContent = data.job_description || "—";
+          $("itemRate").textContent = fmt(totalAmount);
+          $("itemAmount").textContent = fmt(totalAmount);
+
+          $("blueTotal").textContent = "₹" + fmt(blue);
+          $("redTotal").textContent = "₹" + fmt(red);
+          $("greenTotal").textContent = "₹" + fmt(green);
+
+          $("totalAmount").textContent = fmt(totalAmount);
+          $("advanceAmount").textContent = fmt(advance);
+          $("pendingReceived").textContent = fmt(pendingReceived);
+          $("totalReceived").textContent = fmt(totalReceived);
+          $("pendingBalance").textContent = fmt(pendingBalance);
+          $("grandTotal").textContent = fmt(pendingBalance);
+
+          $("billDate").textContent = data.completed_at ? new Date(data.completed_at).toISOString().split("T")[0] : (data.created_at ? new Date(data.created_at).toISOString().split("T")[0] : "—");
+
+          // Show PAID stamp if payable is 0 (or effectively zero)
+          const paidStamp = $("paidStamp");
+          if (Number(pendingBalance) <= 0.0001) {
+            paidStamp.classList.add("visible");
+          } else {
+            paidStamp.classList.remove("visible");
+          }
+
+          $("debugMsg").textContent = "";
+        } catch (err) {
+          console.error("loadBill exception:", err);
+          $("debugMsg").textContent = "Error loading bill. See console for details.";
+        }
+      }
+
+      // Share bill as image using html2canvas
+      async function shareBillImage() {
+        const node = $("billContainer");
+        if (!node) return alert("Bill container not found.");
+
+        try {
+          const canvas = await html2canvas(node, { scale: 2, useCORS: true });
+          const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png", 0.95));
+          if (!blob) throw new Error("Failed to create image blob.");
+
+          const file = new File([blob], `${(window.__ORDER_CODE__ || 'bill')}.png`, { type: "image/png" });
+
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              title: `Bill ${window.__ORDER_CODE__ || ''}`,
+              text: `Final bill ${window.__ORDER_CODE__ || ''}`,
+              files: [file]
+            });
+            return;
+          }
+
+          const url = URL.createObjectURL(blob);
+          const win = window.open(url, "_blank");
+          if (!win) {
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${(window.__ORDER_CODE__ || 'bill')}.png`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+          }
+        } catch (err) {
+          console.error("shareBillImage error:", err);
+          alert("Unable to share image. See console for details.");
+        }
+      }
+
+      // Print
+      $("printBtn").addEventListener("click", () => window.print());
+      $("shareImageBtn").addEventListener("click", shareBillImage);
+
+      // Init
+      (async function init() {
+        const params = new URLSearchParams(window.location.search);
+        const raw = params.get("code") || params.get("order_code") || params.get("id");
+        const code = raw ? decodeURIComponent(raw).trim() : null;
+        if (!code) {
+          $("debugMsg").textContent = "No order code provided in URL. Use ?code=SD/001";
+          return;
+        }
+        window.__ORDER_CODE__ = code;
+
+        try {
+          await whenSupabaseReady(3000);
+          await loadBill(code);
+        } catch (err) {
+          console.error("Supabase init error:", err);
+          $("debugMsg").textContent = "Supabase client not initialized. Ensure js/supabase-config.js is loaded and defines supabaseClient.";
+        }
+      })();
+    })();
+  </script>
+</body>
+</html>
