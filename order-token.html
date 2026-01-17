@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Order Token - Siddhivinayak Digital</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background:#f4f6f9; margin:0; padding:40px; display:flex; justify-content:center; }
+    .token { border:2px solid #333; padding:25px; background:#fff; width:420px; box-shadow:0 4px 10px rgba(0,0,0,0.2); }
+    .token h2 { margin:0; text-align:center; color:#0073ff; }
+    .token p { margin:6px 0; font-size:14px; }
+    .token hr { margin:12px 0; border:0; border-top:1px dashed #aaa; }
+    .token table { width:100%; border-collapse:collapse; margin-top:10px; }
+    .token th, .token td { text-align:left; padding:6px; font-size:14px; }
+    .token th { width:40%; color:#2c3e50; }
+    .actions { margin-top:15px; display:flex; justify-content:space-between; }
+    .actions button { padding:8px 12px; background:#0073ff; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:14px; }
+    .actions button:hover { background:#0056b3; }
+  </style>
+</head>
+<body>
+  <div class="token" id="tokenCard">
+    <h2>Siddhivinayak Digital</h2>
+    <p><strong>Address:</strong> Shop No. 12, Main Road, Mumbai</p>
+    <hr>
+    <table>
+      <tr><th>Order Code</th><td id="code"></td></tr>
+      <tr><th>Customer</th><td id="customer"></td></tr>
+      <tr><th>Job Description</th><td id="job"></td></tr>
+      <tr><th>Total</th><td id="total"></td></tr>
+      <tr><th>Advance</th><td id="advance"></td></tr>
+      <tr><th>Pending</th><td id="pending"></td></tr>
+      <tr><th>Order Date</th><td id="date"></td></tr>
+    </table>
+    <div class="actions">
+      <button onclick="window.print()">Print / PDF</button>
+      <button onclick="downloadToken()">Download PNG</button>
+      <button onclick="shareToken()">Share</button>
+    </div>
+  </div>
+
+  <!-- Supabase SDK + Config + html2canvas -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="js/supabase-config.js"></script>
+
+  <script>
+    async function loadToken() {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+
+      const { data, error } = await supabaseClient
+        .from("orders")
+        .select("order_code, customer_name, job_description, total_amount, advance_amount, pending_amount, created_at")
+        .eq("order_code", code)
+        .single();
+
+      if (error) {
+        alert("Error loading token: " + error.message);
+        return;
+      }
+
+      document.getElementById("code").textContent = data.order_code;
+      document.getElementById("customer").textContent = data.customer_name;
+      document.getElementById("job").textContent = data.job_description;
+      document.getElementById("total").textContent = data.total_amount || 0;
+      document.getElementById("advance").textContent = data.advance_amount || 0;
+      document.getElementById("pending").textContent = data.pending_amount || 0;
+      document.getElementById("date").textContent = data.created_at.split("T")[0];
+    }
+
+    async function downloadToken() {
+      const card = document.getElementById("tokenCard");
+      const canvas = await html2canvas(card, { scale: 2 });
+      const link = document.createElement("a");
+      link.download = (document.getElementById("code").textContent || "order-token") + ".png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+
+    async function shareToken() {
+      const card = document.getElementById("tokenCard");
+      const canvas = await html2canvas(card, { scale: 2 });
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+      const file = new File([blob], "order-token.png", { type: "image/png" });
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: "Order Token",
+            text: "Here is your order slip",
+            files: [file]
+          });
+        } catch (err) {
+          alert("Share cancelled or failed: " + err);
+        }
+      } else {
+        alert("Sharing not supported in this browser. Use Download instead.");
+      }
+    }
+
+    loadToken();
+  </script>
+</body>
+</html>

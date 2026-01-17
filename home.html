@@ -1,18 +1,10 @@
-<script>
-  if (localStorage.getItem("loggedIn") !== "yes") {
-    window.location.href = "index.html";
-  }
-</script>
-
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Siddhivinayak Digital — Home</title>
-
-<link rel="stylesheet" href="style.css" />
-
+  <link rel="stylesheet" href="style.css" />
 
   <style>
     /* Big animated title */
@@ -92,6 +84,7 @@
       transform:scale(1.05);
     }
 
+     
     /* Footer */
     .footer {
       text-align:center;
@@ -103,12 +96,10 @@
 </head>
 
 <body>
-
   <div class="big-title">Siddhivinayak Digital</div>
   <div class="tagline">Printing • Xerox • Binding • Lamination • Designing</div>
 
   <div class="home-wrapper">
-
     <article class="brochure">
       <h3>Welcome to Siddhivinayak Digital</h3>
       <ul>
@@ -120,20 +111,18 @@
       </ul>
     </article>
 
-    <!-- Login only -->
-  <a class="btn-login" href="pages/login.html">Login to Staff Dashboard</a>
-
+    <!-- Login button -->
+    <a class="btn-login" href="login.html">Login to Staff Dashboard</a>
+ 
 
     <div class="footer">© 2025 Siddhivinayak Digital. All rights reserved.</div>
   </div>
 
+  <script>
+    function logout() {
+      localStorage.removeItem("loggedIn");
+      window.location.href = "login.html"; // after logout, go to login page
+    }
+  </script>
 </body>
 </html>
-<button onclick="logout()">Logout</button>
-
-<script>
-  function logout() {
-    localStorage.removeItem("loggedIn");
-    window.location.href = "index.html";
-  }
-</script>

@@ -1,0 +1,65 @@
+<div class="tabs">
+  <button class="tabBtn" onclick="window.location.href='new-order.html'">Create New Order</button>
+  <button class="tabBtn" onclick="showQueue()">My Queue Orders</button>
+</div>
+
+<div id="queueSection" style="display:none;">
+  <h2>My Queue Orders</h2>
+  <table id="queueTable">
+    <thead>
+      <tr>
+        <th>Order Code</th>
+        <th>Customer</th>
+        <th>Mobile</th>
+        <th>Job Description</th>
+        <th>Total</th>
+        <th>Advance</th>
+        <th>Pending</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script>
+async function showQueue() {
+  document.getElementById("queueSection").style.display = "block";
+
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  if (!user) {
+    alert("Not logged in.");
+    window.location.href = "login.html";
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("orders")
+    .select("order_code, customer_name, customer_contact, job_description, total_amount, advance_amount, pending_amount, status, assigned_to, created_at")
+    .neq("status", "Completed")
+    .eq("assigned_to", user.id)   // only orders assigned to this user
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    alert("Error loading queue orders: " + error.message);
+    return;
+  }
+
+  const tbody = document.querySelector("#queueTable tbody");
+  tbody.innerHTML = "";
+  (data || []).forEach(order => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${order.order_code || ""}</td>
+      <td>${order.customer_name || ""}</td>
+      <td>${order.customer_contact || ""}</td>
+      <td>${order.job_description || ""}</td>
+      <td>${(order.total_amount ?? 0).toFixed(2)}</td>
+      <td>${(order.advance_amount ?? 0).toFixed(2)}</td>
+      <td>${(order.pending_amount ?? 0).toFixed(2)}</td>
+      <td>${order.status}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+</script>

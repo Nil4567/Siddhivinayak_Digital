@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Siddhivinayak Digital — Login</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body { font-family: Arial, sans-serif; background:#f4f6f9; margin:0; padding:20px; }
+    .login-wrapper {
+      max-width:400px; margin:60px auto; background:white;
+      padding:30px; border-radius:12px; box-shadow:0 8px 20px rgba(0,0,0,0.08);
+    }
+    h2 { text-align:center; color:#2c3e50; margin-bottom:20px; }
+    label { display:block; margin-top:12px; font-weight:600; color:#333; }
+    input { width:100%; padding:10px; margin-top:6px; border:1px solid #ccc; border-radius:6px; }
+    button {
+      width:100%; margin-top:20px; padding:12px;
+      background:#0073ff; color:white; border:none; border-radius:8px;
+      font-size:16px; font-weight:700; cursor:pointer; transition:0.2s;
+    }
+    button:hover { background:#005fd6; transform:scale(1.03); }
+  </style>
+</head>
+<body>
+  <div class="login-wrapper">
+    <h2>Staff Login</h2>
+    <form id="login-form">
+      <label>Email</label>
+      <input type="email" id="email" required />
+      <label>Password</label>
+      <input type="password" id="password" required />
+      <button type="submit">Login</button>
+    </form>
+  </div>
+
+  <!-- Supabase library + config -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+
+  <script>
+    const form = document.getElementById("login-form");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      // Supabase login
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        alert("Login failed: " + error.message);
+        return;
+      }
+
+      const userId = data.user.id;
+
+      // Fetch role + display_name from profiles table
+      const { data: profile, error: profileError } = await supabaseClient
+        .from("profiles")
+        .select("role, email, display_name")
+        .eq("id", userId)
+        .single();
+
+      if (profileError || !profile) {
+        alert("User not found in database.");
+        return;
+      }
+
+      // Save session info
+      localStorage.setItem("loggedIn", "yes");
+      localStorage.setItem("uid", userId);
+      localStorage.setItem("email", profile.email);
+      localStorage.setItem("displayName", profile.display_name || profile.email);
+      localStorage.setItem("role", profile.role); // critical fix
+
+      // Redirect based on role
+      if (profile.role === "admin") {
+        window.location.href = "admin-dashboard.html";
+      } else if (profile.role === "user") {
+        window.location.href = "user-home.html";
+      } else {
+        alert("Unknown role. Please contact admin.");
+      }
+    });
+  </script>
+</body>
+</html>

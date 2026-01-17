@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Orders Queue - Siddhivinayak Digital</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; background:#f4f6f9; margin:0; padding:20px; }
+    header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+    h1 { color:#2c3e50; margin:0; }
+    .nav { padding:8px 14px; margin-left:10px; background:#0073ff; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:600; }
+    .nav:hover { background:#0056b3; }
+
+    /* Summary boxes */
+    .summary { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px; }
+    .box { flex:1; min-width:120px; padding:10px; border-radius:6px; color:#fff; font-weight:bold; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.12); }
+    .pending { background:#f39c12; }
+    .process { background:#3498db; }
+    .hold { background:#9b59b6; }
+    .assigned { background:#e74c3c; }
+
+    table { width:100%; border-collapse:collapse; background:#fff; }
+    th, td { border:1px solid #ddd; padding:10px; text-align:left; vertical-align:top; }
+    th { background:#0073ff; color:#fff; }
+    input.editable { width:100%; border:1px solid #ccc; padding:6px; border-radius:4px; }
+    select, .updateBtn, .tokenBtn { padding:6px; border-radius:4px; border:1px solid #ccc; }
+    .updateBtn { background:#0073ff; color:#fff; border:none; cursor:pointer; }
+    .updateBtn:hover { background:#0056b3; }
+    .tokenBtn { background:#2c3e50; color:#fff; border:none; cursor:pointer; }
+    .tokenBtn:hover { background:#1f2a38; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Orders Queue</h1>
+    <div>
+      <button class="nav" id="homeBtn">Home</button>
+      <button class="nav" id="logoutBtn">Logout</button>
+    </div>
+  </header>
+
+  <!-- Status Summary -->
+  <div class="summary">
+    <div class="box pending" id="pendingCount">Pending: 0</div>
+    <div class="box process" id="processCount">In Process: 0</div>
+    <div class="box hold" id="holdCount">Hold: 0</div>
+    <!-- Completed box removed -->
+  </div>
+
+  <!-- Assigned To Summary -->
+  <div class="summary" id="assignedSummary"></div>
+
+  <table id="ordersTable">
+    <thead>
+      <tr>
+        <th>Order Code</th>
+        <th>Customer</th>
+        <th>Job Description</th>
+        <th>Total</th>
+        <th>Advance</th>
+        <th>Pending</th>
+        <th>Order Date</th>
+        <th>TAT (Days)</th>
+        <th>Status</th>
+        <th>Assigned To</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <!-- Supabase SDK + Config -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+
+  <script>
+    if (typeof supabaseClient === "undefined") {
+      alert("Supabase client not initialized. Check js/supabase-config.js is loaded correctly.");
+    }
+
+    let users = [];
+
+    document.getElementById("homeBtn").addEventListener("click", () => {
+      const role = localStorage.getItem("role");
+      window.location.href = role === "admin" ? "admin-dashboard.html" : "user-home.html";
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      try { if (supabaseClient && supabaseClient.auth) await supabaseClient.auth.signOut(); } catch(_) {}
+      localStorage.clear();
+      window.location.href = "login.html";
+    });
+
+    async function loadUsers() {
+      const { data, error } = await supabaseClient
+        .from("profiles")
+        .select("id, display_name")
+        .eq("role", "user");
+      if (error) { alert("Error loading users: " + error.message); return; }
+      users = data || [];
+    }
+
+    async function loadOrders() {
+      const { data, error } = await supabaseClient
+        .from("orders")
+        .select("order_id, order_code, customer_name, job_description, total_amount, advance_amount, pending_amount, status, assigned_to, created_at");
+
+      if (error) { alert("Error loading orders: " + error.message); return; }
+
+      // Status summary (no completed count)
+      let pending=0, process=0, hold=0;
+      const assignedCounts = {};
+      (data || []).forEach(o => {
+        if (o.status === "Pending") pending++;
+        else if (o.status === "In Process") process++;
+        else if (o.status === "Hold") hold++;
+        if (o.assigned_to) {
+          assignedCounts[o.assigned_to] = (assignedCounts[o.assigned_to] || 0) + 1;
+        }
+      });
+      document.getElementById("pendingCount").textContent = "Pending: " + pending;
+      document.getElementById("processCount").textContent = "In Process: " + process;
+      document.getElementById("holdCount").textContent = "Hold: " + hold;
+
+      // Assigned summary boxes
+      const assignedDiv = document.getElementById("assignedSummary");
+      assignedDiv.innerHTML = "";
+      users.forEach(u => {
+        const count = assignedCounts[u.id] || 0;
+        const box = document.createElement("div");
+        box.className = "box assigned";
+        box.textContent = u.display_name + ": " + count;
+        assignedDiv.appendChild(box);
+      });
+
+      // Render table (exclude Completed from queue view)
+      const tbody = document.querySelector("#ordersTable tbody");
+      tbody.innerHTML = "";
+      (data || []).filter(o => o.status !== "Completed").forEach(order => {
+        const orderDate = new Date(order.created_at);
+        const today = new Date();
+        const tatDays = Math.floor((today - orderDate) / (1000 * 60 * 60 * 24));
+
+        let assignOptions = `<option value="">Unassigned</option>`;
+        users.forEach(u => {
+          assignOptions += `<option value="${u.id}" ${order.assigned_to === u.id ? "selected" : ""}>${u.display_name}</option>`;
+        });
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${order.order_code || ""}</td>
+          <td>${order.customer_name || ""}</td>
+          <td><input type="text" class="editable" data-id="${order.order_id}" value="${order.job_description || ""}"></td>
+          <td>${order.total_amount ?? 0}</td>
+          <td>${order.advance_amount ?? 0}</td>
+          <td>${order.pending_amount ?? 0}</td>
+          <td>${orderDate.toISOString().split("T")[0]}</td>
+          <td>${isNaN(tatDays) ? 0 : tatDays}</td>
+          <td>
+            <select data-id="${order.order_id}" class="statusSelect">
+              <option ${order.status === "Pending" ? "selected" : ""}>Pending</option>
+              <option ${order.status === "In Process" ? "selected" : ""}>In Process</option>
+              <option ${order.status === "Hold" ? "selected" : ""}>Hold</option>
+              <option ${order.status === "Completed" ? "selected" : ""}>Completed</option>
+            </select>
+          </td>
+          <td>
+            <select data-id="${order.order_id}" class="assignSelect">${assignOptions}</select>
+          </td>
+          <td>
+            <button data-id="${order.order_id}" class="updateBtn">Update</button>
+            <button class="tokenBtn" onclick="window.open('order-token.html?code=${order.order_code}','_blank')">Token</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      attachEvents();
+    }
+
+    function attachEvents() {
+      // Update button handler for each row
+      document.querySelectorAll(".updateBtn").forEach(btn => {
+        btn.addEventListener("click", async function() {
+          const id = this.getAttribute("data-id");
+          const status = document.querySelector(`.statusSelect[data-id="${id}"]`).value;
+          const assigned = document.querySelector(`.assignSelect[data-id="${id}"]`).value || null;
+          const jobDesc = document.querySelector(`input.editable[data-id="${id}"]`).value;
+
+          const { error } = await supabaseClient
+            .from("orders")
+            .update({ status, assigned_to: assigned, job_description: jobDesc })
+            .eq("order_id", id);
+
+          if (error) {
+            alert("Error updating order: " + error.message);
+          } else {
+            if (status === "Completed") {
+              alert("Order marked Completed! It will be moved to archive.");
+            } else {
+              alert("Order updated successfully!");
+            }
+            // Reload to reflect changes and let the trigger move completed orders out
+            loadOrders();
+          }
+        });
+      });
+    }
+
+    // Bootstrap: load users first, then orders
+    (async function init() {
+      try {
+        await loadUsers();
+        await loadOrders();
+      } catch (e) {
+        alert("Initialization error. Check console for details.");
+      }
+    })();
+  </script>
+</body>
+</html>
