@@ -29,7 +29,9 @@
           <th>Status</th>
         </tr>
       </thead>
-      <tbody></tbody>
+      <tbody>
+        <!-- Rows will be injected by JS (Supabase query in showQueue) -->
+      </tbody>
     </table>
   </div>
 
@@ -55,15 +57,20 @@
           <th>Approval</th>
         </tr>
       </thead>
-      <tbody></tbody>
+      <tbody>
+        <!-- Rows will be injected by JS (Supabase query in showAttendance) -->
+      </tbody>
     </table>
   </div>
 
   <!-- Scripts -->
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Your project scripts -->
   <script src="js/auth.js"></script>
   <script src="js/attendance.js"></script>
   <script>
-    // Show Queue Orders
+    // Show Queue Orders (data comes from Supabase, structure is hardcoded)
     async function showQueue() {
       document.getElementById("queueSection").style.display = "block";
       document.getElementById("attendanceSection").style.display = "none";
