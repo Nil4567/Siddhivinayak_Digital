@@ -104,8 +104,8 @@ async function loadPendingAttendance() {
       <td>${req.request_time ? new Date(req.request_time).toLocaleString() : ""}</td>
       <td>${req.status}</td>
       <td>
-        <button class="btn-approve" onclick="approveAttendance(${req.id})">Approve</button>
-        <button class="btn-reject" onclick="rejectAttendance(${req.id})">Reject</button>
+        <button class="btn-approve" onclick="approveAttendance('${req.id}')">Approve</button>
+        <button class="btn-reject" onclick="rejectAttendance('${req.id}')">Reject</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -116,10 +116,15 @@ async function loadPendingAttendance() {
 async function approveAttendance(id) {
   const { error } = await supabaseClient
     .from("attendance_requests")
-    .update({ status: "approved", approved_by: "admin", approved_at: new Date().toISOString() })
+    .update({
+      status: "approved",
+      approved_by: "admin",
+      approved_at: new Date().toISOString()
+    })
     .eq("id", id);
 
   if (error) {
+    console.error("Approve error:", error);
     alert("Error approving: " + error.message);
     return;
   }
@@ -131,10 +136,15 @@ async function approveAttendance(id) {
 async function rejectAttendance(id) {
   const { error } = await supabaseClient
     .from("attendance_requests")
-    .update({ status: "rejected", approved_by: "admin", approved_at: new Date().toISOString() })
+    .update({
+      status: "rejected",
+      approved_by: "admin",
+      approved_at: new Date().toISOString()
+    })
     .eq("id", id);
 
   if (error) {
+    console.error("Reject error:", error);
     alert("Error rejecting: " + error.message);
     return;
   }
