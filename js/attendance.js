@@ -1,6 +1,6 @@
 // js/attendance.js
 
-// Get current user (reuse supabaseClient from auth.js)
+// -------------------- Common Utilities --------------------
 async function getCurrentUser() {
   const { data: { user }, error } = await supabaseClient.auth.getUser();
   if (error) {
@@ -16,8 +16,10 @@ async function getCurrentUser() {
   return user;
 }
 
-// Show Attendance Records
-async function showAttendance() {
+// -------------------- User Functions --------------------
+
+// Load attendance records for the logged-in user
+async function loadAttendance() {
   const user = await getCurrentUser();
   if (!user) return;
 
@@ -49,7 +51,7 @@ async function showAttendance() {
   });
 }
 
-// Submit Attendance Request
+// Submit a new attendance request
 async function requestAttendance(type) {
   console.log("Clicked:", type);
 
@@ -71,5 +73,71 @@ async function requestAttendance(type) {
   }
 
   alert("Your " + type + " request has been submitted.");
-  showAttendance(); // refresh table
+  loadAttendance(); // refresh table
+}
+
+// -------------------- Admin Functions --------------------
+
+// Load all pending attendance requests for admin approval
+async function loadPendingAttendance() {
+  const { data, error } = await supabaseClient
+    .from("attendance_requests")
+    .select("id, user_id, request_type, request_time, status, date")
+    .eq("status", "pending")
+    .order("date", { ascending: false });
+
+  if (error) {
+    console.error("Error loading requests:", error);
+    alert("Error loading attendance requests: " + error.message);
+    return;
+  }
+
+  const tbody = document.querySelector("#approvalTable tbody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  (data || []).forEach(req => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${req.user_id}</td>
+      <td>${req.date || ""}</td>
+      <td>${req.request_type}</td>
+      <td>${req.request_time ? new Date(req.request_time).toLocaleString() : ""}</td>
+      <td>${req.status}</td>
+      <td>
+        <button class="btn-approve" onclick="approveAttendance(${req.id})">Approve</button>
+        <button class="btn-reject" onclick="rejectAttendance(${req.id})">Reject</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Approve a request
+async function approveAttendance(id) {
+  const { error } = await supabaseClient
+    .from("attendance_requests")
+    .update({ status: "approved", approved_by: "admin", approved_at: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) {
+    alert("Error approving: " + error.message);
+    return;
+  }
+  alert("Request approved.");
+  loadPendingAttendance();
+}
+
+// Reject a request
+async function rejectAttendance(id) {
+  const { error } = await supabaseClient
+    .from("attendance_requests")
+    .update({ status: "rejected", approved_by: "admin", approved_at: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) {
+    alert("Error rejecting: " + error.message);
+    return;
+  }
+  alert("Request rejected.");
+  loadPendingAttendance();
 }
