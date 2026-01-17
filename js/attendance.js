@@ -110,3 +110,50 @@ async function loadPendingAttendance() {
     `;
     tbody.appendChild(tr);
   });
+}
+
+// Approve a request (store admin user ID in approved_by)
+async function approveAttendance(id) {
+  const admin = await getCurrentUser(); // get logged-in admin
+  if (!admin) return;
+
+  const { error } = await supabaseClient
+    .from("attendance_requests")
+    .update({
+      status: "approved",
+      approved_by: admin.id,   // ✅ store admin UUID
+      approved_at: new Date().toISOString()
+    })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Approve error:", error);
+    alert("Error approving: " + error.message);
+    return;
+  }
+  alert("Request approved.");
+  loadPendingAttendance();
+}
+
+// Reject a request (store admin user ID in approved_by)
+async function rejectAttendance(id) {
+  const admin = await getCurrentUser();
+  if (!admin) return;
+
+  const { error } = await supabaseClient
+    .from("attendance_requests")
+    .update({
+      status: "rejected",
+      approved_by: admin.id,   // ✅ store admin UUID
+      approved_at: new Date().toISOString()
+    })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Reject error:", error);
+    alert("Error rejecting: " + error.message);
+    return;
+  }
+  alert("Request rejected.");
+  loadPendingAttendance();
+}
