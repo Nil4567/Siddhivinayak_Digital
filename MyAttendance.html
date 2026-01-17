@@ -45,9 +45,9 @@
   <script src="js/auth.js"></script>
   <script src="js/attendance.js"></script>
   <script>
-    // Load attendance records on page load
-    document.addEventListener("DOMContentLoaded", () => {
-      showAttendance();
+    document.addEventListener("DOMContentLoaded", async () => {
+      // Load attendance records on page load
+      await showAttendance();
 
       // Logout button
       const logoutBtn = document.getElementById("logout-btn");
