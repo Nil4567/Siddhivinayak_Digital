@@ -87,7 +87,7 @@ async function loadPendingAttendance() {
       request_time,
       status,
       date,
-      user:auth.users(email)   // join to get email
+      auth_users:auth.users(email)
     `)
     .eq("status", "pending")
     .order("date", { ascending: false });
@@ -104,7 +104,7 @@ async function loadPendingAttendance() {
   (data || []).forEach(req => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${req.user?.email || req.user_id}</td>   <!-- show email instead of UUID -->
+      <td>${req.auth_users?.email || req.user_id}</td>
       <td>${req.date || ""}</td>
       <td>${req.request_type}</td>
       <td>${req.request_time ? new Date(req.request_time).toLocaleString() : ""}</td>
