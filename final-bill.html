@@ -27,7 +27,6 @@
     button.ghost { background:#fff; color:var(--brand); border:1px solid var(--brand); padding:10px 14px; border-radius:6px; cursor:pointer; font-weight:700; }
     .muted { color:var(--muted); font-size:13px; }
     .small { font-size:12px; color:var(--muted); }
-    /* PAID stamp */
     .paid-stamp {
       position: absolute;
       top: 40%;
@@ -43,10 +42,6 @@
       text-shadow: 0 2px 6px rgba(0,0,0,0.06);
     }
     .paid-stamp.visible { display:block; }
-    .color-dot { width:12px; height:12px; border-radius:50%; display:inline-block; margin-right:6px; vertical-align:middle; }
-    .dot-blue { background:#0073ff; }
-    .dot-red { background:#e74c3c; }
-    .dot-green { background:#2ecc71; }
     @media print {
       .actions { display:none; }
       .container { box-shadow:none; border-radius:0; margin:0; }
@@ -61,7 +56,6 @@
     <header>
       <div class="brand">
         <h1>Siddhivinayak Digital</h1>
-        <div class="small">Shop No. X, Example Road, Mumbai • Phone: 9000000000</div>
       </div>
       <div class="meta">
         <div><strong>Final Bill</strong></div>
@@ -81,8 +75,8 @@
         <div id="jobDesc" class="muted">—</div>
       </div>
       <div class="box">
-        <strong>Address</strong>
-        <div class="muted">Shop No. X, Example Road, Mumbai</div>
+        <strong>Reference</strong>
+        <div id="refInfo" class="muted">—</div>
       </div>
     </div>
 
@@ -101,24 +95,6 @@
           <td class="right">1</td>
           <td class="right" id="itemRate">0.00</td>
           <td class="right" id="itemAmount">0.00</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <!-- Color totals rows (three colors) -->
-    <table style="width:100%; border-collapse:collapse; margin-top:12px;">
-      <tbody>
-        <tr>
-          <th style="width:40%;">Blue Total</th>
-          <td id="blueTotal">₹0.00 <span class="color-dot dot-blue" aria-hidden="true"></span></td>
-        </tr>
-        <tr>
-          <th>Red Total</th>
-          <td id="redTotal">₹0.00 <span class="color-dot dot-red" aria-hidden="true"></span></td>
-        </tr>
-        <tr>
-          <th>Green Total</th>
-          <td id="greenTotal">₹0.00 <span class="color-dot dot-green" aria-hidden="true"></span></td>
         </tr>
       </tbody>
     </table>
@@ -187,6 +163,7 @@
             .from("completed_orders")
             .select(`
               order_id,
+              order_serial,
               order_code,
               customer_name,
               customer_contact,
@@ -196,9 +173,6 @@
               pending_received,
               total_received,
               pending_balance,
-              blue_total,
-              red_total,
-              green_total,
               created_at,
               completed_at
             `)
@@ -216,42 +190,27 @@
             return;
           }
 
-          // Base values
           const dbTotal = Number(data.total_amount ?? 0);
           const advance = Number(data.advance_amount ?? 0);
           const pendingReceived = Number(data.pending_received ?? 0);
 
-          // Color totals from DB if present; fallback to 0
-          const blue = Number(data.blue_total ?? 0);
-          const red = Number(data.red_total ?? 0);
-          const green = Number(data.green_total ?? 0);
-
-          // If color totals sum > 0, prefer that as total amount
-          const colorSum = blue + red + green;
-          const totalAmount = colorSum > 0 ? colorSum : dbTotal;
-
-          // Prefer DB-derived total_received / pending_balance if present
           const totalReceivedDB = (data.total_received !== null && data.total_received !== undefined) ? Number(data.total_received) : null;
           const pendingBalanceDB = (data.pending_balance !== null && data.pending_balance !== undefined) ? Number(data.pending_balance) : null;
 
           const totalReceived = totalReceivedDB !== null ? totalReceivedDB : (advance + pendingReceived);
-          const pendingBalance = pendingBalanceDB !== null ? pendingBalanceDB : Math.max(0, totalAmount - totalReceived);
+          const pendingBalance = pendingBalanceDB !== null ? pendingBalanceDB : Math.max(0, dbTotal - totalReceived);
 
-          // Fill UI
           $("billCode").textContent = data.order_code || "—";
           $("custName").textContent = data.customer_name || "—";
           $("custContact").textContent = data.customer_contact || "—";
           $("jobDesc").textContent = data.job_description || "—";
+          $("refInfo").textContent = data.order_serial ? ("Ref: " + data.order_serial) : "—";
 
           $("itemDesc").textContent = data.job_description || "—";
-          $("itemRate").textContent = fmt(totalAmount);
-          $("itemAmount").textContent = fmt(totalAmount);
+          $("itemRate").textContent = fmt(dbTotal);
+          $("itemAmount").textContent = fmt(dbTotal);
 
-          $("blueTotal").textContent = "₹" + fmt(blue);
-          $("redTotal").textContent = "₹" + fmt(red);
-          $("greenTotal").textContent = "₹" + fmt(green);
-
-          $("totalAmount").textContent = fmt(totalAmount);
+          $("totalAmount").textContent = fmt(dbTotal);
           $("advanceAmount").textContent = fmt(advance);
           $("pendingReceived").textContent = fmt(pendingReceived);
           $("totalReceived").textContent = fmt(totalReceived);
@@ -260,15 +219,14 @@
 
           $("billDate").textContent = data.completed_at ? new Date(data.completed_at).toISOString().split("T")[0] : (data.created_at ? new Date(data.created_at).toISOString().split("T")[0] : "—");
 
-          // Show PAID stamp if payable is 0 (or effectively zero)
           const paidStamp = $("paidStamp");
-          if (Number(pendingBalance) <= 0.0001) {
-            paidStamp.classList.add("visible");
-          } else {
-            paidStamp.classList.remove("visible");
-          }
+          if (Number(pendingBalance) <= 0.0001) paidStamp.classList.add("visible"); else paidStamp.classList.remove("visible");
 
-          $("debugMsg").textContent = "";
+          if (dbTotal === 0 && advance === 0 && totalReceived === 0) {
+            $("debugMsg").textContent = "All amounts are zero. Check DB fields: total_amount, total_received, pending_balance.";
+          } else {
+            $("debugMsg").textContent = "";
+          }
         } catch (err) {
           console.error("loadBill exception:", err);
           $("debugMsg").textContent = "Error loading bill. See console for details.";
@@ -287,11 +245,7 @@
           const file = new File([blob], `${(window.__ORDER_CODE__ || 'bill')}.png`, { type: "image/png" });
 
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              title: `Bill ${window.__ORDER_CODE__ || ''}`,
-              text: `Final bill ${window.__ORDER_CODE__ || ''}`,
-              files: [file]
-            });
+            await navigator.share({ title: `Bill ${window.__ORDER_CODE__ || ''}`, text: `Final bill ${window.__ORDER_CODE__ || ''}`, files: [file] });
             return;
           }
 
@@ -311,7 +265,6 @@
         }
       }
 
-      // Attach UI handlers after DOM ready
       document.addEventListener("DOMContentLoaded", () => {
         $("printBtn").addEventListener("click", () => window.print());
         $("shareImageBtn").addEventListener("click", shareBillImage);
