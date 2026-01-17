@@ -12,6 +12,8 @@
     th { background:#f1f9ff; width:40%; text-align:left; }
     .summaryBox { margin-top:15px; display:flex; justify-content:space-between; background:#f1f9ff; border:1px solid #0073ff; border-radius:6px; padding:10px; font-weight:bold; }
     .thankyou { margin-top:20px; background:#2ecc71; color:#fff; text-align:center; padding:12px; font-weight:bold; border-radius:6px; }
+    .shareBtn { margin-top:15px; padding:10px 16px; background:#0073ff; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold; }
+    .shareBtn:hover { background:#0056b3; }
   </style>
 </head>
 <body>
@@ -35,6 +37,7 @@
       <div>Total Received: ₹<span id="receivedSum">0.00</span></div>
     </div>
     <div class="thankyou">🙏 Thank you for choosing Siddhivinayak Digital</div>
+    <button class="shareBtn" id="shareBtn">📤 Share Bill</button>
   </div>
 
   <!-- Supabase client -->
@@ -51,7 +54,7 @@
     async function loadBill(orderCode) {
       const { data, error } = await supabaseClient
         .from("completed_orders")
-        .select("*")
+        .select("order_code, customer_name, customer_contact, job_description, total_amount, advance_amount, pending_received, created_at, completed_at")
         .eq("order_code", orderCode)
         .single();
 
@@ -81,7 +84,7 @@
       $("completedDate").textContent = new Date(data.completed_at).toLocaleDateString();
     }
 
-    // 👉 Get order_code from URL parameter
+    // Get order_code from URL parameter
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
     if (code) {
@@ -89,6 +92,31 @@
     } else {
       $("billCard").innerHTML = `<div style="padding:20px;text-align:center;color:#fff;background:#e74c3c;border-radius:6px;">⚠️ No order code provided</div>`;
     }
+
+    // Share button logic (Web Share API)
+    document.getElementById("shareBtn").addEventListener("click", async () => {
+      const text = `Bill No: ${$("billNo").textContent}
+Customer: ${$("customer").textContent}
+Total: ${$("total").textContent}
+Advance: ${$("advance").textContent}
+Pending Received: ${$("pendingReceived").textContent}
+Total Received: ${$("totalReceived").textContent}
+Pending Balance: ${$("pending").textContent}`;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: "Final Bill - Siddhivinayak Digital",
+            text: text,
+            url: window.location.href
+          });
+        } catch (err) {
+          alert("Sharing cancelled or failed.");
+        }
+      } else {
+        alert("Sharing not supported in this browser.");
+      }
+    });
   </script>
 </body>
 </html>
