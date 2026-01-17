@@ -1,6 +1,6 @@
 // js/attendance.js
 
-// Get current user (reuse auth.js session)
+// Get current user (reuse supabaseClient from auth.js)
 async function getCurrentUser() {
   const { data: { user }, error } = await supabaseClient.auth.getUser();
   if (error) {
@@ -18,9 +18,6 @@ async function getCurrentUser() {
 
 // Show Attendance Records
 async function showAttendance() {
-  document.getElementById("attendanceSection")?.style.display = "block";
-  document.getElementById("queueSection")?.style.display = "none";
-
   const user = await getCurrentUser();
   if (!user) return;
 
