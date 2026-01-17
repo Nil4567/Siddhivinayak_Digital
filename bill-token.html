@@ -1,94 +1,53 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Bill Token - Siddhivinayak Digital</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body { font-family: 'Segoe UI', Arial, sans-serif; margin:20px; background:#fff; }
-    .invoice { max-width:700px; margin:auto; border:1px solid #ccc; padding:20px; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
-    h1 { text-align:center; color:#2c3e50; }
-    .details { margin:20px 0; }
-    .details p { margin:6px 0; }
-    table { width:100%; border-collapse:collapse; margin-top:20px; }
-    th, td { border:1px solid #ddd; padding:10px; text-align:left; }
-    th { background:#2ecc71; color:#fff; }
-    .total { text-align:right; font-weight:bold; }
-    .footer { text-align:center; margin-top:30px; font-size:14px; color:#555; }
-    button.printBtn { background:#3498db; color:#fff; border:none; padding:8px 14px; border-radius:4px; cursor:pointer; }
-    button.printBtn:hover { background:#2980b9; }
-  </style>
-</head>
-<body>
-  <div class="invoice">
-    <h1>Siddhivinayak Digital</h1>
-    <div class="details" id="orderDetails">
-      <!-- Order details will be injected here -->
-    </div>
+<table id="completedTable" border="1" style="width:100%; margin-top:20px;">
+  <thead>
+    <tr>
+      <th>Bill No</th>
+      <th>Customer</th>
+      <th>Mobile</th>
+      <th>Job</th>
+      <th>Total</th>
+      <th>Advance</th>
+      <th>Pending</th>
+      <th>Pending Received</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>BILL-001</td>
+      <td>Rahul Sharma</td>
+      <td>9876543210</td>
+      <td>Photo Album</td>
+      <td>₹2500.00</td>
+      <td>₹1000.00</td>
+      <td>₹1500.00</td>
+      <td><input class="pendingInput" type="number" value="500"></td>
+    </tr>
+    <tr>
+      <td>BILL-002</td>
+      <td>Anita Mehta</td>
+      <td>9123456789</td>
+      <td>Video Editing</td>
+      <td>₹3000.00</td>
+      <td>₹1500.00</td>
+      <td>₹1500.00</td>
+      <td><input class="pendingInput" type="number" value="1000"></td>
+    </tr>
+    <tr>
+      <td>BILL-003</td>
+      <td>Vikram Patel</td>
+      <td>9988776655</td>
+      <td>Poster Design</td>
+      <td>₹1200.00</td>
+      <td>₹500.00</td>
+      <td>₹700.00</td>
+      <td><input class="pendingInput" type="number" value="200"></td>
+    </tr>
+  </tbody>
+</table>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Description</th>
-          <th>Amount (₹)</th>
-        </tr>
-      </thead>
-      <tbody id="billTable"></tbody>
-    </table>
-
-    <div class="total" id="totalAmount"></div>
-
-    <div class="footer">
-      <p>Thank you for your business!</p>
-      <button class="printBtn" onclick="window.print()">Print Bill</button>
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase-config.js"></script>
-  <script>
-    async function loadBill() {
-      const params = new URLSearchParams(window.location.search);
-      const orderCode = params.get("code");
-
-      if (!orderCode) {
-        document.getElementById("orderDetails").innerHTML = "<p>No order code provided.</p>";
-        return;
-      }
-
-      const { data, error } = await supabaseClient
-        .from("completed_orders")
-        .select("*")
-        .eq("order_code", orderCode)
-        .single();
-
-      if (error || !data) {
-        document.getElementById("orderDetails").innerHTML = "<p>Error loading order.</p>";
-        return;
-      }
-
-      // Inject order details
-      document.getElementById("orderDetails").innerHTML = `
-        <p><strong>Order Code:</strong> ${data.order_code}</p>
-        <p><strong>Customer:</strong> ${data.customer_name}</p>
-        <p><strong>Mobile:</strong> ${data.customer_contact}</p>
-        <p><strong>Job:</strong> ${data.job_description}</p>
-        <p><strong>Completed Date:</strong> ${data.completed_at ? new Date(data.completed_at).toLocaleDateString() : ""}</p>
-      `;
-
-      // Build bill table
-      const billRows = `
-        <tr><td>Total Amount</td><td>${data.total_amount ?? 0}</td></tr>
-        <tr><td>Advance Received</td><td>${data.advance_amount ?? 0}</td></tr>
-        <tr><td>Pending Received</td><td>${data.pending_received ?? 0}</td></tr>
-      `;
-      document.getElementById("billTable").innerHTML = billRows;
-
-      const totalReceived = (data.advance_amount ?? 0) + (data.pending_received ?? 0);
-      document.getElementById("totalAmount").textContent = "Total Received: ₹" + totalReceived.toFixed(2);
-    }
-
-    loadBill();
-  </script>
-</body>
-</html>
+<!-- Summary display -->
+<div style="margin-top:15px; font-weight:bold;">
+  Total Paid: <span id="summaryPaid">₹0.00</span><br>
+  Total Pending: <span id="summaryPending">₹0.00</span><br>
+  Visible Rows: <span id="summaryCount">0</span>
+</div>
