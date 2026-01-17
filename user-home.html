@@ -10,7 +10,7 @@
   <div class="tabs">
     <button class="tabBtn" onclick="window.location.href='new-order.html'">Create New Order</button>
     <button class="tabBtn" onclick="showQueue()">My Queue Orders</button>
-    <button class="tabBtn" onclick="showAttendance()">My Attendance</button>
+    <button class="tabBtn" onclick="showAttendanceTab()">My Attendance</button>
   </div>
 
   <!-- Queue Orders Section -->
@@ -29,9 +29,7 @@
           <th>Status</th>
         </tr>
       </thead>
-      <tbody>
-        <!-- Rows will be injected by JS (Supabase query in showQueue) -->
-      </tbody>
+      <tbody></tbody>
     </table>
   </div>
 
@@ -57,9 +55,7 @@
           <th>Approval</th>
         </tr>
       </thead>
-      <tbody>
-        <!-- Rows will be injected by JS (Supabase query in showAttendance) -->
-      </tbody>
+      <tbody></tbody>
     </table>
   </div>
 
@@ -70,7 +66,7 @@
   <script src="js/auth.js"></script>
   <script src="js/attendance.js"></script>
   <script>
-    // Show Queue Orders (data comes from Supabase, structure is hardcoded)
+    // Toggle + load Queue Orders
     async function showQueue() {
       document.getElementById("queueSection").style.display = "block";
       document.getElementById("attendanceSection").style.display = "none";
@@ -110,6 +106,19 @@
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    // Toggle + load Attendance
+    async function showAttendanceTab() {
+      document.getElementById("attendanceSection").style.display = "block";
+      document.getElementById("queueSection").style.display = "none";
+
+      // Call loader from attendance.js
+      if (typeof loadAttendance === "function") {
+        await loadAttendance();
+      } else {
+        console.error("Attendance loader not found.");
+      }
     }
   </script>
 </body>
