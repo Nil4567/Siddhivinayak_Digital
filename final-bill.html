@@ -43,7 +43,6 @@
       text-shadow: 0 2px 6px rgba(0,0,0,0.06);
     }
     .paid-stamp.visible { display:block; }
-    /* color dots for small legend if needed */
     .color-dot { width:12px; height:12px; border-radius:50%; display:inline-block; margin-right:6px; vertical-align:middle; }
     .dot-blue { background:#0073ff; }
     .dot-red { background:#e74c3c; }
@@ -161,7 +160,6 @@
     <div class="muted" id="debugMsg" style="margin-top:12px;"></div>
   </div>
 
-  <!-- libs -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -182,9 +180,6 @@
         });
       }
 
-      // Load bill and color totals. Uses DB fields if present:
-      // total_amount, advance_amount, pending_received, total_received, pending_balance
-      // optional color fields: blue_total, red_total, green_total
       async function loadBill(orderCode) {
         $("debugMsg").textContent = "Loading bill...";
         try {
@@ -221,7 +216,7 @@
             return;
           }
 
-          // Base amounts
+          // Base values
           const dbTotal = Number(data.total_amount ?? 0);
           const advance = Number(data.advance_amount ?? 0);
           const pendingReceived = Number(data.pending_received ?? 0);
@@ -280,7 +275,6 @@
         }
       }
 
-      // Share bill as image using html2canvas
       async function shareBillImage() {
         const node = $("billContainer");
         if (!node) return alert("Bill container not found.");
@@ -317,11 +311,12 @@
         }
       }
 
-      // Print
-      $("printBtn").addEventListener("click", () => window.print());
-      $("shareImageBtn").addEventListener("click", shareBillImage);
+      // Attach UI handlers after DOM ready
+      document.addEventListener("DOMContentLoaded", () => {
+        $("printBtn").addEventListener("click", () => window.print());
+        $("shareImageBtn").addEventListener("click", shareBillImage);
+      });
 
-      // Init
       (async function init() {
         const params = new URLSearchParams(window.location.search);
         const raw = params.get("code") || params.get("order_code") || params.get("id");
