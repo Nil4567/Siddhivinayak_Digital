@@ -1,5 +1,11 @@
-const { createClient } = supabase;
+// js/auth.js
 
+// Make sure the Supabase SDK is loaded in your HTML BEFORE this file:
+// <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+// <script src="js/auth.js"></script>
+
+// Initialize Supabase client
+const { createClient } = supabase;
 const supabaseUrl = "https://qcyqjcxzytjtsikzrdyv.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjeXFqY3h6eXRqdHNpa3pyZHl2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMzA4NjAsImV4cCI6MjA4MDgwNjg2MH0.q0gkhSgqT_BNfsZBCd2stkgskf2V-CDVIG9p6S5LHdM";
 const supabaseClient = createClient(supabaseUrl, supabaseKey);
@@ -14,18 +20,35 @@ document.addEventListener("DOMContentLoaded", () => {
       const password = document.getElementById("password").value;
 
       const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-      if (error) { alert("Login failed: " + error.message); return; }
+      if (error) {
+        alert("Login failed: " + error.message);
+        console.error("Login error:", error);
+        return;
+      }
 
       const { data: { user } } = await supabaseClient.auth.getUser();
-      if (!user) { alert("No user found after login."); return; }
+      if (!user) {
+        alert("No user found after login.");
+        return;
+      }
 
       const { data: profile, error: profileError } = await supabaseClient
-        .from("profiles").select("role").eq("id", user.id).single();
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
 
-      if (profileError) { alert("Error fetching role: " + profileError.message); return; }
+      if (profileError) {
+        alert("Error fetching role: " + profileError.message);
+        console.error("Profile error:", profileError);
+        return;
+      }
 
-      if (profile?.role === "admin") window.location.href = "admin-dashboard.html";
-      else window.location.href = "user-home.html";
+      if (profile?.role === "admin") {
+        window.location.href = "admin-dashboard.html";
+      } else {
+        window.location.href = "user-home.html";
+      }
     });
   }
 
