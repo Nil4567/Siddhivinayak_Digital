@@ -87,6 +87,7 @@
   <script src="js/supabase-config.js"></script>
 
   <script>
+    // Assumes js/supabase-config.js defines `supabaseClient`
     let users = [];
 
     // Navigation
@@ -100,34 +101,53 @@
       window.location.href = "login.html";
     });
 
+    // Helpers
+    function formatNumber(v) {
+      const n = parseFloat(v);
+      return isNaN(n) ? "0.00" : n.toFixed(2);
+    }
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return "";
+      return String(str).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]; });
+    }
+
     // Load users for assigned_to display_name
     async function loadUsers() {
-      const { data } = await supabaseClient.from("profiles").select("id, display_name");
-      users = data || [];
+      try {
+        const { data, error } = await supabaseClient.from("profiles").select("id, display_name");
+        if (error) throw error;
+        users = data || [];
+      } catch (err) {
+        console.error("loadUsers error:", err);
+        users = [];
+      }
     }
 
     // Load completed orders
     async function loadCompleted() {
       const start = document.getElementById("startDate").value;
-      let query = supabaseClient
-        .from("completed_orders")
-        .select("order_id, order_code, customer_name, customer_contact, job_description, total_amount, advance_amount, pending_received, total_received, pending_balance, assigned_to, created_at, completed_at");
+      try {
+        let query = supabaseClient
+          .from("completed_orders")
+          .select("order_id, order_code, customer_name, customer_contact, job_description, total_amount, advance_amount, pending_received, total_received, pending_balance, assigned_to, created_at, completed_at");
 
-      if (start) {
-        const now = new Date().toISOString();
-        query = query.gte("completed_at", start + "T00:00:00").lte("completed_at", now);
-      }
+        if (start) {
+          const now = new Date().toISOString();
+          query = query.gte("completed_at", start + "T00:00:00").lte("completed_at", now);
+        }
 
-      const { data, error } = await query.order("completed_at", { ascending: false });
-      if (error) {
-        alert("Error loading completed orders: " + error.message);
+        const { data, error } = await query.order("completed_at", { ascending: false });
+        if (error) throw error;
+        renderCompleted(data || []);
+        populateDropdowns();
+        attachDropdownFilters();
+        recalcSummary();
+      } catch (err) {
+        console.error("loadCompleted error:", err);
+        alert("Error loading completed orders: " + (err.message || err));
         renderCompleted([]);
-        return;
+        recalcSummary();
       }
-      renderCompleted(data || []);
-      populateDropdowns();
-      attachDropdownFilters();
-      recalcSummary();
     }
 
     // Render table rows
@@ -139,17 +159,177 @@
         const completedDate = order.completed_at ? new Date(order.completed_at) : null;
         const tatDays = completedDate ? Math.floor((completedDate - orderDate) / (1000*60*60*24)) : "";
 
+        // Column indices:
+        // 0 order_code,1 customer,2 mobile,3 job,4 total,5 advance,6 pending_balance,
+        // 7 orderDate,8 completedDate,9 tat,10 assigned,11 pending_received input,12 total_received,13 actions
+
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${order.order_code || ""}</td>
-          <td>${order.customer_name || ""}</td>
-          <td>${order.customer_contact || ""}</td>
-          <td>${order.job_description || ""}</td>
+          <td>${escapeHtml(order.order_code || "")}</td>
+          <td>${escapeHtml(order.customer_name || "")}</td>
+          <td>${escapeHtml(order.customer_contact || "")}</td>
+          <td>${escapeHtml(order.job_description || "")}</td>
           <td>${formatNumber(order.total_amount)}</td>
           <td>${formatNumber(order.advance_amount)}</td>
           <td>${formatNumber(order.pending_balance)}</td>
           <td>${orderDate.toISOString().split("T")[0]}</td>
           <td>${completedDate ? completedDate.toISOString().split("T")[0] : ""}</td>
           <td>${tatDays}</td>
-          <td>${users.find(u=>u.id===order.assigned_to)?.display_name || "Unassigned"}</td>
-          <td><input type="number" min="0" step="0.01" value="${(order.pending_received ?? 0
+          <td>${escapeHtml((users.find(u=>u.id===order.assigned_to)?.display_name) || "Unassigned")}</td>
+          <td><input type="number" min="0" step="0.01" value="${formatNumber(order.pending_received ?? 0)}" class="pendingInput" data-id="${order.order_id}"></td>
+          <td>${formatNumber(order.total_received)}</td>
+          <td>
+            <button class="updatePendingBtn" data-id="${order.order_id}">Update Pending</button>
+            <button class="tokenBtn" data-code="${encodeURIComponent(order.order_code || '')}">Bill Token</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      attachPendingEvents();
+      attachTokenEvents();
+    }
+
+    // Attach update pending events (updates DB then reloads list)
+    function attachPendingEvents() {
+      document.querySelectorAll(".updatePendingBtn").forEach(btn => {
+        btn.removeEventListener("click", handleUpdateClick); // safe remove if previously attached
+        btn.addEventListener("click", handleUpdateClick);
+      });
+    }
+
+    async function handleUpdateClick(e) {
+      const id = e.currentTarget.getAttribute("data-id");
+      const input = document.querySelector(`.pendingInput[data-id="${id}"]`);
+      if (!input) return alert("Input not found for this order.");
+      let amount = parseFloat(input.value);
+      if (isNaN(amount) || amount < 0) amount = 0;
+      const sanitized = parseFloat(amount.toFixed(2));
+
+      try {
+        // Update pending_received in DB
+        const { error } = await supabaseClient
+          .from("completed_orders")
+          .update({ pending_received: sanitized })
+          .eq("order_id", id);
+
+        if (error) throw error;
+
+        // Reload fresh data from DB (so derived columns update)
+        await loadCompleted();
+        alert("Pending updated successfully!");
+      } catch (err) {
+        console.error("update pending error:", err);
+        alert("Error updating pending: " + (err.message || err));
+      }
+    }
+
+    // Token button
+    function attachTokenEvents() {
+      document.querySelectorAll(".tokenBtn").forEach(btn => {
+        btn.removeEventListener("click", handleTokenClick);
+        btn.addEventListener("click", handleTokenClick);
+      });
+    }
+    function handleTokenClick(e) {
+      const code = decodeURIComponent(e.currentTarget.getAttribute("data-code") || "");
+      const url = "final-bill.html?code=" + encodeURIComponent(code || "");
+      window.open(url, "_blank");
+    }
+
+    // Populate dropdowns with unique values from visible rows
+    function populateDropdowns() {
+      const rows = document.querySelectorAll("#completedTable tbody tr");
+      const selects = document.querySelectorAll(".filterSelect");
+
+      selects.forEach(sel => {
+        const colIndex = parseInt(sel.getAttribute("data-col"));
+        const values = new Set();
+
+        rows.forEach(row => {
+          const text = (row.children[colIndex]?.textContent || "").trim();
+          if (text) values.add(text);
+        });
+
+        // remove existing non-empty options
+        sel.querySelectorAll("option:not([value=''])").forEach(opt => opt.remove());
+        Array.from(values).sort().forEach(v => {
+          const opt = document.createElement("option");
+          opt.value = v;
+          opt.textContent = v;
+          sel.appendChild(opt);
+        });
+      });
+    }
+
+    // Attach dropdown filter logic
+    function attachDropdownFilters() {
+      document.querySelectorAll(".filterSelect").forEach(sel => {
+        sel.removeEventListener("change", handleFilterChange);
+        sel.addEventListener("change", handleFilterChange);
+      });
+    }
+    function handleFilterChange() {
+      const activeFilters = Array.from(document.querySelectorAll(".filterSelect"))
+        .map(s => ({ col: parseInt(s.getAttribute("data-col")), val: s.value }));
+
+      document.querySelectorAll("#completedTable tbody tr").forEach(tr => {
+        const show = activeFilters.every(f => {
+          if (!f.val) return true;
+          const cellText = (tr.children[f.col]?.textContent || "").trim();
+          return cellText === f.val;
+        });
+        tr.style.display = show ? "" : "none";
+      });
+      recalcSummary();
+    }
+
+    // Recalculate summary totals using DB-derived columns
+    function recalcSummary() {
+      let totalPaid = 0;
+      let totalPending = 0;
+      let visibleCount = 0;
+      const rows = document.querySelectorAll("#completedTable tbody tr");
+
+      rows.forEach(row => {
+        if (row.style.display === "none") return;
+        visibleCount++;
+
+        const totalReceived = parseFloat(row.children[12].textContent) || 0; // total_received column
+        const pendingBalance = parseFloat(row.children[6].textContent) || 0; // pending_balance column
+
+        totalPaid += totalReceived;
+        totalPending += pendingBalance;
+      });
+
+      document.getElementById("totalPaid").textContent = "Total Paid: ₹" + totalPaid.toFixed(2);
+      document.getElementById("pendingTotal").textContent = "Total Pending: ₹" + totalPending.toFixed(2);
+      document.getElementById("completedCount").textContent = "Completed Orders: " + visibleCount;
+    }
+
+    // Default start date = first day of current month
+    function setDefaultStartDate() {
+      const d = new Date();
+      const first = new Date(d.getFullYear(), d.getMonth(), 1);
+      document.getElementById("startDate").value = first.toISOString().split("T")[0];
+    }
+
+    // Apply filter
+    document.getElementById("applyFilterBtn").addEventListener("click", loadCompleted);
+
+    // Clear filters
+    document.getElementById("clearFilterBtn").addEventListener("click", async () => {
+      setDefaultStartDate();
+      document.querySelectorAll(".filterSelect").forEach(sel => sel.value = "");
+      await loadCompleted();
+    });
+
+    // Init
+    (async function init(){
+      setDefaultStartDate();
+      await loadUsers();
+      await loadCompleted();
+    })();
+  </script>
+</body>
+</html>
