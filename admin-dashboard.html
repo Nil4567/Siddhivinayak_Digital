@@ -13,6 +13,13 @@
     .nav { margin-top:30px; display:flex; gap:20px; }
     .nav button { padding:12px 20px; background:#0073ff; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:15px; font-weight:600; }
     .nav button:hover { background:#0056b3; }
+    .section { margin-top:40px; }
+    table { width:100%; border-collapse:collapse; margin-top:15px; background:#fff; border-radius:6px; overflow:hidden; }
+    th, td { padding:10px; border-bottom:1px solid #ddd; text-align:left; }
+    th { background:#2c3e50; color:#fff; }
+    td button { margin-right:8px; padding:6px 12px; border:none; border-radius:4px; cursor:pointer; font-weight:600; }
+    .btn-approve { background:#27ae60; color:#fff; }
+    .btn-reject { background:#e74c3c; color:#fff; }
   </style>
 </head>
 <body>
@@ -35,6 +42,24 @@
     <button onclick="location.href='new-order.html'">Create New Order</button>
     <button onclick="location.href='orders-queue.html'">View Queue Orders</button>
     <button onclick="location.href='completed-orders.html'">View Completed Orders</button>
+  </div>
+
+  <!-- Attendance Approval Section -->
+  <div class="section">
+    <h2>Attendance Requests (Pending)</h2>
+    <table id="approvalTable">
+      <thead>
+        <tr>
+          <th>User ID</th>
+          <th>Date</th>
+          <th>Request Type</th>
+          <th>Request Time</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
 
   <!-- Supabase library + config -->
@@ -78,11 +103,74 @@
         if (!data || data.role !== "admin") {
           alert("Access denied. Redirecting to user home.");
           window.location.href = "user-home.html";
+          return;
         }
+
+        // Load pending attendance requests
+        loadPendingAttendance();
       } catch (err) {
         alert("Backend error: " + err.message);
       }
     });
+
+    async function loadPendingAttendance() {
+      const { data, error } = await supabaseClient
+        .from("attendance_requests")
+        .select("id, user_id, request_type, request_time, status, date")
+        .eq("status", "pending")
+        .order("date", { ascending: false });
+
+      if (error) {
+        alert("Error loading attendance requests: " + error.message);
+        return;
+      }
+
+      const tbody = document.querySelector("#approvalTable tbody");
+      tbody.innerHTML = "";
+      (data || []).forEach(req => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${req.user_id}</td>
+          <td>${req.date || ""}</td>
+          <td>${req.request_type}</td>
+          <td>${req.request_time ? new Date(req.request_time).toLocaleString() : ""}</td>
+          <td>${req.status}</td>
+          <td>
+            <button class="btn-approve" onclick="approveAttendance(${req.id})">Approve</button>
+            <button class="btn-reject" onclick="rejectAttendance(${req.id})">Reject</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function approveAttendance(id) {
+      const { error } = await supabaseClient
+        .from("attendance_requests")
+        .update({ status: "approved", approved_by: "admin" })
+        .eq("id", id);
+
+      if (error) {
+        alert("Error approving: " + error.message);
+        return;
+      }
+      alert("Request approved.");
+      loadPendingAttendance();
+    }
+
+    async function rejectAttendance(id) {
+      const { error } = await supabaseClient
+        .from("attendance_requests")
+        .update({ status: "rejected", approved_by: "admin" })
+        .eq("id", id);
+
+      if (error) {
+        alert("Error rejecting: " + error.message);
+        return;
+      }
+      alert("Request rejected.");
+      loadPendingAttendance();
+    }
   </script>
 </body>
 </html>
