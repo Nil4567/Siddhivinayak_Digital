@@ -5,88 +5,18 @@
   <title>Final Bill - Siddhivinayak Digital</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body {
-      font-family: Segoe UI, Arial, sans-serif;
-      background: #f4f6f9;
-      padding: 40px;
-      display: flex;
-      justify-content: center;
-    }
-    .bill {
-      width: 650px;
-      background: #fff;
-      border: 2px solid #333;
-      padding: 20px;
-      box-shadow: 0 4px 10px rgba(0,0,0,.2);
-    }
-    .headerRow { display: flex; gap: 20px; align-items: center; }
-    .logoWrap { width: 120px; height: 120px; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; }
-    .logoWrap img { width: 100%; height: 100%; object-fit: contain; }
-    .shopInfo { text-align: center; flex: 1; }
-    .shopInfo h2 { margin: 0; color: #0073ff; font-size: 30px; }
-    hr { border-top: 1px dashed #aaa; margin: 12px 0; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid #ddd; padding: 8px; font-size: 14px; }
-    th { background: #f1f9ff; width: 40%; text-align: left; }
-    .summaryBox {
-      margin-top: 15px;
-      display: flex;
-      justify-content: space-between;
-      background: #f1f9ff;
-      border: 1px solid #0073ff;
-      border-radius: 6px;
-      padding: 10px;
-      font-weight: bold;
-    }
-    .actions { margin-top: 15px; display: flex; gap: 8px; }
-    .actions button {
-      flex: 1;
-      padding: 8px;
-      background: #0073ff;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .thankyou {
-      margin-top: 20px;
-      background: #2ecc71;
-      color: #fff;
-      text-align: center;
-      padding: 12px;
-      font-weight: bold;
-      border-radius: 6px;
-    }
-    .warning {
-      padding: 20px;
-      text-align: center;
-      color: #fff;
-      background: #e74c3c;
-      border-radius: 6px;
-      font-size: 16px;
-      font-weight: bold;
-    }
+    body { font-family: Segoe UI, Arial, sans-serif; background:#f4f6f9; padding:40px; display:flex; justify-content:center; }
+    .bill { width:650px; background:#fff; border:2px solid #333; padding:20px; box-shadow:0 4px 10px rgba(0,0,0,.2); }
+    table { width:100%; border-collapse:collapse; margin-top:10px; }
+    th,td { border:1px solid #ddd; padding:8px; font-size:14px; }
+    th { background:#f1f9ff; width:40%; text-align:left; }
+    .summaryBox { margin-top:15px; display:flex; justify-content:space-between; background:#f1f9ff; border:1px solid #0073ff; border-radius:6px; padding:10px; font-weight:bold; }
+    .thankyou { margin-top:20px; background:#2ecc71; color:#fff; text-align:center; padding:12px; font-weight:bold; border-radius:6px; }
   </style>
 </head>
 <body>
   <div class="bill" id="billCard">
-    <div class="headerRow">
-      <div class="logoWrap">
-        <img src="YOUR_LOGO_URL" alt="Logo">
-      </div>
-      <div class="shopInfo">
-        <h2>Siddhivinayak Digital</h2>
-        <p>
-          Row House No.3, Sundarvan CHS<br>
-          Opp Datta Meghe College, Airoli<br>
-          Sector-2, Navi Mumbai-400708<br>
-          <strong>Contact:</strong> 8169040864
-        </p>
-      </div>
-    </div>
-
-    <hr>
-
+    <h2 style="text-align:center;color:#0073ff;">Siddhivinayak Digital</h2>
     <table>
       <tr><th>Bill No</th><td id="billNo">—</td></tr>
       <tr><th>Customer Name</th><td id="customer">—</td></tr>
@@ -100,87 +30,59 @@
       <tr><th>Order Date</th><td id="orderDate">—</td></tr>
       <tr><th>Completed Date</th><td id="completedDate">—</td></tr>
     </table>
-
     <div class="summaryBox">
       <div>Pending Balance: ₹<span id="pendingSum">0.00</span></div>
       <div>Total Received: ₹<span id="receivedSum">0.00</span></div>
     </div>
-
-    <div class="actions" id="actionBtns">
-      <button id="printBtn">Print / PDF</button>
-      <button id="downloadBtn">Download PNG</button>
-      <button id="shareBtn">Share Bill</button>
-    </div>
-
     <div class="thankyou">🙏 Thank you for choosing Siddhivinayak Digital</div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- Supabase client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const $ = id => document.getElementById(id);
     const money = v => (parseFloat(v) || 0).toFixed(2);
 
-    const billData = localStorage.getItem("billData");
-    if (!billData) {
-      $("billCard").innerHTML = `
-        <div class="warning">
-          ⚠️ No bill data found. Please create bill from form page first.
-        </div>
-      `;
-    } else {
-      const data = JSON.parse(billData);
+    // ✅ Replace with your Supabase project details
+    const supabaseUrl = "https://YOUR_PROJECT.supabase.co";
+    const supabaseKey = "YOUR_ANON_KEY";
+    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-      const total = parseFloat(data.total) || 0;
-      const advance = parseFloat(data.advance) || 0;
+    async function loadBill(orderCode) {
+      const { data, error } = await supabase
+        .from("completed_orders")
+        .select("*")
+        .eq("order_code", orderCode)
+        .single();
+
+      if (error || !data) {
+        $("billCard").innerHTML = `<div style="padding:20px;text-align:center;color:#fff;background:#e74c3c;border-radius:6px;">⚠️ Bill not found</div>`;
+        return;
+      }
+
+      const total = parseFloat(data.total_amount) || 0;
+      const advance = parseFloat(data.advance_amount) || 0;
       const pendingReceived = parseFloat(data.pending_received) || 0;
-
       const totalReceived = advance + pendingReceived;
       const pending = Math.max(0, total - totalReceived);
 
-      $("billNo").textContent = data.order_code || "—";
-      $("customer").textContent = data.customer || "—";
-      $("mobile").textContent = data.mobile || "—";
-      $("job").textContent = data.job || "—";
-
+      $("billNo").textContent = data.order_code;
+      $("customer").textContent = data.customer_name;
+      $("mobile").textContent = data.customer_contact;
+      $("job").textContent = data.job_description;
       $("total").textContent = "₹" + money(total);
       $("advance").textContent = "₹" + money(advance);
       $("pendingReceived").textContent = "₹" + money(pendingReceived);
       $("totalReceived").textContent = "₹" + money(totalReceived);
       $("pending").textContent = "₹" + money(pending);
-
       $("pendingSum").textContent = money(pending);
       $("receivedSum").textContent = money(totalReceived);
-
-      $("orderDate").textContent = data.order_date || "—";
-      $("completedDate").textContent = data.completed_date || "—";
+      $("orderDate").textContent = new Date(data.created_at).toLocaleDateString();
+      $("completedDate").textContent = new Date(data.completed_at).toLocaleDateString();
     }
 
-    $("printBtn")?.addEventListener("click", () => window.print());
-
-    $("downloadBtn")?.addEventListener("click", async () => {
-      const canvas = await html2canvas($("billCard"), { scale: 2 });
-      canvas.toBlob(b => {
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(b);
-        a.download = "Siddhivinayak-Bill.png";
-        a.click();
-      });
-    });
-
-    $("shareBtn")?.addEventListener("click", async () => {
-      const canvas = await html2canvas($("billCard"), { scale: 2 });
-      canvas.toBlob(async b => {
-        const file = new File([b], "Siddhivinayak-Bill.png", { type: "image/png" });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file] });
-        } else {
-          const a = document.createElement("a");
-          a.href = URL.createObjectURL(b);
-          a.download = file.name;
-          a.click();
-        }
-      });
-    });
+    // ✅ Call with a specific order_code
+    loadBill("INV-101");
   </script>
 </body>
 </html>
