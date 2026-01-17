@@ -4,6 +4,15 @@
   <meta charset="UTF-8">
   <title>My Attendance</title>
   <link rel="stylesheet" href="css/style.css">
+  <!-- FullCalendar CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+  <style>
+    #calendar { margin-top:20px; background:#fff; padding:10px; border-radius:6px; }
+    .fc-daygrid-day.fc-day-present { background:#d4edda !important; } /* green */
+    .fc-daygrid-day.fc-day-absent { background:#f8d7da !important; } /* red */
+    .fc-daygrid-day.fc-day-half { background:#fff3cd !important; } /* yellow */
+    .summary { margin-top:20px; font-weight:bold; }
+  </style>
 </head>
 <body>
   <!-- Header -->
@@ -18,6 +27,13 @@
     <button onclick="requestAttendance('in')">Request In Time</button>
     <button onclick="requestAttendance('out')">Request Out Time</button>
     <button onclick="requestAttendance('half_day')">Request Half Day</button>
+  </div>
+
+  <!-- Attendance Calendar -->
+  <div class="attendanceCalendar">
+    <h2>Calendar View</h2>
+    <div id="calendar"></div>
+    <div class="summary" id="summary"></div>
   </div>
 
   <!-- Attendance History Table -->
@@ -38,16 +54,13 @@
   </div>
 
   <!-- Scripts -->
-  <!-- Load Supabase SDK first -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- Then your project scripts -->
   <script src="js/auth.js"></script>
   <script src="js/attendance.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 
   <script>
     document.addEventListener("DOMContentLoaded", async () => {
-      // Load attendance records on page load
       await showAttendance();
 
       // Logout button
@@ -58,6 +71,58 @@
           window.location.href = "index.html";
         });
       }
+
+      // Calendar setup
+      const calendarEl = document.getElementById("calendar");
+      const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: "dayGridMonth",
+        events: async (fetchInfo, successCallback, failureCallback) => {
+          try {
+            const user = await getCurrentUser();
+            if (!user) return;
+
+            const { data, error } = await supabaseClient
+              .from("attendance_requests")
+              .select("date, request_type, status")
+              .eq("user_id", user.id);
+
+            if (error) {
+              console.error(error);
+              failureCallback(error);
+              return;
+            }
+
+            let presentCount = 0, absentCount = 0, halfCount = 0;
+
+            const events = (data || []).map(req => {
+              let color = "#007bff"; // default blue
+              if (req.request_type === "in" && req.status === "approved") {
+                color = "green"; presentCount++;
+              } else if (req.request_type === "out" && req.status === "approved") {
+                color = "red"; absentCount++;
+              } else if (req.request_type === "half_day" && req.status === "approved") {
+                color = "orange"; halfCount++;
+              }
+
+              return {
+                title: `${req.request_type} (${req.status})`,
+                start: req.date,
+                color: color
+              };
+            });
+
+            // Update summary
+            document.getElementById("summary").textContent =
+              `Summary: Present ${presentCount}, Absent ${absentCount}, Half Day ${halfCount}`;
+
+            successCallback(events);
+          } catch (err) {
+            console.error(err);
+            failureCallback(err);
+          }
+        }
+      });
+      calendar.render();
     });
   </script>
 </body>
