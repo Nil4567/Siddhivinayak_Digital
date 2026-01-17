@@ -70,7 +70,7 @@
         <th>Job Description<br><select class="filterSelect" data-col="3"><option value="">All</option></select></th>
         <th>Total</th>
         <th>Advance</th>
-        <th>Pending</th>
+        <th>Pending Balance</th>
         <th>Order Date</th>
         <th>Completed Date</th>
         <th>TAT (Days)</th>
@@ -102,40 +102,28 @@
 
     // Load users for assigned_to display_name
     async function loadUsers() {
-      try {
-        const { data, error } = await supabaseClient.from("profiles").select("id, display_name");
-        if (error) console.error("Error loading users:", error.message);
-        users = data || [];
-      } catch (err) {
-        console.error("loadUsers error:", err);
-        users = [];
-      }
+      const { data } = await supabaseClient.from("profiles").select("id, display_name");
+      users = data || [];
     }
 
-    // Load completed orders with optional From date (to now inclusive)
+    // Load completed orders
     async function loadCompleted() {
       const start = document.getElementById("startDate").value;
-
       let query = supabaseClient
         .from("completed_orders")
-        .select("order_id, order_code, customer_name, customer_contact, job_description, total_amount, advance_amount, pending_amount, pending_received, assigned_to, created_at, completed_at");
+        .select("order_id, order_code, customer_name, customer_contact, job_description, total_amount, advance_amount, pending_received, total_received, pending_balance, assigned_to, created_at, completed_at");
 
       if (start) {
-        const now = new Date().toISOString(); // current timestamp
-        query = query
-          .gte("completed_at", start + "T00:00:00")
-          .lte("completed_at", now);
+        const now = new Date().toISOString();
+        query = query.gte("completed_at", start + "T00:00:00").lte("completed_at", now);
       }
 
       const { data, error } = await query.order("completed_at", { ascending: false });
       if (error) {
         alert("Error loading completed orders: " + error.message);
-        console.error(error);
         renderCompleted([]);
         return;
       }
-
-      console.log("Loaded data:", data);
       renderCompleted(data || []);
       populateDropdowns();
       attachDropdownFilters();
@@ -153,172 +141,15 @@
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${escapeHtml(order.order_code || "")}</td>
-          <td>${escapeHtml(order.customer_name || "")}</td>
-          <td>${escapeHtml(order.customer_contact || "")}</td>
-          <td>${escapeHtml(order.job_description || "")}</td>
+          <td>${order.order_code || ""}</td>
+          <td>${order.customer_name || ""}</td>
+          <td>${order.customer_contact || ""}</td>
+          <td>${order.job_description || ""}</td>
           <td>${formatNumber(order.total_amount)}</td>
           <td>${formatNumber(order.advance_amount)}</td>
-          <td>${formatNumber(order.pending_amount)}</td>
+          <td>${formatNumber(order.pending_balance)}</td>
           <td>${orderDate.toISOString().split("T")[0]}</td>
           <td>${completedDate ? completedDate.toISOString().split("T")[0] : ""}</td>
           <td>${tatDays}</td>
-          <td>${escapeHtml(users.find(u=>u.id===order.assigned_to)?.display_name || "Unassigned")}</td>
-          <td><input type="number" min="0" step="0.01" value="${(order.pending_received ?? 0).toFixed(2)}" class="pendingInput" data-id="${order.order_id}"></td>
-          <td>${formatNumber((order.advance_amount ?? 0) + (order.pending_received ?? 0))}</td>
-          <td>
-            <button class="updatePendingBtn" data-id="${order.order_id}">Update Pending</button>
-            <button class="tokenBtn" data-code="${encodeURIComponent(order.order_code || '')}">Bill Token</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      attachPendingEvents();
-      attachTokenEvents();
-    }
-
-    // Helpers
-    function formatNumber(v) {
-      const n = parseFloat(v);
-      return isNaN(n) ? "0.00" : n.toFixed(2);
-    }
-    function escapeHtml(str) {
-      return String(str).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]; });
-    }
-
-    // Inline update for pending_received and total received + summary
-    function attachPendingEvents() {
-      document.querySelectorAll(".updatePendingBtn").forEach(btn => {
-        btn.addEventListener("click", async function() {
-          const id = this.getAttribute("data-id");
-          const input = document.querySelector(`.pendingInput[data-id="${id}"]`);
-          if (!input) return alert("Input not found for this order.");
-          const amount = parseFloat(input.value);
-          const sanitized = isNaN(amount) || amount < 0 ? 0 : amount;
-
-          const { error } = await supabaseClient
-            .from("completed_orders")
-            .update({ pending_received: sanitized })
-            .eq("order_id", id);
-
-          if (error) {
-            alert("Error updating pending: " + error.message);
-            console.error(error);
-          } else {
-            const row = input.closest("tr");
-            input.value = sanitized.toFixed(2);
-            const adv = parseFloat(row.children[5].textContent) || 0;
-            row.children[12].textContent = (adv + sanitized).toFixed(2);
-            recalcSummary();
-            alert("Pending updated successfully!");
-          }
-        });
-      });
-    }
-
-    // Open bill token in new tab
-    function attachTokenEvents() {
-      document.querySelectorAll(".tokenBtn").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const code = decodeURIComponent(btn.getAttribute("data-code") || "");
-          const url = "final-bill.html?code=" + encodeURIComponent(code || "");
-          window.open(url, "_blank");
-        });
-      });
-    }
-
-    // Populate dropdowns with unique values
-    function populateDropdowns() {
-      const rows = document.querySelectorAll("#completedTable tbody tr");
-      const selects = document.querySelectorAll(".filterSelect");
-
-      selects.forEach(sel => {
-        const colIndex = parseInt(sel.getAttribute("data-col"));
-        const values = new Set();
-
-        rows.forEach(row => {
-          const text = (row.children[colIndex]?.textContent || "").trim();
-          if (text) values.add(text);
-        });
-
-        // remove existing non-empty options
-        sel.querySelectorAll("option:not([value=''])").forEach(opt => opt.remove());
-        Array.from(values).sort().forEach(v => {
-          const opt = document.createElement("option");
-          opt.value = v;
-          opt.textContent = v;
-          sel.appendChild(opt);
-        });
-      });
-    }
-
-    // Attach dropdown filter logic
-    function attachDropdownFilters() {
-      document.querySelectorAll(".filterSelect").forEach(sel => {
-        sel.addEventListener("change", () => {
-          const activeFilters = Array.from(document.querySelectorAll(".filterSelect"))
-            .map(s => ({ col: parseInt(s.getAttribute("data-col")), val: s.value }));
-
-          document.querySelectorAll("#completedTable tbody tr").forEach(tr => {
-            const show = activeFilters.every(f => {
-              if (!f.val) return true;
-              const cellText = (tr.children[f.col]?.textContent || "").trim();
-              return cellText === f.val;
-            });
-            tr.style.display = show ? "" : "none";
-          });
-          recalcSummary();
-        });
-      });
-    }
-
-    // Recalculate summary totals
-    function recalcSummary() {
-      let totalPaid = 0;
-      let totalPending = 0;
-      let visibleCount = 0;
-      const rows = document.querySelectorAll("#completedTable tbody tr");
-
-      rows.forEach(row => {
-        if (row.style.display === "none") return;
-        visibleCount++;
-        const adv = parseFloat(row.children[5].textContent) || 0;
-        const pendAmt = parseFloat(row.children[6].textContent) || 0;
-        const pendRecvInput = row.querySelector(".pendingInput");
-        const pendRecv = pendRecvInput ? (parseFloat(pendRecvInput.value) || 0) : 0;
-        totalPaid += adv + pendRecv;
-        totalPending += Math.max(0, pendAmt - pendRecv);
-      });
-
-      document.getElementById("totalPaid").textContent = "Total Paid: ₹" + totalPaid.toFixed(2);
-      document.getElementById("pendingTotal").textContent = "Total Pending: ₹" + totalPending.toFixed(2);
-      document.getElementById("completedCount").textContent = "Completed Orders: " + visibleCount;
-    }
-
-    // Set default From date to first day of current month
-    function setDefaultStartDate() {
-      const d = new Date();
-      const first = new Date(d.getFullYear(), d.getMonth(), 1);
-      document.getElementById("startDate").value = first.toISOString().split("T")[0];
-    }
-
-    // Apply filter
-    document.getElementById("applyFilterBtn").addEventListener("click", loadCompleted);
-
-    // Clear filters
-    document.getElementById("clearFilterBtn").addEventListener("click", async () => {
-      setDefaultStartDate();
-      document.querySelectorAll(".filterSelect").forEach(sel => sel.value = "");
-      await loadCompleted();
-    });
-
-    // Init
-    (async function init(){
-      setDefaultStartDate();
-      await loadUsers();
-      await loadCompleted();
-    })();
-  </script>
-</body>
-</html>
+          <td>${users.find(u=>u.id===order.assigned_to)?.display_name || "Unassigned"}</td>
+          <td><input type="number" min="0" step="0.01" value="${(order.pending_received ?? 0
