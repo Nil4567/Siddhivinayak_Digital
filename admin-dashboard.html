@@ -65,6 +65,8 @@
   <!-- Supabase library + config -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
+  <!-- Combined attendance script -->
+  <script src="js/attendance.js"></script>
 
   <script>
     document.addEventListener("DOMContentLoaded", async () => {
@@ -106,71 +108,12 @@
           return;
         }
 
-        // Load pending attendance requests
+        // Load pending attendance requests (from attendance.js)
         loadPendingAttendance();
       } catch (err) {
         alert("Backend error: " + err.message);
       }
     });
-
-    async function loadPendingAttendance() {
-      const { data, error } = await supabaseClient
-        .from("attendance_requests")
-        .select("id, user_id, request_type, request_time, status, date")
-        .eq("status", "pending")
-        .order("date", { ascending: false });
-
-      if (error) {
-        alert("Error loading attendance requests: " + error.message);
-        return;
-      }
-
-      const tbody = document.querySelector("#approvalTable tbody");
-      tbody.innerHTML = "";
-      (data || []).forEach(req => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${req.user_id}</td>
-          <td>${req.date || ""}</td>
-          <td>${req.request_type}</td>
-          <td>${req.request_time ? new Date(req.request_time).toLocaleString() : ""}</td>
-          <td>${req.status}</td>
-          <td>
-            <button class="btn-approve" onclick="approveAttendance(${req.id})">Approve</button>
-            <button class="btn-reject" onclick="rejectAttendance(${req.id})">Reject</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    async function approveAttendance(id) {
-      const { error } = await supabaseClient
-        .from("attendance_requests")
-        .update({ status: "approved", approved_by: "admin" })
-        .eq("id", id);
-
-      if (error) {
-        alert("Error approving: " + error.message);
-        return;
-      }
-      alert("Request approved.");
-      loadPendingAttendance();
-    }
-
-    async function rejectAttendance(id) {
-      const { error } = await supabaseClient
-        .from("attendance_requests")
-        .update({ status: "rejected", approved_by: "admin" })
-        .eq("id", id);
-
-      if (error) {
-        alert("Error rejecting: " + error.message);
-        return;
-      }
-      alert("Request rejected.");
-      loadPendingAttendance();
-    }
   </script>
 </body>
 </html>
