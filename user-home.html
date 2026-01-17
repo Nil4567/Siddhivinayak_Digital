@@ -1,6 +1,7 @@
 <div class="tabs">
   <button class="tabBtn" onclick="window.location.href='new-order.html'">Create New Order</button>
   <button class="tabBtn" onclick="showQueue()">My Queue Orders</button>
+  <button class="tabBtn" onclick="showAttendance()">My Attendance</button>
 </div>
 
 <div id="queueSection" style="display:none;">
@@ -22,6 +23,22 @@
   </table>
 </div>
 
+<div id="attendanceSection" style="display:none;">
+  <h2>My Attendance</h2>
+  <table id="attendanceTable">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>In Time</th>
+        <th>Out Time</th>
+        <th>Status</th>
+        <th>Approval</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
 <script>
 async function showQueue() {
   document.getElementById("queueSection").style.display = "block";
@@ -37,7 +54,7 @@ async function showQueue() {
     .from("orders")
     .select("order_code, customer_name, customer_contact, job_description, total_amount, advance_amount, pending_amount, status, assigned_to, created_at")
     .neq("status", "Completed")
-    .eq("assigned_to", user.id)   // only orders assigned to this user
+    .eq("assigned_to", user.id)
     .order("created_at", { ascending: false });
 
   if (error) {
