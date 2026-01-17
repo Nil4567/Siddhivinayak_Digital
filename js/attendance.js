@@ -3,7 +3,12 @@
 // Get current user (reuse auth.js session)
 async function getCurrentUser() {
   const { data: { user }, error } = await supabaseClient.auth.getUser();
-  if (error || !user) {
+  if (error) {
+    console.error("Auth error:", error);
+    alert("Error checking login: " + error.message);
+    return null;
+  }
+  if (!user) {
     alert("Not logged in.");
     window.location.href = "login.html";
     return null;
@@ -13,8 +18,8 @@ async function getCurrentUser() {
 
 // Show Attendance Records
 async function showAttendance() {
-  document.getElementById("attendanceSection").style.display = "block";
-  document.getElementById("queueSection").style.display = "none";
+  document.getElementById("attendanceSection")?.style.display = "block";
+  document.getElementById("queueSection")?.style.display = "none";
 
   const user = await getCurrentUser();
   if (!user) return;
@@ -26,11 +31,13 @@ async function showAttendance() {
     .order("date", { ascending: false });
 
   if (error) {
+    console.error("Select error:", error);
     alert("Error loading attendance: " + error.message);
     return;
   }
 
   const tbody = document.querySelector("#attendanceTable tbody");
+  if (!tbody) return;
   tbody.innerHTML = "";
   (data || []).forEach(record => {
     const tr = document.createElement("tr");
@@ -47,6 +54,8 @@ async function showAttendance() {
 
 // Submit Attendance Request
 async function requestAttendance(type) {
+  console.log("Clicked:", type);
+
   const user = await getCurrentUser();
   if (!user) return;
 
@@ -59,6 +68,7 @@ async function requestAttendance(type) {
     });
 
   if (error) {
+    console.error("Insert error:", error);
     alert("Error submitting request: " + error.message);
     return;
   }
