@@ -1,82 +1,172 @@
-<div class="tabs">
-  <button class="tabBtn" onclick="window.location.href='new-order.html'">Create New Order</button>
-  <button class="tabBtn" onclick="showQueue()">My Queue Orders</button>
-  <button class="tabBtn" onclick="showAttendance()">My Attendance</button>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User Dashboard</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tabBtn" onclick="window.location.href='new-order.html'">Create New Order</button>
+    <button class="tabBtn" onclick="showQueue()">My Queue Orders</button>
+    <button class="tabBtn" onclick="showAttendance()">My Attendance</button>
+  </div>
 
-<div id="queueSection" style="display:none;">
-  <h2>My Queue Orders</h2>
-  <table id="queueTable">
-    <thead>
-      <tr>
-        <th>Order Code</th>
-        <th>Customer</th>
-        <th>Mobile</th>
-        <th>Job Description</th>
-        <th>Total</th>
-        <th>Advance</th>
-        <th>Pending</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-</div>
+  <!-- Queue Orders Section -->
+  <div id="queueSection" style="display:none;">
+    <h2>My Queue Orders</h2>
+    <table id="queueTable">
+      <thead>
+        <tr>
+          <th>Order Code</th>
+          <th>Customer</th>
+          <th>Mobile</th>
+          <th>Job Description</th>
+          <th>Total</th>
+          <th>Advance</th>
+          <th>Pending</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
-<div id="attendanceSection" style="display:none;">
-  <h2>My Attendance</h2>
-  <table id="attendanceTable">
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>In Time</th>
-        <th>Out Time</th>
-        <th>Status</th>
-        <th>Approval</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-</div>
+  <!-- Attendance Section -->
+  <div id="attendanceSection" style="display:none;">
+    <h2>My Attendance</h2>
 
-<script>
-async function showQueue() {
-  document.getElementById("queueSection").style.display = "block";
+    <!-- Action Buttons -->
+    <div class="attendanceActions">
+      <button onclick="requestAttendance('in')">Request In Time</button>
+      <button onclick="requestAttendance('out')">Request Out Time</button>
+      <button onclick="requestAttendance('half_day')">Request Half Day</button>
+    </div>
 
-  const { data: { user } } = await supabaseClient.auth.getUser();
-  if (!user) {
-    alert("Not logged in.");
-    window.location.href = "login.html";
-    return;
-  }
+    <!-- Attendance History Table -->
+    <table id="attendanceTable">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Request Type</th>
+          <th>Request Time</th>
+          <th>Status</th>
+          <th>Approval</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
-  const { data, error } = await supabaseClient
-    .from("orders")
-    .select("order_code, customer_name, customer_contact, job_description, total_amount, advance_amount, pending_amount, status, assigned_to, created_at")
-    .neq("status", "Completed")
-    .eq("assigned_to", user.id)
-    .order("created_at", { ascending: false });
+  <!-- Scripts -->
+  <script src="js/auth.js"></script>
+  <script>
+    // Show Queue Orders
+    async function showQueue() {
+      document.getElementById("queueSection").style.display = "block";
+      document.getElementById("attendanceSection").style.display = "none";
 
-  if (error) {
-    alert("Error loading queue orders: " + error.message);
-    return;
-  }
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user) {
+        alert("Not logged in.");
+        window.location.href = "login.html";
+        return;
+      }
 
-  const tbody = document.querySelector("#queueTable tbody");
-  tbody.innerHTML = "";
-  (data || []).forEach(order => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${order.order_code || ""}</td>
-      <td>${order.customer_name || ""}</td>
-      <td>${order.customer_contact || ""}</td>
-      <td>${order.job_description || ""}</td>
-      <td>${(order.total_amount ?? 0).toFixed(2)}</td>
-      <td>${(order.advance_amount ?? 0).toFixed(2)}</td>
-      <td>${(order.pending_amount ?? 0).toFixed(2)}</td>
-      <td>${order.status}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-</script>
+      const { data, error } = await supabaseClient
+        .from("orders")
+        .select("order_code, customer_name, customer_contact, job_description, total_amount, advance_amount, pending_amount, status, assigned_to, created_at")
+        .neq("status", "Completed")
+        .eq("assigned_to", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        alert("Error loading queue orders: " + error.message);
+        return;
+      }
+
+      const tbody = document.querySelector("#queueTable tbody");
+      tbody.innerHTML = "";
+      (data || []).forEach(order => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${order.order_code || ""}</td>
+          <td>${order.customer_name || ""}</td>
+          <td>${order.customer_contact || ""}</td>
+          <td>${order.job_description || ""}</td>
+          <td>${(order.total_amount ?? 0).toFixed(2)}</td>
+          <td>${(order.advance_amount ?? 0).toFixed(2)}</td>
+          <td>${(order.pending_amount ?? 0).toFixed(2)}</td>
+          <td>${order.status}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Show Attendance Records
+    async function showAttendance() {
+      document.getElementById("attendanceSection").style.display = "block";
+      document.getElementById("queueSection").style.display = "none";
+
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user) {
+        alert("Not logged in.");
+        window.location.href = "login.html";
+        return;
+      }
+
+      const { data, error } = await supabaseClient
+        .from("attendance_requests")
+        .select("date, request_type, request_time, status, approved_by, approved_at")
+        .eq("user_id", user.id)
+        .order("date", { ascending: false });
+
+      if (error) {
+        alert("Error loading attendance: " + error.message);
+        return;
+      }
+
+      const tbody = document.querySelector("#attendanceTable tbody");
+      tbody.innerHTML = "";
+      (data || []).forEach(record => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${record.date || ""}</td>
+          <td>${record.request_type || ""}</td>
+          <td>${record.request_time ? new Date(record.request_time).toLocaleString() : ""}</td>
+          <td>${record.status}</td>
+          <td>${record.approved_by ? "Approved" : (record.status === "pending" ? "Pending" : "Rejected")}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Submit Attendance Request
+    async function requestAttendance(type) {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user) {
+        alert("Not logged in.");
+        window.location.href = "login.html";
+        return;
+      }
+
+      const { error } = await supabaseClient
+        .from("attendance_requests")
+        .insert({
+          user_id: user.id,
+          request_type: type,
+          status: "pending"
+        });
+
+      if (error) {
+        alert("Error submitting request: " + error.message);
+        return;
+      }
+
+      alert("Your " + type + " request has been submitted.");
+      showAttendance(); // refresh table
+    }
+  </script>
+</body>
+</html>
