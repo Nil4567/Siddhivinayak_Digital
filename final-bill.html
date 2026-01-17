@@ -46,10 +46,10 @@
     // 🔑 Replace with your Supabase project details
     const supabaseUrl = "https://YOUR_PROJECT.supabase.co";
     const supabaseKey = "YOUR_ANON_KEY";
-    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
     async function loadBill(orderCode) {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from("completed_orders")
         .select("*")
         .eq("order_code", orderCode)
@@ -81,8 +81,14 @@
       $("completedDate").textContent = new Date(data.completed_at).toLocaleDateString();
     }
 
-    // 👉 Call with a specific order_code (उदा. "INV-101")
-    loadBill("INV-101");
+    // 👉 Get order_code from URL parameter
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    if (code) {
+      loadBill(code);
+    } else {
+      $("billCard").innerHTML = `<div style="padding:20px;text-align:center;color:#fff;background:#e74c3c;border-radius:6px;">⚠️ No order code provided</div>`;
+    }
   </script>
 </body>
 </html>
