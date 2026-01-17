@@ -57,15 +57,6 @@
       font-weight: bold;
       border-radius: 6px;
     }
-    .warning {
-      padding: 20px;
-      text-align: center;
-      color: #fff;
-      background: #e74c3c;
-      border-radius: 6px;
-      font-size: 16px;
-      font-weight: bold;
-    }
   </style>
 </head>
 <body>
@@ -88,22 +79,22 @@
     <hr>
 
     <table>
-      <tr><th>Bill No</th><td id="billNo">—</td></tr>
-      <tr><th>Customer Name</th><td id="customer">—</td></tr>
-      <tr><th>Mobile</th><td id="mobile">—</td></tr>
-      <tr><th>Job Description</th><td id="job">—</td></tr>
-      <tr><th>Total Amount</th><td id="total">₹0.00</td></tr>
-      <tr><th>Advance Paid</th><td id="advance">₹0.00</td></tr>
-      <tr><th>Pending Received</th><td id="pendingReceived">₹0.00</td></tr>
-      <tr><th>Total Received</th><td id="totalReceived">₹0.00</td></tr>
-      <tr><th>Pending Balance</th><td id="pending">₹0.00</td></tr>
-      <tr><th>Order Date</th><td id="orderDate">—</td></tr>
-      <tr><th>Completed Date</th><td id="completedDate">—</td></tr>
+      <tr><th>Bill No</th><td id="billNo"></td></tr>
+      <tr><th>Customer Name</th><td id="customer"></td></tr>
+      <tr><th>Mobile</th><td id="mobile"></td></tr>
+      <tr><th>Job Description</th><td id="job"></td></tr>
+      <tr><th>Total Amount</th><td id="total"></td></tr>
+      <tr><th>Advance Paid</th><td id="advance"></td></tr>
+      <tr><th>Pending Received</th><td id="pendingReceived"></td></tr>
+      <tr><th>Total Received</th><td id="totalReceived"></td></tr>
+      <tr><th>Pending Balance</th><td id="pending"></td></tr>
+      <tr><th>Order Date</th><td id="orderDate"></td></tr>
+      <tr><th>Completed Date</th><td id="completedDate"></td></tr>
     </table>
 
     <div class="summaryBox">
-      <div>Pending Balance: ₹<span id="pendingSum">0.00</span></div>
-      <div>Total Received: ₹<span id="receivedSum">0.00</span></div>
+      <div>Pending Balance: ₹<span id="pendingSum"></span></div>
+      <div>Total Received: ₹<span id="receivedSum"></span></div>
     </div>
 
     <div class="actions" id="actionBtns">
@@ -118,67 +109,60 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script>
     const $ = id => document.getElementById(id);
-    const hideBtns = () => $("actionBtns").style.display = "none";
-    const showBtns = () => $("actionBtns").style.display = "flex";
     const money = v => (parseFloat(v) || 0).toFixed(2);
 
-    const billData = localStorage.getItem("billData");
-    const data = billData ? JSON.parse(billData) : null;
+    // ✅ Hardcoded sample bill data (replace with backend later)
+    const data = {
+      order_code: "INV-101",
+      customer: "Rahul Sharma",
+      mobile: "9876543210",
+      job: "Flex Printing",
+      total: 2500,
+      advance: 1000,
+      pending_received: 500,
+      order_date: "2026-01-17",
+      completed_date: "2026-01-20"
+    };
 
-    if (!data) {
-      // Show warning if no bill data
-      $("billCard").innerHTML = `
-        <div class="warning">
-          ⚠️ No bill data found. Please generate or load a bill first.
-        </div>
-      `;
-    } else {
-      const total = parseFloat(data.total) || 0;
-      const advance = parseFloat(data.advance) || 0;
-      const pendingReceived = parseFloat(data.pending_received) || 0;
+    const total = parseFloat(data.total) || 0;
+    const advance = parseFloat(data.advance) || 0;
+    const pendingReceived = parseFloat(data.pending_received) || 0;
 
-      const totalReceived = advance + pendingReceived;
-      const pending = Math.max(0, total - totalReceived);
+    const totalReceived = advance + pendingReceived;
+    const pending = Math.max(0, total - totalReceived);
 
-      $("billNo").textContent = data.order_code || "—";
-      $("customer").textContent = data.customer || "—";
-      $("mobile").textContent = data.mobile || "—";
-      $("job").textContent = data.job || "—";
+    $("billNo").textContent = data.order_code;
+    $("customer").textContent = data.customer;
+    $("mobile").textContent = data.mobile;
+    $("job").textContent = data.job;
 
-      $("total").textContent = "₹" + money(total);
-      $("advance").textContent = "₹" + money(advance);
-      $("pendingReceived").textContent = "₹" + money(pendingReceived);
-      $("totalReceived").textContent = "₹" + money(totalReceived);
-      $("pending").textContent = "₹" + money(pending);
+    $("total").textContent = "₹" + money(total);
+    $("advance").textContent = "₹" + money(advance);
+    $("pendingReceived").textContent = "₹" + money(pendingReceived);
+    $("totalReceived").textContent = "₹" + money(totalReceived);
+    $("pending").textContent = "₹" + money(pending);
 
-      $("pendingSum").textContent = money(pending);
-      $("receivedSum").textContent = money(totalReceived);
+    $("pendingSum").textContent = money(pending);
+    $("receivedSum").textContent = money(totalReceived);
 
-      $("orderDate").textContent = data.order_date || "—";
-      $("completedDate").textContent = data.completed_date || "—";
-    }
+    $("orderDate").textContent = data.order_date;
+    $("completedDate").textContent = data.completed_date;
 
-    $("printBtn")?.addEventListener("click", async () => {
-      hideBtns(); await new Promise(r => setTimeout(r, 100));
-      window.print(); showBtns();
-    });
+    // Action buttons
+    $("printBtn").onclick = () => window.print();
 
-    $("downloadBtn")?.addEventListener("click", async () => {
-      hideBtns(); await new Promise(r => requestAnimationFrame(r));
+    $("downloadBtn").onclick = async () => {
       const canvas = await html2canvas($("billCard"), { scale: 2 });
-      showBtns();
       canvas.toBlob(b => {
         const a = document.createElement("a");
         a.href = URL.createObjectURL(b);
         a.download = "Siddhivinayak-Bill.png";
         a.click();
       });
-    });
+    };
 
-    $("shareBtn")?.addEventListener("click", async () => {
-      hideBtns(); await new Promise(r => requestAnimationFrame(r));
+    $("shareBtn").onclick = async () => {
       const canvas = await html2canvas($("billCard"), { scale: 2 });
-      showBtns();
       canvas.toBlob(async b => {
         const file = new File([b], "Siddhivinayak-Bill.png", { type: "image/png" });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -190,7 +174,7 @@
           a.click();
         }
       });
-    });
+    };
   </script>
 </body>
 </html>
