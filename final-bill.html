@@ -1,122 +1,338 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Final Bill - Siddhivinayak Digital</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: Segoe UI, Arial, sans-serif; background:#f4f6f9; padding:40px; display:flex; justify-content:center; }
-    .bill { width:650px; background:#fff; border:2px solid #333; padding:20px; box-shadow:0 4px 10px rgba(0,0,0,.2); }
-    table { width:100%; border-collapse:collapse; margin-top:10px; }
-    th,td { border:1px solid #ddd; padding:8px; font-size:14px; }
-    th { background:#f1f9ff; width:40%; text-align:left; }
-    .summaryBox { margin-top:15px; display:flex; justify-content:space-between; background:#f1f9ff; border:1px solid #0073ff; border-radius:6px; padding:10px; font-weight:bold; }
-    .thankyou { margin-top:20px; background:#2ecc71; color:#fff; text-align:center; padding:12px; font-weight:bold; border-radius:6px; }
-    .shareBtn { margin-top:15px; padding:10px 16px; background:#0073ff; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold; }
-    .shareBtn:hover { background:#0056b3; }
+    :root { --brand:#0073ff; --accent:#2ecc71; --muted:#666; --paper:#fff; }
+    body { font-family: "Segoe UI", Arial, sans-serif; background:#f4f6f9; margin:0; padding:24px; display:flex; justify-content:center; }
+    .container { width:760px; background:var(--paper); border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,0.08); padding:20px; }
+    header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+    .brand { color:var(--brand); }
+    .brand h1 { margin:0; font-size:20px; }
+    .meta { text-align:right; font-size:13px; color:#222; }
+    .meta .small { color:var(--muted); font-size:12px; }
+    .grid { display:flex; gap:12px; margin-top:14px; flex-wrap:wrap; }
+    .box { flex:1 1 220px; background:#fafafa; padding:12px; border-radius:6px; border:1px solid #eee; }
+    table.items { width:100%; border-collapse:collapse; margin-top:14px; }
+    table.items th, table.items td { border:1px solid #e6e6e6; padding:10px; text-align:left; vertical-align:top; }
+    table.items th { background:var(--brand); color:#fff; font-weight:700; }
+    .right { text-align:right; }
+    .totals { width:100%; margin-top:12px; border-collapse:collapse; }
+    .totals td { padding:8px; border-top:1px solid #eee; }
+    .totals .label { color:var(--muted); }
+    .actions { margin-top:18px; display:flex; gap:10px; }
+    button.primary { background:var(--brand); color:#fff; border:none; padding:10px 14px; border-radius:6px; cursor:pointer; font-weight:700; }
+    button.ghost { background:#fff; color:var(--brand); border:1px solid var(--brand); padding:10px 14px; border-radius:6px; cursor:pointer; font-weight:700; }
+    button.warn { background:#f39c12; color:#fff; border:none; padding:10px 14px; border-radius:6px; cursor:pointer; font-weight:700; }
+    .note { margin-top:12px; font-size:13px; color:#333; }
+    .muted { color:var(--muted); font-size:13px; }
+    @media print {
+      body { background:#fff; padding:0; }
+      .actions { display:none; }
+      .container { box-shadow:none; border-radius:0; margin:0; }
+    }
   </style>
 </head>
 <body>
-  <div class="bill" id="billCard">
-    <h2 style="text-align:center;color:#0073ff;">Siddhivinayak Digital</h2>
-    <table>
-      <tr><th>Bill No</th><td id="billNo">—</td></tr>
-      <tr><th>Customer Name</th><td id="customer">—</td></tr>
-      <tr><th>Mobile</th><td id="mobile">—</td></tr>
-      <tr><th>Job Description</th><td id="job">—</td></tr>
-      <tr><th>Total Amount</th><td id="total">₹0.00</td></tr>
-      <tr><th>Advance Paid</th><td id="advance">₹0.00</td></tr>
-      <tr><th>Pending Received</th><td id="pendingReceived">₹0.00</td></tr>
-      <tr><th>Total Received</th><td id="totalReceived">₹0.00</td></tr>
-      <tr><th>Pending Balance</th><td id="pending">₹0.00</td></tr>
-      <tr><th>Order Date</th><td id="orderDate">—</td></tr>
-      <tr><th>Completed Date</th><td id="completedDate">—</td></tr>
-    </table>
-    <div class="summaryBox">
-      <div>Pending Balance: ₹<span id="pendingSum">0.00</span></div>
-      <div>Total Received: ₹<span id="receivedSum">0.00</span></div>
+  <div class="container" id="container">
+    <header>
+      <div class="brand">
+        <h1>Siddhivinayak Digital</h1>
+        <div class="muted">Shop No. X, Example Road, Mumbai • Phone: 9000000000</div>
+      </div>
+      <div class="meta">
+        <div><strong>Final Bill</strong></div>
+        <div class="small" id="billCode">Bill Code: —</div>
+        <div class="small" id="billDate">Date: —</div>
+        <div class="small" id="billTAT">TAT: —</div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="box">
+        <strong>Customer</strong>
+        <div id="custName" class="muted">—</div>
+        <div id="custContact" class="muted">—</div>
+      </div>
+      <div class="box">
+        <strong>Job</strong>
+        <div id="jobDesc" class="muted">—</div>
+      </div>
+      <div class="box">
+        <strong>Assigned To</strong>
+        <div id="assignedTo" class="muted">—</div>
+      </div>
     </div>
-    <div class="thankyou">🙏 Thank you for choosing Siddhivinayak Digital</div>
-    <button class="shareBtn" id="shareBtn">📤 Share Bill</button>
+
+    <table class="items" id="itemsTable" aria-label="Bill items">
+      <thead>
+        <tr>
+          <th style="width:60%;">Description</th>
+          <th style="width:10%;">Qty</th>
+          <th style="width:15%;" class="right">Rate</th>
+          <th style="width:15%;" class="right">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td id="itemDesc">—</td>
+          <td class="right">1</td>
+          <td class="right" id="itemRate">0.00</td>
+          <td class="right" id="itemAmount">0.00</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table class="totals" aria-hidden="false">
+      <tbody>
+        <tr>
+          <td class="label">Total Amount</td>
+          <td class="right" id="totalAmount">0.00</td>
+        </tr>
+        <tr>
+          <td class="label">Advance Received</td>
+          <td class="right" id="advanceAmount">0.00</td>
+        </tr>
+        <tr>
+          <td class="label">Pending Received</td>
+          <td class="right" id="pendingReceived">0.00</td>
+        </tr>
+        <tr>
+          <td class="label">Total Received</td>
+          <td class="right" id="totalReceived">0.00</td>
+        </tr>
+        <tr>
+          <td class="label">Pending Balance</td>
+          <td class="right" id="pendingBalance">0.00</td>
+        </tr>
+        <tr>
+          <td class="label">GST Rate</td>
+          <td class="right" id="gstRate">18%</td>
+        </tr>
+        <tr>
+          <td class="label">GST Amount</td>
+          <td class="right" id="gstAmount">0.00</td>
+        </tr>
+        <tr style="font-weight:800;">
+          <td>Total Payable</td>
+          <td class="right" id="grandTotal">0.00</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="note" id="noteArea">
+      <strong>Note</strong>
+      <div class="muted">This bill is generated from completed orders archive. GST is applied at 18% by default.</div>
+    </div>
+
+    <div class="actions">
+      <button class="primary" id="printBtn">Print / Save as PDF</button>
+      <button class="ghost" id="reloadBtn">Reload</button>
+      <button class="warn" id="markBilledBtn">Mark as Billed</button>
+    </div>
+
+    <div class="muted" id="debugMsg" style="margin-top:12px;"></div>
   </div>
 
-  <!-- Supabase client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+
   <script>
-    const $ = id => document.getElementById(id);
-    const money = v => (parseFloat(v) || 0).toFixed(2);
+    // Final bill script (revised, robust)
+    // Expects js/supabase-config.js to create global `supabaseClient`
+    (function () {
+      const GST_RATE = 0.18;
 
-    // 🔑 Replace with your Supabase project details
-    const supabaseUrl = "https://YOUR_PROJECT.supabase.co";
-    const supabaseKey = "YOUR_ANON_KEY";
-    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+      const $ = id => document.getElementById(id);
+      const fmt = v => (Number(v) || 0).toFixed(2);
+      const daysBetween = (a, b) => Math.max(0, Math.floor((b - a) / (1000*60*60*24)));
 
-    async function loadBill(orderCode) {
-      const { data, error } = await supabaseClient
-        .from("completed_orders")
-        .select("order_code, customer_name, customer_contact, job_description, total_amount, advance_amount, pending_received, created_at, completed_at")
-        .eq("order_code", orderCode)
-        .single();
-
-      if (error || !data) {
-        $("billCard").innerHTML = `<div style="padding:20px;text-align:center;color:#fff;background:#e74c3c;border-radius:6px;">⚠️ Bill not found</div>`;
-        return;
+      // Wait for supabaseClient to be available
+      function whenSupabaseReady(timeout = 3000) {
+        return new Promise((resolve, reject) => {
+          const start = Date.now();
+          (function check() {
+            if (typeof supabaseClient !== 'undefined' && supabaseClient) return resolve();
+            if (Date.now() - start > timeout) return reject(new Error('supabaseClient not available'));
+            setTimeout(check, 50);
+          })();
+        });
       }
 
-      const total = parseFloat(data.total_amount) || 0;
-      const advance = parseFloat(data.advance_amount) || 0;
-      const pendingReceived = parseFloat(data.pending_received) || 0;
-      const totalReceived = advance + pendingReceived;
-      const pending = Math.max(0, total - totalReceived);
-
-      $("billNo").textContent = data.order_code;
-      $("customer").textContent = data.customer_name;
-      $("mobile").textContent = data.customer_contact;
-      $("job").textContent = data.job_description;
-      $("total").textContent = "₹" + money(total);
-      $("advance").textContent = "₹" + money(advance);
-      $("pendingReceived").textContent = "₹" + money(pendingReceived);
-      $("totalReceived").textContent = "₹" + money(totalReceived);
-      $("pending").textContent = "₹" + money(pending);
-      $("pendingSum").textContent = money(pending);
-      $("receivedSum").textContent = money(totalReceived);
-      $("orderDate").textContent = new Date(data.created_at).toLocaleDateString();
-      $("completedDate").textContent = new Date(data.completed_at).toLocaleDateString();
-    }
-
-    // Get order_code from URL parameter
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
-    if (code) {
-      loadBill(code);
-    } else {
-      $("billCard").innerHTML = `<div style="padding:20px;text-align:center;color:#fff;background:#e74c3c;border-radius:6px;">⚠️ No order code provided</div>`;
-    }
-
-    // Share button logic (Web Share API)
-    document.getElementById("shareBtn").addEventListener("click", async () => {
-      const text = `Bill No: ${$("billNo").textContent}
-Customer: ${$("customer").textContent}
-Total: ${$("total").textContent}
-Advance: ${$("advance").textContent}
-Pending Received: ${$("pendingReceived").textContent}
-Total Received: ${$("totalReceived").textContent}
-Pending Balance: ${$("pending").textContent}`;
-
-      if (navigator.share) {
+      async function loadBillByCode(orderCode) {
+        $("debugMsg").textContent = "Loading bill...";
         try {
-          await navigator.share({
-            title: "Final Bill - Siddhivinayak Digital",
-            text: text,
-            url: window.location.href
-          });
+          const { data, error } = await supabaseClient
+            .from("completed_orders")
+            .select(`
+              order_id,
+              order_serial,
+              order_code,
+              customer_name,
+              customer_contact,
+              job_description,
+              total_amount,
+              advance_amount,
+              pending_received,
+              total_received,
+              pending_balance,
+              assigned_to,
+              created_at,
+              completed_at
+            `)
+            .eq("order_code", orderCode)
+            .limit(1)
+            .single();
+
+          if (error) {
+            console.error("Supabase error:", error);
+            $("debugMsg").textContent = "Bill not found or permission denied. Check console.";
+            $("container").scrollIntoView();
+            return;
+          }
+          if (!data) {
+            $("debugMsg").textContent = "No data returned for this code.";
+            return;
+          }
+
+          // Prefer DB-derived columns if present
+          const total = Number(data.total_amount ?? 0);
+          const advance = Number(data.advance_amount ?? 0);
+          const pendingReceived = Number(data.pending_received ?? 0);
+
+          const totalReceivedDB = (data.total_received !== null && data.total_received !== undefined) ? Number(data.total_received) : null;
+          const pendingBalanceDB = (data.pending_balance !== null && data.pending_balance !== undefined) ? Number(data.pending_balance) : null;
+
+          const totalReceived = totalReceivedDB !== null ? totalReceivedDB : (advance + pendingReceived);
+          const pendingBalance = pendingBalanceDB !== null ? pendingBalanceDB : Math.max(0, total - totalReceived);
+
+          // Fill UI
+          $("billCode").textContent = "Bill Code: " + (data.order_code || "—");
+          const completedAt = data.completed_at ? new Date(data.completed_at) : new Date();
+          $("billDate").textContent = "Date: " + completedAt.toISOString().split("T")[0];
+          const createdAt = data.created_at ? new Date(data.created_at) : new Date();
+          $("billTAT").textContent = "TAT: " + daysBetween(createdAt, completedAt) + " days";
+
+          $("custName").textContent = data.customer_name || "—";
+          $("custContact").textContent = data.customer_contact || "—";
+          $("jobDesc").textContent = data.job_description || "—";
+          $("assignedTo").textContent = data.assigned_to || "Unassigned";
+
+          $("itemDesc").textContent = data.job_description || "—";
+          $("itemRate").textContent = fmt(total);
+          $("itemAmount").textContent = fmt(total);
+
+          $("totalAmount").textContent = fmt(total);
+          $("advanceAmount").textContent = fmt(advance);
+          $("pendingReceived").textContent = fmt(pendingReceived);
+          $("totalReceived").textContent = fmt(totalReceived);
+          $("pendingBalance").textContent = fmt(pendingBalance);
+
+          $("gstRate").textContent = (GST_RATE * 100).toFixed(0) + "%";
+          const gstAmount = total * GST_RATE;
+          $("gstAmount").textContent = fmt(gstAmount);
+          const grandTotal = total + gstAmount;
+          $("grandTotal").textContent = fmt(grandTotal);
+
+          // Note
+          if (pendingBalance > 0) {
+            $("noteArea").innerHTML = `<strong>Note</strong><div class="muted">Pending balance ₹${fmt(pendingBalance)} remains. Please collect before or at delivery. GST applied at ${(GST_RATE*100).toFixed(0)}% on total amount.</div>`;
+          } else {
+            $("noteArea").innerHTML = `<strong>Note</strong><div class="muted">No pending balance. GST applied at ${(GST_RATE*100).toFixed(0)}% on total amount.</div>`;
+          }
+
+          $("debugMsg").textContent = "";
         } catch (err) {
-          alert("Sharing cancelled or failed.");
+          console.error("loadBill exception:", err);
+          $("debugMsg").textContent = "Error loading bill. See console for details.";
         }
-      } else {
-        alert("Sharing not supported in this browser.");
       }
-    });
+
+      async function markAsBilled(orderCode) {
+        if (!orderCode) return alert("No order code to mark billed.");
+        try {
+          // Fetch order_id first
+          const { data: orderData, error: e1 } = await supabaseClient
+            .from("completed_orders")
+            .select("order_id")
+            .eq("order_code", orderCode)
+            .limit(1)
+            .single();
+
+          if (e1) throw e1;
+          const orderId = orderData?.order_id;
+          if (!orderId) return alert("Order ID not found to log activity.");
+
+          // Insert activity log
+          const { error: e2 } = await supabaseClient
+            .from("order_activity")
+            .insert([{
+              order_id: orderId,
+              action: "Completed",
+              old_status: "Completed",
+              new_status: "Billed",
+              created_by: null,
+              assigned_to: null
+            }]);
+
+          if (e2) throw e2;
+          alert("Marked as billed and logged in activity.");
+        } catch (err) {
+          console.error("markAsBilled error:", err);
+          alert("Unable to mark billed. Check console for details.");
+        }
+      }
+
+      // Buttons
+      $("printBtn").addEventListener("click", () => window.print());
+      $("reloadBtn").addEventListener("click", async () => {
+        if (window.__ORDER_CODE__) await loadBillByCode(window.__ORDER_CODE__);
+      });
+      $("markBilledBtn").addEventListener("click", async () => {
+        if (!window.__ORDER_CODE__) return alert("No order code available.");
+        await markAsBilled(window.__ORDER_CODE__);
+      });
+
+      // Share
+      document.getElementById("container").addEventListener("click", (e) => {
+        if (e.target && e.target.id === "shareBtn") {
+          const text = `Bill: ${$("billCode").textContent}
+Customer: ${$("custName").textContent}
+Total: ₹${$("totalAmount").textContent}
+Advance: ₹${$("advanceAmount").textContent}
+Pending Received: ₹${$("pendingReceived").textContent}
+Total Received: ₹${$("totalReceived").textContent}
+Pending Balance: ₹${$("pendingBalance").textContent}`;
+          if (navigator.share) {
+            navigator.share({ title: "Final Bill", text, url: window.location.href }).catch(()=>{});
+          } else {
+            alert(text);
+          }
+        }
+      });
+
+      // Init: read code param and wait for supabaseClient
+      (async function init() {
+        const params = new URLSearchParams(window.location.search);
+        const raw = params.get("code") || params.get("order_code") || params.get("id");
+        const code = raw ? decodeURIComponent(raw).trim() : null;
+        if (!code) {
+          $("debugMsg").textContent = "No order code provided in URL. Use ?code=SD/001";
+          return;
+        }
+        window.__ORDER_CODE__ = code;
+
+        try {
+          await whenSupabaseReady(3000);
+          await loadBillByCode(code);
+        } catch (err) {
+          console.error("Supabase init error:", err);
+          $("debugMsg").textContent = "Supabase client not initialized. Ensure js/supabase-config.js is loaded and defines supabaseClient.";
+        }
+      })();
+    })();
   </script>
 </body>
 </html>
