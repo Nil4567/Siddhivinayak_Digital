@@ -13,7 +13,7 @@ async function getCurrentUser() {
     window.location.href = "login.html";
     return null;
   }
-  return user;
+  return user; // user.id is UUID
 }
 
 // -------------------- User Functions --------------------
@@ -53,8 +53,6 @@ async function loadAttendance() {
 
 // Submit a new attendance request
 async function requestAttendance(type) {
-  console.log("Clicked:", type);
-
   const user = await getCurrentUser();
   if (!user) return;
 
@@ -112,16 +110,18 @@ async function loadPendingAttendance() {
   });
 }
 
-// Approve a request (store admin user ID in approved_by)
+// Approve a request (store admin user UUID in approved_by)
 async function approveAttendance(id) {
-  const admin = await getCurrentUser(); // get logged-in admin
+  const admin = await getCurrentUser();
   if (!admin) return;
+
+  console.log("Approving with admin.id:", admin.id); // debug
 
   const { error } = await supabaseClient
     .from("attendance_requests")
     .update({
       status: "approved",
-      approved_by: admin.id,   // ✅ store admin UUID
+      approved_by: admin.id,   // ✅ UUID from auth.users
       approved_at: new Date().toISOString()
     })
     .eq("id", id);
@@ -135,16 +135,18 @@ async function approveAttendance(id) {
   loadPendingAttendance();
 }
 
-// Reject a request (store admin user ID in approved_by)
+// Reject a request (store admin user UUID in approved_by)
 async function rejectAttendance(id) {
   const admin = await getCurrentUser();
   if (!admin) return;
+
+  console.log("Rejecting with admin.id:", admin.id); // debug
 
   const { error } = await supabaseClient
     .from("attendance_requests")
     .update({
       status: "rejected",
-      approved_by: admin.id,   // ✅ store admin UUID
+      approved_by: admin.id,   // ✅ UUID from auth.users
       approved_at: new Date().toISOString()
     })
     .eq("id", id);
