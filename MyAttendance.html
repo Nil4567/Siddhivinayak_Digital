@@ -42,7 +42,18 @@
   <script src="js/attendance.js"></script>
   <script>
     // Load attendance records on page load
-    showAttendance();
+    document.addEventListener("DOMContentLoaded", () => {
+      showAttendance();
+
+      // Logout button
+      const logoutBtn = document.getElementById("logout-btn");
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", async () => {
+          await supabaseClient.auth.signOut();
+          window.location.href = "index.html";
+        });
+      }
+    });
   </script>
 </body>
 </html>
