@@ -1,21 +1,67 @@
 {
   "version": "1.0",
   "lastUpdated": "2026-06-01",
-  "description": "Replace this with data exported from Google Sheets as JSON",
+  "description": "OM Namah Shivay - Order Management Database",
   "data": [
     {
       "id": 1,
-      "name": "Sample Entry 1",
-      "description": "This is a sample entry",
-      "createdDate": "2026-06-01",
-      "status": "active"
+      "customerName": "Rajesh Kumar",
+      "customerContact": "9876543210",
+      "jobDescription": "Murti Installation and Puja Setup",
+      "totalAmount": 5000,
+      "advanceAmount": 2000,
+      "pendingAmount": 3000,
+      "orderDate": "2026-05-15",
+      "status": "pending",
+      "paymentStatus": "partial"
     },
     {
       "id": 2,
-      "name": "Sample Entry 2",
-      "description": "Another sample entry",
-      "createdDate": "2026-06-01",
-      "status": "active"
+      "customerName": "Priya Singh",
+      "customerContact": "9123456789",
+      "jobDescription": "Temple Decoration for Diwali",
+      "totalAmount": 15000,
+      "advanceAmount": 7500,
+      "pendingAmount": 7500,
+      "orderDate": "2026-05-20",
+      "status": "in-progress",
+      "paymentStatus": "partial"
+    },
+    {
+      "id": 3,
+      "customerName": "Amit Patel",
+      "customerContact": "8765432109",
+      "jobDescription": "Brass Lamp Cleaning and Polish",
+      "totalAmount": 1200,
+      "advanceAmount": 1200,
+      "pendingAmount": 0,
+      "orderDate": "2026-05-25",
+      "status": "completed",
+      "paymentStatus": "paid"
+    },
+    {
+      "id": 4,
+      "customerName": "Sunita Sharma",
+      "customerContact": "9654321098",
+      "jobDescription": "Pooja Samagri Supply and Setup",
+      "totalAmount": 8500,
+      "advanceAmount": 3000,
+      "pendingAmount": 5500,
+      "orderDate": "2026-05-28",
+      "status": "pending",
+      "paymentStatus": "partial"
+    },
+    {
+      "id": 5,
+      "customerName": "Vikram Gupta",
+      "customerContact": "9543210876",
+      "jobDescription": "Religious Statue Repair",
+      "totalAmount": 3500,
+      "advanceAmount": 0,
+      "pendingAmount": 3500,
+      "orderDate": "2026-06-01",
+      "status": "new",
+      "paymentStatus": "unpaid"
     }
   ]
 }
