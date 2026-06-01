@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sheets Database Example</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            color: #555;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        input, button {
+            padding: 10px 15px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        .stats {
+            background-color: #e7f3ff;
+            padding: 15px;
+            border-left: 4px solid #2196F3;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        table thead {
+            background-color: #f2f2f2;
+        }
+        
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        table tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .search-results {
+            margin: 20px 0;
+        }
+        
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Google Sheets Database Example</h1>
+        
+        <div class="stats">
+            <strong>Total Records:</strong> <span id="totalCount">0</span>
+        </div>
+
+        <h2>View All Records</h2>
+        <button onclick="displayAllData()">Load All Data</button>
+        <div id="tableContainer"></div>
+
+        <h2>Search Records</h2>
+        <div class="controls">
+            <input type="text" id="searchInput" placeholder="Enter search keyword..." />
+            <button onclick="searchData()">Search</button>
+        </div>
+        <div class="search-results" id="searchResults"></div>
+
+        <h2>Find by ID</h2>
+        <div class="controls">
+            <input type="number" id="idInput" placeholder="Enter ID..." />
+            <button onclick="findById()">Find</button>
+        </div>
+        <div id="findResults"></div>
+
+        <h2>Export Data</h2>
+        <button onclick="exportData()">Export as CSV</button>
+        <div id="exportResults"></div>
+    </div>
+
+    <script src="db.js"></script>
+    <script>
+        // Initialize database
+        const db = new GoogleSheetsDB('./database/data.json');
+
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            await db.loadData();
+            document.getElementById('totalCount').textContent = db.count();
+        });
+
+        // Display all data
+        function displayAllData() {
+            db.displayTable('tableContainer');
+        }
+
+        // Search data
+        function searchData() {
+            const keyword = document.getElementById('searchInput').value;
+            if (!keyword) {
+                alert('Please enter a search keyword');
+                return;
+            }
+            
+            const results = db.search(keyword);
+            const resultsDiv = document.getElementById('searchResults');
+            
+            if (results.length === 0) {
+                resultsDiv.innerHTML = `<div class="message info">No results found for "${keyword}"</div>`;
+                return;
+            }
+            
+            resultsDiv.innerHTML = `<div class="message success">Found ${results.length} result(s)</div>`;
+            const tempDB = new GoogleSheetsDB();
+            tempDB.data = results;
+            tempDB.displayTable('searchResults');
+        }
+
+        // Find by ID
+        function findById() {
+            const id = parseInt(document.getElementById('idInput').value);
+            if (!id) {
+                alert('Please enter a valid ID');
+                return;
+            }
+            
+            const record = db.findById(id);
+            const resultsDiv = document.getElementById('findResults');
+            
+            if (!record) {
+                resultsDiv.innerHTML = `<div class="message info">No record found with ID: ${id}</div>`;
+                return;
+            }
+            
+            let html = '<div class="message success">Record found:</div>';
+            html += '<pre style="background:#f5f5f5; padding:10px; border-radius:4px; overflow-x:auto;">';
+            html += JSON.stringify(record, null, 2);
+            html += '</pre>';
+            resultsDiv.innerHTML = html;
+        }
+
+        // Export data
+        function exportData() {
+            const csv = db.exportCSV();
+            const element = document.createElement('a');
+            element.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv));
+            element.setAttribute('download', 'database_export.csv');
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+            
+            document.getElementById('exportResults').innerHTML = '<div class="message success">✓ Data exported as CSV</div>';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2026-06-01",
+  "description": "Replace this with data exported from Google Sheets as JSON",
+  "data": [
+    {
+      "id": 1,
+      "name": "Sample Entry 1",
+      "description": "This is a sample entry",
+      "createdDate": "2026-06-01",
+      "status": "active"
+    },
+    {
+      "id": 2,
+      "name": "Sample Entry 2",
+      "description": "Another sample entry",
+      "createdDate": "2026-06-01",
+      "status": "active"
+    }
+  ]
+}
